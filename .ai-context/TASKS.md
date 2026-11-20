@@ -2,28 +2,31 @@
 
 ## DOING
 
-### P0-005
-Inspect the actual Deepseek-pet entry files and runtime relationships.
+### P0-006
+Determine the actual Deepseek-pet runtime startup flow and integration injection point.
 
 ## TODO
 
-### P0-006
-Determine OpenClaw integration strategy.
-
 ### P0-007
-Acquire or locate OpenClaw source/runtime.
+Identify which standalone/mock AI code should eventually be isolated from the pet runtime.
 
 ### P0-008
-Inspect OpenClaw architecture and Gateway.
+Determine OpenClaw repository/runtime integration method.
 
 ### P0-009
-Verify OpenClaw Windows runtime.
+Acquire or locate OpenClaw.
 
 ### P0-010
-Verify external Gateway client.
+Inspect OpenClaw architecture and Gateway.
 
 ### P0-011
-Verify Agent + Tool complete execution chain.
+Verify OpenClaw Windows runtime.
+
+### P0-012
+Verify Gateway external client.
+
+### P0-013
+Verify complete Agent + Tool chain.
 
 ## BLOCKED
 None.
@@ -31,19 +34,22 @@ None.
 ## DONE
 
 ### P0-001
-Create FJK Agent project guide.
+Project guide.
 
 ### P0-002
-Create .ai-context management system.
+AI context system.
 
 ### P0-003
-Initialize local Git baseline.
+Local Git baseline.
 
 ### P0-004
-Import Deepseek-pet into repository.
+Deepseek-pet imported.
 
-### P0-004A
-Audit Deepseek-pet project structure.
+### P0-005
+Deepseek-pet structure audited.
 
-### P0-004B
-Create PET_RUNTIME_REUSE_MAP.md.
+### P0-005A
+Pet dependency audit generated.
+
+### P0-005B
+Pet symbol/state/resource/construction audits generated.

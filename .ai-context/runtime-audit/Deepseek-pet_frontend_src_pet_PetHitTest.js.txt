@@ -1,0 +1,133 @@
+﻿============================================================
+FILE: Deepseek-pet\frontend\src\pet\PetHitTest.js
+============================================================
+
+export class PetHitTest {
+
+  constructor({
+    canvas,
+    alphaThreshold = 25,
+  }) {
+    this.canvas = canvas
+
+    this.ctx =
+      canvas.getContext(
+        '2d',
+        {
+          willReadFrequently: true,
+        }
+      )
+
+    this.alphaThreshold =
+      alphaThreshold
+  }
+
+
+  /*
+   * 鎶婃祻瑙堝櫒 CSS 鍧愭爣
+   * 杞垚 Canvas 瀹為檯鍍忕礌鍧愭爣銆?
+   */
+  clientToCanvas(
+    clientX,
+    clientY
+  ) {
+    const rect =
+      this.canvas.getBoundingClientRect()
+
+    if (
+      rect.width <= 0 ||
+      rect.height <= 0
+    ) {
+      return null
+    }
+
+    const x =
+      (
+        (clientX - rect.left) /
+        rect.width
+      ) *
+      this.canvas.width
+
+    const y =
+      (
+        (clientY - rect.top) /
+        rect.height
+      ) *
+      this.canvas.height
+
+    return {
+      x: Math.floor(x),
+      y: Math.floor(y),
+    }
+  }
+
+
+  isInsideCanvas(
+    x,
+    y
+  ) {
+    return (
+      x >= 0 &&
+      y >= 0 &&
+      x < this.canvas.width &&
+      y < this.canvas.height
+    )
+  }
+
+
+  /*
+   * 妫€鏌ュ綋鍓?Canvas 宸茬粡缁樺埗鍑烘潵鐨勮繖涓€甯с€?
+   *
+   * alpha > threshold
+   * 鎵嶈涓虹湡姝ｇ偣涓簡瑙掕壊銆?
+   */
+  hit(
+    clientX,
+    clientY
+  ) {
+    const point =
+      this.clientToCanvas(
+        clientX,
+        clientY
+      )
+
+    if (!point) {
+      return false
+    }
+
+    if (
+      !this.isInsideCanvas(
+        point.x,
+        point.y
+      )
+    ) {
+      return false
+    }
+
+    try {
+      const pixel =
+        this.ctx.getImageData(
+          point.x,
+          point.y,
+          1,
+          1
+        ).data
+
+      const alpha =
+        pixel[3]
+
+      return (
+        alpha >
+        this.alphaThreshold
+      )
+
+    } catch (error) {
+      console.error(
+        'PetHitTest failed:',
+        error
+      )
+
+      return false
+    }
+  }
+}

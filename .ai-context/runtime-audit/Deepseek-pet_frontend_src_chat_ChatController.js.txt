@@ -1,0 +1,445 @@
+﻿============================================================
+FILE: Deepseek-pet\frontend\src\chat\ChatController.js
+============================================================
+
+import {
+  PetStates,
+} from '../pet/PetStates.js'
+
+
+export class ChatController {
+
+  constructor({
+    client,
+    stateMachine,
+  }) {
+
+    this.client =
+      client
+
+    this.stateMachine =
+      stateMachine
+
+
+    this.messages =
+      []
+
+    this.abortController =
+      null
+
+    this.generating =
+      false
+
+
+    this.onMessageChange =
+      null
+
+    this.onGeneratingChange =
+      null
+
+    this.onBubbleChange =
+      null
+
+    this.onError =
+      null
+  }
+
+
+  get isGenerating() {
+    return this.generating
+  }
+
+
+  async send(
+    content
+  ) {
+
+    const message =
+      content.trim()
+
+
+    if (!message) {
+      return false
+    }
+
+
+    /*
+     * 褰撳墠鍏堢姝袱涓洖澶嶅苟鍙戙€?
+     */
+    if (
+      this.generating
+    ) {
+      return false
+    }
+
+
+    this.addMessage(
+      'user',
+      message
+    )
+
+
+    const assistantMessage = {
+      id:
+        this.createId(),
+
+      role:
+        'assistant',
+
+      content:
+        '',
+
+      status:
+        'streaming',
+    }
+
+
+    this.messages.push(
+      assistantMessage
+    )
+
+
+    this.emitMessages()
+
+
+    this.abortController =
+      new AbortController()
+
+
+    this.setGenerating(
+      true
+    )
+
+
+    this.setBubble(
+      '姝ｅ湪鎬濊€冣€?
+    )
+
+
+    try {
+
+      /*
+       * 鐢ㄦ埛鎻愪氦鍚庯細
+       *
+       * IDLE
+       * 鈫?
+       * THINKING
+       */
+      await this.stateMachine
+        .setState(
+          PetStates.THINKING,
+          {
+            reason:
+              'chat-request',
+          }
+        )
+
+
+      let speakingStarted =
+        false
+
+
+      await this.client.send({
+
+        message,
+
+        signal:
+          this.abortController.signal,
+
+
+        /*
+         * Mock AI 鍗冲皢寮€濮嬭緭鍑恒€?
+         *
+         * 绗竴鎵瑰唴瀹瑰埌鏉ヤ箣鍓?
+         * 鍒囨崲鍒?SPEAKING銆?
+         */
+        onStart:
+          async () => {
+
+            if (
+              speakingStarted
+            ) {
+              return
+            }
+
+
+            speakingStarted =
+              true
+
+
+            await this.stateMachine
+              .setState(
+                PetStates.SPEAKING,
+                {
+                  reason:
+                    'chat-stream-start',
+                }
+              )
+          },
+
+
+        onToken:
+          (token) => {
+
+            assistantMessage.content +=
+              token
+
+
+            this.setBubble(
+              assistantMessage.content
+            )
+
+
+            this.emitMessages()
+          },
+      })
+
+
+      assistantMessage.status =
+        'done'
+
+
+      this.emitMessages()
+
+
+      /*
+       * 鍥炲缁撴潫锛?
+       *
+       * SPEAKING
+       * 鈫?
+       * IDLE
+       */
+      await this.stateMachine
+        .idle(
+          'chat-complete'
+        )
+
+
+      return true
+
+    } catch (error) {
+
+      if (
+        error?.name ===
+        'AbortError'
+      ) {
+
+        assistantMessage.status =
+          'aborted'
+
+
+        if (
+          !assistantMessage.content
+        ) {
+          assistantMessage.content =
+            '锛堝洖澶嶅凡鍋滄锛?
+        } else {
+          assistantMessage.content +=
+            '\n锛堝凡鍋滄锛?
+        }
+
+
+        this.emitMessages()
+
+
+        this.setBubble(
+          assistantMessage.content
+        )
+
+
+        try {
+          await this.stateMachine
+            .idle(
+              'chat-aborted'
+            )
+        } catch (
+          stateError
+        ) {
+          console.error(
+            stateError
+          )
+        }
+
+
+        return false
+      }
+
+
+      assistantMessage.status =
+        'error'
+
+      assistantMessage.content =
+        '妯℃嫙鑱婂ぉ鍙戠敓閿欒銆?
+
+
+      this.emitMessages()
+
+
+      this.setBubble(
+        assistantMessage.content
+      )
+
+
+      try {
+
+        await this.stateMachine
+          .setState(
+            PetStates.ERROR,
+            {
+              reason:
+                'chat-error',
+            }
+          )
+
+      } catch (
+        stateError
+      ) {
+
+        console.error(
+          stateError
+        )
+      }
+
+
+      if (
+        typeof this.onError ===
+        'function'
+      ) {
+        this.onError(
+          error
+        )
+      }
+
+
+      throw error
+
+    } finally {
+
+      this.abortController =
+        null
+
+
+      this.setGenerating(
+        false
+      )
+    }
+  }
+
+
+  stop() {
+
+    if (
+      !this.abortController
+    ) {
+      return false
+    }
+
+
+    this.abortController.abort()
+
+    return true
+  }
+
+
+  clear() {
+
+    /*
+     * 娓呯┖鍓嶅厛缁撴潫褰撳墠鍥炲銆?
+     */
+    this.stop()
+
+
+    this.messages = []
+
+
+    this.setBubble(
+      ''
+    )
+
+
+    this.emitMessages()
+  }
+
+
+  addMessage(
+    role,
+    content
+  ) {
+
+    this.messages.push({
+      id:
+        this.createId(),
+
+      role,
+
+      content,
+
+      status:
+        'done',
+    })
+
+
+    this.emitMessages()
+  }
+
+
+  emitMessages() {
+
+    if (
+      typeof this.onMessageChange ===
+      'function'
+    ) {
+
+      this.onMessageChange(
+        [...this.messages]
+      )
+    }
+  }
+
+
+  setGenerating(
+    value
+  ) {
+
+    this.generating =
+      value
+
+
+    if (
+      typeof this.onGeneratingChange ===
+      'function'
+    ) {
+
+      this.onGeneratingChange(
+        value
+      )
+    }
+  }
+
+
+  setBubble(
+    value
+  ) {
+
+    if (
+      typeof this.onBubbleChange ===
+      'function'
+    ) {
+
+      this.onBubbleChange(
+        value
+      )
+    }
+  }
+
+
+  createId() {
+
+    return (
+      `${Date.now()}-` +
+      `${Math.random()
+        .toString(16)
+        .slice(2)}`
+    )
+  }
+}

@@ -1,0 +1,248 @@
+﻿# Pet State Reference Audit
+
+This file records real state-related source references.
+
+- Deepseek-pet\frontend\src\main.js:28 | PetStates,
+- Deepseek-pet\frontend\src\main.js:29 | } from './pet/PetStates.js'
+- Deepseek-pet\frontend\src\main.js:32 | PetStateMachine,
+- Deepseek-pet\frontend\src\main.js:33 | } from './pet/PetStateMachine.js'
+- Deepseek-pet\frontend\src\main.js:92 | <strong id="state-name">BOOT</strong>
+- Deepseek-pet\frontend\src\main.js:95 | <strong id="previous-state">-</strong>
+- Deepseek-pet\frontend\src\main.js:101 | <strong id="transition-reason">-</strong>
+- Deepseek-pet\frontend\src\main.js:104 | <strong id="interaction-state">-</strong>
+- Deepseek-pet\frontend\src\main.js:116 | <strong id="audio-state">无</strong>
+- Deepseek-pet\frontend\src\main.js:119 | <strong id="clock-state">-</strong>
+- Deepseek-pet\frontend\src\main.js:315 | const stateNameElement =
+- Deepseek-pet\frontend\src\main.js:317 | '#state-name'
+- Deepseek-pet\frontend\src\main.js:320 | const previousStateElement =
+- Deepseek-pet\frontend\src\main.js:322 | '#previous-state'
+- Deepseek-pet\frontend\src\main.js:330 | const transitionReasonElement =
+- Deepseek-pet\frontend\src\main.js:332 | '#transition-reason'
+- Deepseek-pet\frontend\src\main.js:335 | const interactionStateElement =
+- Deepseek-pet\frontend\src\main.js:337 | '#interaction-state'
+- Deepseek-pet\frontend\src\main.js:355 | const audioStateElement =
+- Deepseek-pet\frontend\src\main.js:357 | '#audio-state'
+- Deepseek-pet\frontend\src\main.js:360 | const clockStateElement =
+- Deepseek-pet\frontend\src\main.js:362 | '#clock-state'
+- Deepseek-pet\frontend\src\main.js:1239 | const stateMachine =
+- Deepseek-pet\frontend\src\main.js:1240 | new PetStateMachine({
+- Deepseek-pet\frontend\src\main.js:1271 | audioStateElement.textContent =
+- Deepseek-pet\frontend\src\main.js:1277 | clockStateElement.textContent =
+- Deepseek-pet\frontend\src\main.js:1284 | animator.onError =
+- Deepseek-pet\frontend\src\main.js:1285 | (error) => {
+- Deepseek-pet\frontend\src\main.js:1287 | console.error(
+- Deepseek-pet\frontend\src\main.js:1288 | '[Animator Error]',
+- Deepseek-pet\frontend\src\main.js:1289 | error
+- Deepseek-pet\frontend\src\main.js:1294 | `动画错误：${error.message}`
+- Deepseek-pet\frontend\src\main.js:1298 | stateMachine.onStateChange =
+- Deepseek-pet\frontend\src\main.js:1305 | stateNameElement.textContent =
+- Deepseek-pet\frontend\src\main.js:1309 | previousStateElement.textContent =
+- Deepseek-pet\frontend\src\main.js:1313 | transitionReasonElement.textContent =
+- Deepseek-pet\frontend\src\main.js:1322 | stateMachine.onStateError =
+- Deepseek-pet\frontend\src\main.js:1323 | (error) => {
+- Deepseek-pet\frontend\src\main.js:1325 | console.error(
+- Deepseek-pet\frontend\src\main.js:1326 | '[State Error]',
+- Deepseek-pet\frontend\src\main.js:1327 | error
+- Deepseek-pet\frontend\src\main.js:1332 | await stateMachine.setState(
+- Deepseek-pet\frontend\src\main.js:1333 | PetStates.IDLE,
+- Deepseek-pet\frontend\src\main.js:1363 | stateMachine,
+- Deepseek-pet\frontend\src\main.js:1376 | interactionStateElement
+- Deepseek-pet\frontend\src\main.js:1403 | thinkingDelay:
+- Deepseek-pet\frontend\src\main.js:1416 | stateMachine,
+- Deepseek-pet\frontend\src\main.js:1493 | .onError =
+- Deepseek-pet\frontend\src\main.js:1494 | (error) => {
+- Deepseek-pet\frontend\src\main.js:1496 | console.error(
+- Deepseek-pet\frontend\src\main.js:1497 | '[Chat Error]',
+- Deepseek-pet\frontend\src\main.js:1498 | error
+- Deepseek-pet\frontend\src\main.js:1534 | } catch (error) {
+- Deepseek-pet\frontend\src\main.js:1536 | console.error(
+- Deepseek-pet\frontend\src\main.js:1537 | error
+- Deepseek-pet\frontend\src\main.js:1600 | stateMachine,
+- Deepseek-pet\frontend\src\main.js:1608 | } catch (error) {
+- Deepseek-pet\frontend\src\main.js:1610 | console.error(
+- Deepseek-pet\frontend\src\main.js:1612 | error
+- Deepseek-pet\frontend\src\main.js:1617 | `初始化失败：${error.message}`
+- Deepseek-pet\frontend\src\main.vite-backup.js:11 | <img src="${javascriptLogo}" class="framework" alt="JavaScript logo"/>
+- Deepseek-pet\frontend\src\chat\ChatController.js:2 | PetStates,
+- Deepseek-pet\frontend\src\chat\ChatController.js:3 | } from '../pet/PetStates.js'
+- Deepseek-pet\frontend\src\chat\ChatController.js:10 | stateMachine,
+- Deepseek-pet\frontend\src\chat\ChatController.js:16 | this.stateMachine =
+- Deepseek-pet\frontend\src\chat\ChatController.js:17 | stateMachine
+- Deepseek-pet\frontend\src\chat\ChatController.js:39 | this.onError =
+- Deepseek-pet\frontend\src\chat\ChatController.js:120 | * IDLE
+- Deepseek-pet\frontend\src\chat\ChatController.js:122 | * THINKING
+- Deepseek-pet\frontend\src\chat\ChatController.js:124 | await this.stateMachine
+- Deepseek-pet\frontend\src\chat\ChatController.js:125 | .setState(
+- Deepseek-pet\frontend\src\chat\ChatController.js:126 | PetStates.THINKING,
+- Deepseek-pet\frontend\src\chat\ChatController.js:166 | await this.stateMachine
+- Deepseek-pet\frontend\src\chat\ChatController.js:167 | .setState(
+- Deepseek-pet\frontend\src\chat\ChatController.js:168 | PetStates.SPEAKING,
+- Deepseek-pet\frontend\src\chat\ChatController.js:206 | * IDLE
+- Deepseek-pet\frontend\src\chat\ChatController.js:208 | await this.stateMachine
+- Deepseek-pet\frontend\src\chat\ChatController.js:209 | .idle(
+- Deepseek-pet\frontend\src\chat\ChatController.js:216 | } catch (error) {
+- Deepseek-pet\frontend\src\chat\ChatController.js:219 | error?.name ===
+- Deepseek-pet\frontend\src\chat\ChatController.js:220 | 'AbortError'
+- Deepseek-pet\frontend\src\chat\ChatController.js:247 | await this.stateMachine
+- Deepseek-pet\frontend\src\chat\ChatController.js:248 | .idle(
+- Deepseek-pet\frontend\src\chat\ChatController.js:252 | stateError
+- Deepseek-pet\frontend\src\chat\ChatController.js:254 | console.error(
+- Deepseek-pet\frontend\src\chat\ChatController.js:255 | stateError
+- Deepseek-pet\frontend\src\chat\ChatController.js:265 | 'error'
+- Deepseek-pet\frontend\src\chat\ChatController.js:281 | await this.stateMachine
+- Deepseek-pet\frontend\src\chat\ChatController.js:282 | .setState(
+- Deepseek-pet\frontend\src\chat\ChatController.js:283 | PetStates.ERROR,
+- Deepseek-pet\frontend\src\chat\ChatController.js:286 | 'chat-error',
+- Deepseek-pet\frontend\src\chat\ChatController.js:291 | stateError
+- Deepseek-pet\frontend\src\chat\ChatController.js:294 | console.error(
+- Deepseek-pet\frontend\src\chat\ChatController.js:295 | stateError
+- Deepseek-pet\frontend\src\chat\ChatController.js:301 | typeof this.onError ===
+- Deepseek-pet\frontend\src\chat\ChatController.js:304 | this.onError(
+- Deepseek-pet\frontend\src\chat\ChatController.js:305 | error
+- Deepseek-pet\frontend\src\chat\ChatController.js:310 | throw error
+- Deepseek-pet\frontend\src\chat\MockChatClient.js:4 | thinkingDelay = 900,
+- Deepseek-pet\frontend\src\chat\MockChatClient.js:8 | this.thinkingDelay =
+- Deepseek-pet\frontend\src\chat\MockChatClient.js:9 | thinkingDelay
+- Deepseek-pet\frontend\src\chat\MockChatClient.js:27 | throw new Error(
+- Deepseek-pet\frontend\src\chat\MockChatClient.js:37 | this.thinkingDelay,
+- Deepseek-pet\frontend\src\chat\MockChatClient.js:115 | 'AbortError'
+- Deepseek-pet\frontend\src\chat\MockChatClient.js:138 | 'AbortError'
+- Deepseek-pet\frontend\src\chat\MockChatClient.js:170 | 'AbortError'
+- Deepseek-pet\frontend\src\pet\AnimationCache.js:23 | throw new Error('Invalid animation action')
+- Deepseek-pet\frontend\src\pet\AnimationCache.js:42 | .catch((error) => {
+- Deepseek-pet\frontend\src\pet\AnimationCache.js:44 | throw error
+- Deepseek-pet\frontend\src\pet\AnimationCache.js:64 | image.onerror = () => {
+- Deepseek-pet\frontend\src\pet\AnimationCache.js:66 | new Error(
+- Deepseek-pet\frontend\src\pet\PetAnimator.js:30 | this.onError = null
+- Deepseek-pet\frontend\src\pet\PetAnimator.js:46 | throw new Error(
+- Deepseek-pet\frontend\src\pet\PetAnimator.js:138 | } catch (error) {
+- Deepseek-pet\frontend\src\pet\PetAnimator.js:139 | console.error(
+- Deepseek-pet\frontend\src\pet\PetAnimator.js:141 | error
+- Deepseek-pet\frontend\src\pet\PetAnimator.js:307 | } catch (error) {
+- Deepseek-pet\frontend\src\pet\PetAnimator.js:308 | console.error(
+- Deepseek-pet\frontend\src\pet\PetAnimator.js:310 | error
+- Deepseek-pet\frontend\src\pet\PetAnimator.js:316 | typeof this.onError ===
+- Deepseek-pet\frontend\src\pet\PetAnimator.js:319 | this.onError(error)
+- Deepseek-pet\frontend\src\pet\PetAudioManager.js:42 | throw new Error(
+- Deepseek-pet\frontend\src\pet\PetAudioManager.js:74 | const handleError = () => {
+- Deepseek-pet\frontend\src\pet\PetAudioManager.js:78 | new Error(
+- Deepseek-pet\frontend\src\pet\PetAudioManager.js:91 | 'error',
+- Deepseek-pet\frontend\src\pet\PetAudioManager.js:92 | handleError
+- Deepseek-pet\frontend\src\pet\PetAudioManager.js:105 | 'error',
+- Deepseek-pet\frontend\src\pet\PetAudioManager.js:106 | handleError,
+- Deepseek-pet\frontend\src\pet\PetDataLoader.js:11 | throw new Error(
+- Deepseek-pet\frontend\src\pet\PetHitTest.js:120 | } catch (error) {
+- Deepseek-pet\frontend\src\pet\PetHitTest.js:121 | console.error(
+- Deepseek-pet\frontend\src\pet\PetHitTest.js:123 | error
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:2 | PetStates,
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:3 | } from './PetStates.js'
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:11 | stateMachine,
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:22 | this.stateMachine =
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:23 | stateMachine
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:272 | await this.stateMachine
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:273 | .setState(
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:274 | PetStates.DRAGGING,
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:280 | } catch (error) {
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:281 | console.error(
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:283 | error
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:384 | await this.stateMachine.idle(
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:407 | await this.stateMachine
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:408 | .setState(
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:409 | PetStates.INTERACT,
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:428 | } catch (error) {
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:430 | console.error(
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:432 | error
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:459 | await this.stateMachine.idle(
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:462 | } catch (error) {
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:463 | console.error(
+- Deepseek-pet\frontend\src\pet\PetInteractionController.js:464 | error
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:2 | PetStates,
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:3 | PetStateConfig,
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:4 | } from './PetStates.js'
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:7 | export class PetStateMachine {
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:11 | config = PetStateConfig,
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:20 | this.currentState =
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:21 | PetStates.BOOT
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:23 | this.previousState =
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:26 | this.transitionToken =
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:29 | this.onStateChange =
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:32 | this.onStateError =
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:44 | const stateConfig =
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:46 | this.currentState
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:50 | !stateConfig ||
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:51 | !stateConfig.transient
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:56 | const returnState =
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:57 | stateConfig.returnState ??
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:58 | PetStates.IDLE
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:62 | await this.setState(
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:63 | returnState,
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:70 | } catch (error) {
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:72 | this.handleError(
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:73 | error
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:80 | getStateConfig(state) {
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:83 | this.config[state] ??
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:89 | canEnter(state) {
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:92 | state ===
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:93 | PetStates.BOOT
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:99 | this.getStateConfig(
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:100 | state
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:106 | async setState(
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:107 | nextState,
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:115 | !this.canEnter(nextState)
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:117 | throw new Error(
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:118 | `Unknown or unavailable pet state: ${nextState}`
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:129 | nextState ===
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:130 | this.currentState
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:137 | ++this.transitionToken
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:140 | const previousState =
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:141 | this.currentState
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:144 | const stateConfig =
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:145 | this.getStateConfig(
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:146 | nextState
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:153 | stateConfig.actionId,
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:156 | stateConfig.loop,
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:168 | this.transitionToken
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:174 | this.previousState =
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:175 | previousState
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:177 | this.currentState =
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:178 | nextState
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:182 | typeof this.onStateChange ===
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:186 | this.onStateChange({
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:188 | previousState,
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:191 | nextState,
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:196 | stateConfig.actionId,
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:200 | stateConfig.transient
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:208 | } catch (error) {
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:210 | this.handleError(
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:211 | error
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:214 | throw error
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:226 | this.currentState ===
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:227 | PetStates.BOOT
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:232 | return this.setState(
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:233 | this.currentState,
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:246 | async idle(
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:247 | reason = 'idle'
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:250 | return this.setState(
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:251 | PetStates.IDLE,
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:259 | handleError(error) {
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:261 | console.error(
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:262 | 'PetStateMachine error:',
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:263 | error
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:268 | typeof this.onStateError ===
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:271 | this.onStateError(
+- Deepseek-pet\frontend\src\pet\PetStateMachine.js:272 | error
+- Deepseek-pet\frontend\src\pet\PetStates.js:1 | export const PetStates = Object.freeze({
+- Deepseek-pet\frontend\src\pet\PetStates.js:3 | IDLE: 'IDLE',
+- Deepseek-pet\frontend\src\pet\PetStates.js:4 | THINKING: 'THINKING',
+- Deepseek-pet\frontend\src\pet\PetStates.js:9 | ERROR: 'ERROR',
+- Deepseek-pet\frontend\src\pet\PetStates.js:13 | export const PetStateConfig = Object.freeze({
+- Deepseek-pet\frontend\src\pet\PetStates.js:15 | [PetStates.IDLE]: {
+- Deepseek-pet\frontend\src\pet\PetStates.js:25 | [PetStates.THINKING]: {
+- Deepseek-pet\frontend\src\pet\PetStates.js:35 | [PetStates.SPEAKING]: {
+- Deepseek-pet\frontend\src\pet\PetStates.js:41 | [PetStates.WALKING]: {
+- Deepseek-pet\frontend\src\pet\PetStates.js:50 | * 动作播放完后自动回到 IDLE。
+- Deepseek-pet\frontend\src\pet\PetStates.js:52 | [PetStates.INTERACT]: {
+- Deepseek-pet\frontend\src\pet\PetStates.js:56 | returnState: PetStates.IDLE,
+- Deepseek-pet\frontend\src\pet\PetStates.js:63 | [PetStates.DRAGGING]: {
+- Deepseek-pet\frontend\src\pet\PetStates.js:70 | * ERROR 暂时也保持角色可见。
+- Deepseek-pet\frontend\src\pet\PetStates.js:73 | [PetStates.ERROR]: {
