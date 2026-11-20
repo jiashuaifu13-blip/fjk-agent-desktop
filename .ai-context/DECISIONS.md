@@ -48,3 +48,17 @@ Decision:
 
 Status:
 Confirmed.
+
+
+## ADR-006：Desktop Frontend
+
+Decision:
+FJK Desktop 前端独立于 Deepseek-pet，放在主仓库 /apps/desktop/（Tauri 2 + React + TS + Vite）。
+桌宠运行时与资源从 Deepseek-pet 逐字迁移到 apps/desktop（保持 plain JS，不重写、不重命名）。
+
+Reason:
+Deepseek-pet 定位是"资源来源"而非运行依赖；其 submodule 状态不健康（无 .gitmodules）。
+迁移解耦后前端不再依赖该 submodule。桌宠运行时已稳定，遵守"现有稳定能力优先于重写"。
+
+Status:
+Confirmed（最小可运行闭环已实现，构建通过）。

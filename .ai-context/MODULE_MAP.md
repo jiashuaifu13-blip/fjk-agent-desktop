@@ -14,5 +14,10 @@
 | AgentToPetState | /packages/agent-state/AgentToPetState.js | FJK AgentState → existing PetState adapter | Added |
 | OpenClaw | TBD | Agent Core | Not integrated |
 | Gateway Client | TBD | OpenClaw desktop communication | Not started |
-| FJK Desktop | TBD | Windows management terminal and host | Not started |
+| FJK Desktop | /apps/desktop/ | Tauri 2 + React + TS desktop shell | In progress |
+| Pet runtime (migrated) | /apps/desktop/src/pet/ | Pet canvas runtime, copied from Deepseek-pet | Migrated |
+| Chat runtime (migrated) | /apps/desktop/src/chat/ | ChatController + MockChatClient | Migrated |
+| PetRuntime | /apps/desktop/src/runtime/ | React wrapper (usePetRuntime + context) | Added |
+| DesktopTerminal | /apps/desktop/src/components/DesktopTerminal.tsx | Terminal UI, mock chat | Added |
+| PetView | /apps/desktop/src/components/PetView.tsx | Pet canvas host | Added |
 | Extensions | TBD | Blog / Files / Git / GitHub | Not started |

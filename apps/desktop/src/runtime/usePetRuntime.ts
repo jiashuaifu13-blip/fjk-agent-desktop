@@ -1,0 +1,140 @@
+import { useEffect, useState } from 'react'
+import type { RefObject } from 'react'
+
+import { PetDataLoader } from '../pet/PetDataLoader.js'
+import { AnimationLibrary } from '../pet/AnimationLibrary.js'
+import { AnimationCache } from '../pet/AnimationCache.js'
+import { PetRenderer } from '../pet/PetRenderer.js'
+import { PetAnimator } from '../pet/PetAnimator.js'
+import { PetAudioManager } from '../pet/PetAudioManager.js'
+import { PetStates } from '../pet/PetStates.js'
+import { PetStateMachine } from '../pet/PetStateMachine.js'
+import { PetHitTest } from '../pet/PetHitTest.js'
+import { PetInteractionController } from '../pet/PetInteractionController.js'
+import { ChatController } from '../chat/ChatController.js'
+import { MockChatClient } from '../chat/MockChatClient.js'
+import { AgentStates } from '@fjk/agent-state/AgentStates.js'
+
+export interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  status?: string
+}
+
+export interface ChatControllerLike {
+  send(content: string): Promise<boolean>
+  stop(): boolean
+  clear(): void
+  isGenerating: boolean
+  onMessageChange: ((messages: ChatMessage[]) => void) | null
+  onGeneratingChange: ((generating: boolean) => void) | null
+  onBubbleChange: ((content: string) => void) | null
+  onError: ((error: unknown) => void) | null
+}
+
+// Map the pet's presentation state back to the unified FJK AgentState
+// vocabulary. Full event-driven mapping lands with the Gateway client (P0-021).
+const PET_TO_AGENT: Record<string, string> = {
+  BOOT: AgentStates.OFFLINE,
+  IDLE: AgentStates.IDLE,
+  THINKING: AgentStates.THINKING,
+  SPEAKING: AgentStates.WORKING,
+  WALKING: AgentStates.IDLE,
+  INTERACT: AgentStates.IDLE,
+  DRAGGING: AgentStates.IDLE,
+  ERROR: AgentStates.FAILED,
+}
+
+export interface PetRuntime {
+  chatController: ChatControllerLike | null
+  petState: string
+  agentState: string
+  sending: boolean
+  ready: boolean
+  error: string | null
+}
+
+export function usePetRuntime(
+  canvasRef: RefObject<HTMLCanvasElement>,
+  rootRef: RefObject<HTMLDivElement>,
+): PetRuntime {
+  const [chatController, setChatController] = useState<ChatControllerLike | null>(null)
+  const [petState, setPetState] = useState<string>(PetStates.BOOT)
+  const [sending, setSending] = useState(false)
+  const [ready, setReady] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    let animator: { stop(): Promise<void> } | null = null
+    let interaction: { mount(): void; destroy(): void } | null = null
+
+    async function boot() {
+      const canvas = canvasRef.current
+      const root = rootRef.current
+      if (!canvas || !root) return
+
+      const loader = new PetDataLoader()
+      const { actions } = await loader.load()
+      if (cancelled) return
+
+      const library = new AnimationLibrary(actions)
+      const cache = new AnimationCache()
+      const renderer = new PetRenderer(canvas)
+      const audio = new PetAudioManager()
+      // `audioManager` defaults to `null` in the plain-JS PetAnimator, which TS
+      // infers as `null`; cast the options object to sidestep the inference.
+      animator = new PetAnimator({ renderer, library, cache, audioManager: audio } as any)
+      const stateMachine = new PetStateMachine({ animator })
+
+      stateMachine.onStateChange = ({ to }: { to: string }) => {
+        if (!cancelled) setPetState(to)
+      }
+      stateMachine.onStateError = (err: unknown) => {
+        console.error('[FJK] pet state error:', err)
+      }
+
+      const client = new MockChatClient()
+      const controller = new ChatController({ client, stateMachine }) as ChatControllerLike
+
+      controller.onGeneratingChange = (generating: boolean) => {
+        if (!cancelled) setSending(generating)
+      }
+
+      const hitTest = new PetHitTest({ canvas, alphaThreshold: 25 })
+      interaction = new PetInteractionController({
+        root,
+        canvas,
+        stateMachine,
+        hitTest,
+        dragThreshold: 6,
+      })
+      interaction.mount()
+
+      await stateMachine.setState(PetStates.IDLE, { reason: 'application-ready' })
+
+      if (!cancelled) {
+        setChatController(controller)
+        setReady(true)
+      }
+    }
+
+    boot().catch((err: unknown) => {
+      console.error('[FJK] pet boot failed:', err)
+      if (!cancelled) {
+        setError(err instanceof Error ? err.message : String(err))
+      }
+    })
+
+    return () => {
+      cancelled = true
+      interaction?.destroy()
+      void animator?.stop()
+    }
+  }, [canvasRef, rootRef])
+
+  const agentState = PET_TO_AGENT[petState] ?? AgentStates.IDLE
+
+  return { chatController, petState, agentState, sending, ready, error }
+}
