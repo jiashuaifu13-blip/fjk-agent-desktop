@@ -1,30 +1,64 @@
 ﻿# AI Handoff
 
-## Current Phase
+## Current Stage
 Phase 0
 
-## Architecture Decision Reached
+## Major Milestone
 
-PetStateMachine.setState(...) is the verified pet integration boundary.
+OpenClaw has now been proven capable of serving as the FJK Agent Core.
 
-OpenClaw must not directly control animation assets.
+Verified:
 
-A semantic adapter now exists:
+- Gateway
+- DeepSeek model
+- Agent
+- Session
+- Tools
+- exec policy
+- interactive approval
+- tool result
 
-AgentState
-→ AgentToPetState
-→ PetStateMachine
+## Approval Finding
 
-## Existing Mock AI
+Working chain:
 
-MockChatClient and ChatController are still present.
+Agent
+→ exec
+→ approval request
+→ Control UI
+→ Allow once
+→ command
+→ result
 
-Do not remove them yet.
+Complex shell commands may be rejected by OpenClaw's approval binder before an approval UI is produced.
 
-They currently provide a working standalone test route for the pet runtime.
+Do not bypass this behavior.
+
+## Current Architecture
+
+OpenClaw
+= Agent Core
+
+FJK AgentState
+= semantic shared state layer
+
+Deepseek-pet
+= pet runtime / presentation layer
+
+Future FJK Desktop
+= Gateway client + terminal + approval UI
 
 ## Next Task
 
-Start OpenClaw investigation and determine the safest repository/runtime integration model.
+Inspect real Gateway events.
 
-Do not mix OpenClaw source directly into Deepseek-pet.
+The goal is to determine exactly which Gateway events should drive:
+
+- idle
+- thinking
+- working
+- waiting_approval
+- completed
+- failed
+
+Do not begin large Desktop UI development before this event contract is known.

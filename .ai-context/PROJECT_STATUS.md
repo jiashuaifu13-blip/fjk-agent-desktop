@@ -1,56 +1,71 @@
 ﻿# Project Status
 
 ## Current Phase
-Phase 0 - Project investigation and technical validation
+Phase 0 - OpenClaw technical validation
 
-## Verified Existing Pet Architecture
+## Deepseek-pet
 
-Deepseek-pet currently uses:
+Verified:
 
-PetDataLoader
-→ AnimationLibrary
-→ AnimationCache
-→ PetRenderer
-→ PetAudioManager
-→ PetAnimator
-→ PetStateMachine
+- Existing pet runtime imported
+- Runtime architecture audited
+- PetStateMachine integration boundary identified
+- FJK AgentState layer created
+- AgentState → PetState adapter tested
 
-PetStateMachine.setState(...) is the selected future FJK integration boundary.
+## OpenClaw
 
-## Added FJK Architecture
+Verified:
 
-A new independent semantic state layer now exists:
+- OpenClaw 2026.11.6 installed
+- Windows local Gateway
+- Loopback bind: 127.0.0.1:18789
+- Gateway RPC
+- DeepSeek Provider
+- deepseek/deepseek-flash
+- CLI model inference
+- Gateway model inference
+- Windows system CA requirement
+- Agent Runtime
+- persistent Session
+- Tool calls
+- exec policy
+- Control UI authentication
+- interactive command approval
+- Allow-once execution
+- tool completion
 
-/packages/agent-state/
+## Security
 
-It contains:
+Current exec policy:
 
-- AgentStates.js
-- AgentToPetState.js
-- AgentToPetState.test.mjs
+allowlist
++
+ask on miss
++
+fallback deny
 
-The adapter has been tested independently.
+This policy remains the current project baseline.
 
-## Chat Architecture
+Complex commands that cannot be safely bound by OpenClaw may be rejected before approval.
 
-Current:
+FJK Desktop must preserve this behavior.
 
-MockChatClient
-→ ChatController
-→ PetStateMachine
+## Git Strategy
 
-Future:
+Local Git commits required.
 
-OpenClaw Gateway
-→ FJK AgentState
-→ Terminal + Pet
-
-The mock client remains temporarily for runtime testing.
-
-## Git
-Local Git only.
-
-GitHub remote synchronization intentionally deferred.
+GitHub remote synchronization remains deferred.
 
 ## Next
-Begin OpenClaw integration investigation.
+
+Inspect real Gateway event semantics and determine the FJK Desktop Gateway Client contract.
+
+Target architecture:
+
+OpenClaw Gateway
+→ Gateway Client
+→ FJK AgentState Store
+→ Desktop Terminal
+→ Pet State Adapter
+→ Deepseek-pet

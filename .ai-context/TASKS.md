@@ -2,33 +2,34 @@
 
 ## DOING
 
-### P0-009
-Verify OpenClaw Windows CLI and Gateway runtime.
+### P0-016
+Inspect real OpenClaw Gateway event semantics for FJK Desktop integration.
 
 ## TODO
 
-### P0-010
-Inspect OpenClaw Gateway configuration and lifecycle.
+### P0-017
+Identify Gateway authentication and connection contract.
 
-### P0-011
-Complete OpenClaw onboarding/provider configuration.
+### P0-018
+Identify Agent turn events.
 
-### P0-012
-Verify a real model completion.
+### P0-019
+Identify Tool execution events.
 
-### P0-013
-Verify Agent + Tool execution.
+### P0-020
+Identify Approval request / resolution events.
 
-### P0-014
-Inspect Gateway external-client interface.
+### P0-021
+Define Gateway Event → FJK AgentState mapping.
 
-### P0-015
-Map Gateway events into FJK AgentState.
+### P0-022
+Define initial FJK Gateway Client interface.
 
-### P0-016
-Decide whether FJK needs OpenClaw source checkout at all.
+### P0-023
+Produce final Phase 0 technical selection report.
 
 ## BLOCKED
+
 None.
 
 ## DONE
@@ -49,10 +50,31 @@ Deepseek-pet imported.
 Deepseek-pet architecture audited.
 
 ### P0-006
-Pet runtime startup flow identified.
+Pet runtime integration boundary identified.
 
 ### P0-007
-AgentState adapter defined and tested.
+FJK AgentState adapter created and tested.
 
 ### P0-008
-OpenClaw research area established.
+OpenClaw installed.
+
+### P0-009
+Windows Gateway validated.
+
+### P0-010
+DeepSeek Provider configured.
+
+### P0-011
+Real model inference validated.
+
+### P0-012
+Gateway model transport validated.
+
+### P0-013
+Agent Runtime validated.
+
+### P0-014
+Session persistence validated.
+
+### P0-015
+Tool + interactive Approval complete chain validated.
