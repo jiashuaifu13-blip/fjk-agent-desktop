@@ -1,0 +1,24 @@
+﻿{
+  "openclawVersion": "2026.11.6",
+  "gatewayProtocol": {
+    "min": 4,
+    "max": 4
+  },
+  "events": {
+    "hello-ok": 8,
+    "agent": 72455,
+    "chat": 9061,
+    "session.message": 51,
+    "session.operation": 5,
+    "session.tool": 25,
+    "session.approval": 4,
+    "sessions.changed": 50,
+    "exec.approval.requested": 7,
+    "exec.approval.resolved": 4,
+    "sessions.subscribe": 28,
+    "sessions.messages.subscribe": 17,
+    "sessions.messages.unsubscribe": 9,
+    "shutdown": 844
+  },
+  "status": "verified"
+}
