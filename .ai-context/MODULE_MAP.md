@@ -12,8 +12,9 @@
 | MockChatClient | /Deepseek-pet/frontend/src/chat/MockChatClient.js | Current mock AI transport | Existing / temporary |
 | AgentStates | /packages/agent-state/AgentStates.js | Unified FJK execution state definitions | Added |
 | AgentToPetState | /packages/agent-state/AgentToPetState.js | FJK AgentState → existing PetState adapter | Added |
+| GatewayEventToAgentState | /packages/agent-state/GatewayEventToAgentState.js | Gateway event → AgentState mapping | Added |
 | OpenClaw | TBD | Agent Core | Not integrated |
-| Gateway Client | TBD | OpenClaw desktop communication | Not started |
+| Gateway Client | /packages/gateway-client/ | FJK Gateway Client interface (types) | Interface defined |
 | FJK Desktop | /apps/desktop/ | Tauri 2 + React + TS desktop shell | In progress |
 | Pet runtime (migrated) | /apps/desktop/src/pet/ | Pet canvas runtime, copied from Deepseek-pet | Migrated |
 | Chat runtime (migrated) | /apps/desktop/src/chat/ | ChatController + MockChatClient | Migrated |

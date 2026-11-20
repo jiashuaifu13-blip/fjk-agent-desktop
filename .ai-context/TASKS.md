@@ -2,31 +2,9 @@
 
 ## DOING
 
-### P0-016
-Inspect real OpenClaw Gateway event semantics for FJK Desktop integration.
-
 ## TODO
 
-### P0-017
-Identify Gateway authentication and connection contract.
-
-### P0-018
-Identify Agent turn events.
-
-### P0-019
-Identify Tool execution events.
-
-### P0-020
-Identify Approval request / resolution events.
-
-### P0-021
-Define Gateway Event → FJK AgentState mapping.
-
-### P0-022
-Define initial FJK Gateway Client interface.
-
-### P0-023
-Produce final Phase 0 technical selection report.
+（无待办 —— Phase 0 全部完成）
 
 ## BLOCKED
 
@@ -78,3 +56,27 @@ Session persistence validated.
 
 ### P0-015
 Tool + interactive Approval complete chain validated.
+
+### P0-016
+Real Gateway event semantics inspected (OPENCLAW_GATEWAY_EVENT_SEMANTICS.md).
+
+### P0-017
+Gateway authentication and connection contract identified (OPENCLAW_GATEWAY_AUTH_CONTRACT.md).
+
+### P0-018
+Agent turn events identified (OPENCLAW_GATEWAY_ACTIVITY_EVENTS.md).
+
+### P0-019
+Tool execution events identified (OPENCLAW_GATEWAY_ACTIVITY_EVENTS.md).
+
+### P0-020
+Approval request / resolution events identified (OPENCLAW_GATEWAY_ACTIVITY_EVENTS.md).
+
+### P0-021
+Gateway Event → FJK AgentState mapping defined (OPENCLAW_EVENT_TO_AGENTSTATE_MAPPING.md + packages/agent-state/GatewayEventToAgentState.js).
+
+### P0-022
+FJK Gateway Client interface defined (OPENCLAW_GATEWAY_CLIENT_INTERFACE.md + packages/gateway-client).
+
+### P0-023
+Phase 0 technical selection report produced (OPENCLAW_TECH_SELECTION.md).

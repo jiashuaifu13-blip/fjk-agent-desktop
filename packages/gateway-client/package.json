@@ -1,0 +1,8 @@
+{
+  "name": "@fjk/gateway-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "FJK Gateway Client interface (protocol v4) — implementation lands in Phase 1",
+  "types": "GatewayClient.ts"
+}

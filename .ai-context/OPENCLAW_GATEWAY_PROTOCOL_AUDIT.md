@@ -67,5 +67,8 @@ PASS
 
 Static protocol inspection is complete.
 
+Runtime event semantics have been captured and documented in
+OPENCLAW_GATEWAY_EVENT_SEMANTICS.md (P0-016).
+
 Next:
-capture real runtime events during Agent, Tool and Approval activity.
+P0-021 — define Gateway Event → FJK AgentState mapping.
