@@ -2,40 +2,48 @@
 
 ## DOING
 
-### P0-003
-盘点 D:\pet-desp 当前真实源码、技术栈和已有桌宠 Runtime。
+### P0-005
+Inspect the actual Deepseek-pet entry files and runtime relationships.
 
 ## TODO
 
-### P0-004
-分析现有项目 package / frontend / backend / pet runtime 结构。
-
-### P0-005
-确定 OpenClaw 获取和集成方式。
-
 ### P0-006
-调查 OpenClaw 当前真实架构。
+Determine OpenClaw integration strategy.
 
 ### P0-007
-验证 OpenClaw Windows 本地运行。
+Acquire or locate OpenClaw source/runtime.
 
 ### P0-008
-验证 Gateway 外部客户端通信。
+Inspect OpenClaw architecture and Gateway.
 
 ### P0-009
-验证 Agent + Tool 完整调用链。
+Verify OpenClaw Windows runtime.
+
+### P0-010
+Verify external Gateway client.
+
+### P0-011
+Verify Agent + Tool complete execution chain.
 
 ## BLOCKED
-
-无。
+None.
 
 ## DONE
 
 ### P0-001
-创建 FJK_AGENT_PROJECT_GUIDE.md。
+Create FJK Agent project guide.
 
 ### P0-002
-创建 .ai-context 项目管理体系。
+Create .ai-context management system.
 
-### P0-002A
-建立 Git 基础规则和项目目录快照。
+### P0-003
+Initialize local Git baseline.
+
+### P0-004
+Import Deepseek-pet into repository.
+
+### P0-004A
+Audit Deepseek-pet project structure.
+
+### P0-004B
+Create PET_RUNTIME_REUSE_MAP.md.

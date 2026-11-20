@@ -1,23 +1,36 @@
 ﻿# AI Handoff
 
-## Current State
-项目刚进入正式开发。
-
-## Completed
-- 创建项目总纲。
-- 创建 AI 项目管理文件。
-
 ## Current Phase
 Phase 0
 
+## Current Source Reality
+
+Deepseek-pet is now physically present in the repository and committed to local Git.
+
+It is the real source for the current pet runtime and assets.
+
+## Completed
+- Deepseek-pet imported
+- Source structure audited
+- PET_RUNTIME_REUSE_MAP.md generated
+- SOURCE_AUDIT.md refreshed
+
 ## Next Task
-检查：
-1. 当前 Git 状态。
-2. 当前根目录已有文件。
-3. Deepseek-pet 是否已经位于当前仓库。
-4. 是否已有 OpenClaw 代码。
-5. 是否已有远程 Git 仓库。
+
+Inspect actual entry files and dependencies between:
+
+- main / App
+- PetRenderer
+- PetAnimator
+- PetStateMachine
+- PetInteractionController
+- PetDataLoader
+- ChatController
+
+The goal is to understand the real runtime startup flow before modifying it.
 
 ## Important
-不要假设当前目录为空。
-下一步必须先检查真实目录和 Git 状态，再决定如何导入 OpenClaw。
+
+Do not create replacement pet runtime classes.
+
+Do not start OpenClaw integration until the current runtime boundaries are understood.
