@@ -3,29 +3,28 @@
 ## Current Phase
 Phase 0
 
-## Current Work
-Deepseek-pet runtime relationships have now been extracted into source-based audit files.
+## Architecture Decision Reached
 
-## Evidence Files
-- PET_DEPENDENCY_AUDIT.md
-- PET_SYMBOL_AUDIT.md
-- PET_STATE_AUDIT.md
-- PET_RESOURCE_LOADING_AUDIT.md
-- PET_RUNTIME_CONSTRUCTION.md
-- PET_RUNTIME_FLOW.md
-- runtime-audit/
+PetStateMachine.setState(...) is the verified pet integration boundary.
+
+OpenClaw must not directly control animation assets.
+
+A semantic adapter now exists:
+
+AgentState
+→ AgentToPetState
+→ PetStateMachine
+
+## Existing Mock AI
+
+MockChatClient and ChatController are still present.
+
+Do not remove them yet.
+
+They currently provide a working standalone test route for the pet runtime.
 
 ## Next Task
-Use these source-derived facts to identify:
 
-1. actual application bootstrap
-2. runtime constructor
-3. state transition API
-4. animation selection API
-5. pet resource loading API
-6. mock/standalone AI boundary
+Start OpenClaw investigation and determine the safest repository/runtime integration model.
 
-Then define the exact future FJK AgentState injection point.
-
-## Important
-No business runtime code has been changed yet.
+Do not mix OpenClaw source directly into Deepseek-pet.

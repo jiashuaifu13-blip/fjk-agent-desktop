@@ -2,31 +2,31 @@
 
 ## DOING
 
-### P0-006
-Determine the actual Deepseek-pet runtime startup flow and integration injection point.
+### P0-008
+Determine and prepare the OpenClaw integration strategy.
 
 ## TODO
 
-### P0-007
-Identify which standalone/mock AI code should eventually be isolated from the pet runtime.
-
-### P0-008
-Determine OpenClaw repository/runtime integration method.
-
 ### P0-009
-Acquire or locate OpenClaw.
+Acquire OpenClaw source/runtime without disturbing Deepseek-pet.
 
 ### P0-010
-Inspect OpenClaw architecture and Gateway.
+Inspect OpenClaw current architecture and license.
 
 ### P0-011
-Verify OpenClaw Windows runtime.
+Identify Gateway protocol and external-client interface.
 
 ### P0-012
-Verify Gateway external client.
+Verify OpenClaw Windows local runtime.
 
 ### P0-013
-Verify complete Agent + Tool chain.
+Verify real model connection.
+
+### P0-014
+Verify Agent + Tool execution.
+
+### P0-015
+Verify Gateway event → FJK AgentState normalization.
 
 ## BLOCKED
 None.
@@ -34,13 +34,13 @@ None.
 ## DONE
 
 ### P0-001
-Project guide.
+Project guide established.
 
 ### P0-002
-AI context system.
+AI context system established.
 
 ### P0-003
-Local Git baseline.
+Local Git baseline established.
 
 ### P0-004
 Deepseek-pet imported.
@@ -48,8 +48,14 @@ Deepseek-pet imported.
 ### P0-005
 Deepseek-pet structure audited.
 
-### P0-005A
-Pet dependency audit generated.
+### P0-006
+Deepseek-pet runtime startup flow identified.
 
-### P0-005B
-Pet symbol/state/resource/construction audits generated.
+### P0-007
+FJK AgentState → PetState integration boundary defined.
+
+### P0-007A
+AgentStates created.
+
+### P0-007B
+AgentToPetState adapter created and tested.
