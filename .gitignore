@@ -1,0 +1,48 @@
+﻿
+# Node / frontend
+node_modules/
+dist/
+build/
+.vite/
+.next/
+
+# Rust / Tauri
+target/
+**/target/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Logs
+*.log
+logs/
+
+# IDE
+.idea/
+.vs/
+*.user
+*.suo
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Temporary / cache
+tmp/
+temp/
+.cache/
+*.tmp
+
+# Package caches
+.npm/
+.pnpm-store/
+
+# Test / coverage
+coverage/

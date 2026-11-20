@@ -1,0 +1,12 @@
+﻿.ai-context
+.git
+.gitignore
+FJK_AGENT_PROJECT_GUIDE.md
+.ai-context\AI_CONTEXT.md
+.ai-context\AI_HANDOFF.md
+.ai-context\CHANGELOG.md
+.ai-context\DECISIONS.md
+.ai-context\MODULE_MAP.md
+.ai-context\PROJECT_STATUS.md
+.ai-context\PROJECT_TREE.txt
+.ai-context\TASKS.md
