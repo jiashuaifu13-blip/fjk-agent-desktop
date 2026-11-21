@@ -24,14 +24,23 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 - 分支：`main`
 - 环境：Windows 11、Windows PowerShell 5.1、Node 18+、Rust stable、本地 OpenClaw Gateway（`ws://127.0.0.1:18789`）
 
-## 三、当前状态（2026-11-21 17:00 更新）
+## 三、当前状态（2026-11-21 17:55 更新）
 
-- 最新提交：`2993e09 docs(context): restore original card, refresh project state`（已推送）
+- 最新提交：以 `git log -1` 为准（恢复卡/规则文档更新）
 - 未提交改动：`apps/desktop/src-tauri/src/gateway.rs`
-  （connect 参数已加 `"caps": ["approvals", "exec-approvals"]`，待审批事件验证后提交）
-- 当前任务：**Approval UI** 验证阶段——caps 已加、桌面端已用新二进制重启；
-  待手动发送 `请使用 exec 执行只读命令 whoami`，确认是否出现审批事件。
-  若仍无事件，下一步加 `sessions.messages.subscribe(includeApprovals: true)`。
+  （connect 参数已把 `caps` 移到顶层 `["approvals","exec-approvals"]`，握手已验证通过）
+
+- 当前任务：**Approval UI**，现状必须按下面事实理解，不要凭记忆：
+
+  | 项 | 真实状态 |
+  |---|---|
+  | 审批 UI 代码 | **不存在**（`apps/desktop/src` 中 approval 匹配为 0），不会出现审批卡片 |
+  | runtime 订阅 | **未实现**：没有调用 `sessions.messages.subscribe(includeApprovals:true)` |
+  | caps | 已加且握手成功 |
+  | 订阅能力 | **已用独立探针验证可用**：返回 `subscribed:true` + `approvalReplay` |
+  | 真实审批事件 | **未验证**：Agent 尚未真正发起 command-mode exec，无 `exec.approval.requested` / `session.approval` 样本 |
+
+- 因此下一步不是"再发一次消息看卡片"，而是**把订阅接进 runtime**，再验证事件。
 
 ## 四、已完成（P1-001 ~ P1-005）
 
