@@ -63,14 +63,13 @@
 5. **受限沙箱**：`node --test`、`npm run build`、`cargo` 可能 spawn EPERM；需要时申请完全权限并说明理由。
 6. **`.tmp` 目录**是临时验收脚本，已被 `*.tmp` 规则忽略，不要提交。
 
-## 七、当前状态（2026-11-21 22:15）
+## 七、当前状态（2026-11-21 22:45）
 
-- `HEAD = origin/main = a30f1ab`；`STATE_ID = 20261121-2200`。
-- 已完成：P1-001~P1-005；P1-006 Approval（allow/deny 均验证）；Connection State；Log Viewer；
-  Settings 只读概览 + 模型修改/单次回滚；P1-010 Session 只读列表。
-- 进行中：**聊天区滚动 + 面板互斥/悬浮**布局修复（代码已改、build PASS，**UI 待用户确认**，未提交）。
-- 未验证：快速失败瞬时事件；Session 切换/新建/删除；自动重连。
-- 下一步：确认布局修复后提交 → Session 切换 → 自动重连。
+- `HEAD = origin/main = 5e9eeec`；`STATE_ID = 20261121-2240`。
+- 已完成：P1-001~P1-005；P1-006 Approval（allow/deny）；Connection State；Log Viewer；
+  Settings 只读概览 + 模型修改/单次回滚；P1-010 Session 只读列表；P1-011 UI 布局；P1-012 Session 切换。
+- 未验证：快速失败瞬时事件；新建/删除会话；自动重连。
+- 下一步：新建/删除会话（删除需二次确认）或自动重连。
 
 ## 八、交接约定
 

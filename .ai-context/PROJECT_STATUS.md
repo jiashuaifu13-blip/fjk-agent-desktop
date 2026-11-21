@@ -31,7 +31,7 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 |---|---|---|---|
 | Phase 0 | OpenClaw 调查与基础验证 | ✅ **完成** | P0-001~023 全部完成；技术选型报告 GO（OpenClaw 作为 Agent Core） |
 | Phase 1 | FJK Desktop 基础框架（Tauri 2 + React + TS + Rust） | ✅ **主体完成** | Rust Gateway 通道、权限探测、错误映射、事件驱动 AgentState、Connection State / Log Viewer / Settings、release 与 NSIS 回归均已完成 |
-| Phase 2 | Agent Desktop Terminal | 🟡 **部分** | 真实 Gateway 对话、流式回复、连接断线状态、Approval 卡片（allow/deny 均验证）已跑通；Session 管理、历史记录未做 |
+| Phase 2 | Agent Desktop Terminal | 🟡 **部分** | 真实对话/流式/断线、Approval、Connection State、Log Viewer、Settings（只读+模型回滚）、Session 列表与切换、UI 布局均已验证；历史记录、新建/删除会话未做 |
 | Phase 3 | Deepseek-pet 桌宠整合 | **部分（仅 3A + 部分 3D）** | 3A 审计已完成；AgentState→PetState Adapter 与 runtime 驱动已接通；3B/3C/3E 未完成 |
 | Phase 4 | Blog Adapter | **未开始** | 无对应代码 |
 | Phase 5 | Local Project / Git / GitHub | **未开始** | 无对应产品功能代码 |
@@ -77,6 +77,9 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 - **Settings 只读概览**：模型、工具数量、当前 Session、Session 总数；Gateway 未返回字段统一显示「未提供」。
 - **GatewayChatAdapter 订阅顺序修复**：先注册 `onEvent` 再 `sendMessage`，缓冲 runId 未知前的早到事件。
 - **Settings 模型修改 + 单次回滚**：`sessions.patch { key, model }` 修改当前 Session 模型，记录原值并可一键回滚；RPC 与 UI 均实测（`deepseek-flash` → `deepseek-chat` → 回滚）。
+- **Session 只读列表**：MAIN/SESSION、key、更新时间、「（当前使用）」标记。
+- **Session 切换**：先订阅新 key（includeApprovals）再退订旧 key，成功后 Adapter/UI 切到新 key，失败不留半切换。
+- **UI 布局**：聊天区内部滚动、输入框固定；四个面板互斥且悬浮，不再挤压聊天区。
 - `.ai-context/OPENCLAW_*` 系列文档 — Gateway 事件语义 / 认证契约 / 活动事件 / 状态映射 / Client 接口 / 技术选型报告。
 
 ## AgentState 验证
@@ -154,6 +157,6 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 ## 下一步
 
 继续 **Phase 2**（Phase 1 主体已完成）：
-1. 下一轮功能：Settings 写操作 / Session 管理 / 自动重连（尚未开始）。
+1. 下一轮：新建/删除会话（写操作，删除需二次确认）、自动重连、Settings 更多项。
 2. （可选）快速失败场景的确定性复现（临时改错模型名），关闭最后一个未实测项。
 3. 安装包后续形态：MSI、代码签名、自动更新（NSIS 已完成安装/运行/卸载回归）。

@@ -24,22 +24,28 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 - 分支：`main`
 - 环境：Windows 11、Windows PowerShell 5.1、Node 18+、Rust stable、本地 OpenClaw Gateway（`ws://127.0.0.1:18789`）
 
-## 三、当前状态（2026-11-21 19:45 更新）
+## 三、当前状态（2026-11-21 22:40 更新）
 
-- 最新提交：以 `git log -1` 为准
-- 未提交改动：无（代码已提交）
-- 当前任务：**Settings / Connection State / Log Viewer**，现状按下面事实理解，不要凭记忆：
+- 实时状态以 `STATE.md` 为准（含 `STATE_ID` / `HEAD_AT_SYNC` / 任务 / 未验证项）；
+- 未提交改动：无
+- 当前任务：**等待下一轮**（候选：新建/删除会话、自动重连、Settings 更多项）
 
-  | 项 | 真实状态 |
+  已完成且实测：
+
+  | 功能 | 状态 |
   |---|---|
-  | 审批 UI | **已实现**：`DesktopTerminal` 有卡片（标题/命令/过期/允许/拒绝） |
-  | runtime 订阅 | **已实现**：`sessions.messages.subscribe { key, includeApprovals:true }` |
-  | caps | 已加在 connect 顶层，握手成功 |
-  | allow 路径 | **已验证**：whoami 执行，exit 0，482ms，审批移除 |
-  | deny 路径 | **已验证**：`exec.approval.resolved {decision:"deny"}`，命令未执行（user-denied） |
-  | 未验证 | Settings / Connection State / Log Viewer；GatewayChatAdapter 快速失败竞态 |
+  | Approval（allow/deny） | 已验证：allow 执行 whoami；deny user-denied、命令未执行 |
+  | Connection State | 已验证：徽标/字段/最近错误/重连说明 |
+  | Log Viewer | 已验证：最近 200 条、展开/关闭/清空、订阅 approvals=true |
+  | Settings 只读概览 | 已验证：模型/工具数量/当前 Session/总数，缺失显示「未提供」 |
+  | Settings 模型修改 + 单次回滚 | 已验证：`sessions.patch {key, model}`，deepseek-flash→deepseek-chat→回滚 |
+  | Session 只读列表 | 已验证：MAIN/SESSION、key、时间、当前使用 |
+  | Session 切换 | 已验证：先订阅新 key 再退订旧 key，adapter 换 key |
+  | UI 布局 | 已验证：聊天区内部滚动、输入框固定、四面板互斥悬浮 |
 
-- 下一步：实现 Settings / Connection State / Log Viewer，不要再重复验证审批。
+  未验证：快速失败瞬时事件（开代理表现为挂起，非秒失败）。
+
+- 下一步：从上面的候选里选一个，不要再重复验证已完成项。
 
 ## 四、已完成（P1-001 ~ P1-005）
 
@@ -80,6 +86,7 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 
 ## 八、下一步
 
-1. **Settings / Connection State / Log Viewer**。
-2. 修复 `GatewayChatAdapter` 快速失败竞态。
-3. （可选）MSI 安装包、代码签名、自动更新。
+1. 新建 / 删除会话（写操作，风险较高；删除前必须二次确认）。
+2. 自动重连（断线后自动恢复，不要求重启桌面端）。
+3. Settings 更多项（工具开关、执行模式展示）。
+4. （可选）快速失败的确定性复现；MSI / 签名 / 自动更新。

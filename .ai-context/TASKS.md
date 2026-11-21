@@ -2,15 +2,15 @@
 
 ## DOING
 
-- Phase 1 收尾：核心只读三件套（Connection State / Log Viewer / Settings 概览）已完成并实测；
-  等待下一轮功能（Settings 写操作 / Session 管理 / 自动重连）。
+- Phase 1/2 收尾：Connection State / Log Viewer / Settings（只读+模型修改回滚）/
+  Session 列表与切换 / UI 布局均已完成并实测；等待下一轮功能。
 
 ## TODO
 
+- **下一轮候选**：新建/删除会话（写操作，删除需二次确认）、自动重连、Settings 更多项（工具开关/执行模式展示）。
 - **（可选）快速失败场景的确定性复现。**
   订阅先于发送的修复已落地、普通对话正常；但"run 秒失败"场景无法稳定构造
   （开系统代理表现为挂起而非秒失败），该路径仍标**未实测**。
-- **Settings 写操作 / Session 管理 / 自动重连**（下一轮功能，尚未开始）。
 - MSI 安装包（可选）。NSIS 已完成并验证；MSI、代码签名、自动更新未做。
 - 设备配对（device identity）作为浏览器端接入的可选路径。
 

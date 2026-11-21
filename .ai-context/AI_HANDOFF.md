@@ -114,6 +114,9 @@ Phase 1（桌面框架）主体完成 / Phase 2 部分完成。
 - Settings 只读概览：模型 / 工具数量 / 当前 Session / Session 总数，缺失字段显示「未提供」（截图确认）。
 - GatewayChatAdapter：`onEvent` 在 L138、`sendMessage` 在 L162，subscribe-before-send=True；普通对话正常。
 - Settings 模型修改 + 单次回滚：`sessions.patch { key, model }`，RPC 与 UI 均实测（deepseek-flash → deepseek-chat → 回滚）。
+- Session 只读列表：MAIN/SESSION、key、时间、「（当前使用）」标记（截图确认）。
+- Session 切换：先订阅新 key（includeApprovals）再退订旧 key，`adapter.setSessionKey` 生效；失败回滚不留半切换（用户确认）。
+- UI 布局：消息区内部滚动、输入框固定；四个面板互斥悬浮（用户确认）。
 - release + NSIS 复验：`tauri build` exit 0；静默安装 exit 0（目录 `D:\fjk-agent\FJK Agent`）、
   安装版窗口正常并连接 Gateway、静默卸载 exit 0，目录/快捷方式/进程/注册表均清理。
 
@@ -156,7 +159,7 @@ Windows 系统代理若指向 `127.0.0.1:7897`，当前 OpenClaw 环境可能触
 
 ## Next Task
 
-1. 下一轮功能：Settings 写操作 / Session 管理 / 自动重连（尚未开始）。
+1. 下一轮：新建/删除会话（写操作，删除需二次确认）、自动重连、Settings 更多项。
 2. （可选）快速失败场景的确定性复现（临时改错模型名），关闭最后一个未实测项。
 3. 安装包后续形态：MSI、代码签名、自动更新（NSIS 已复验通过）。
 
