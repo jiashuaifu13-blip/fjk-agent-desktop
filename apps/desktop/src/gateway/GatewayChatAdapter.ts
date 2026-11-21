@@ -43,99 +43,151 @@ export class GatewayChatAdapter {
       await this.resolveSessionKey()
 
 
-    const result =
-      await this.client.sendMessage(
-        sessionKey,
-        message
-      )
+    let runId: string | null = null
+    let started = false
+    let cleaned = false
+
+    const bufferedEvents: GatewayEventFrame[] = []
 
 
-    const runId =
-      (result as { runId?: string } | undefined)?.runId
+    let resolveRun: () => void = () => undefined
+    let rejectRun: (reason?: unknown) => void = () => undefined
+
+    const finished =
+      new Promise<void>((resolve, reject) => {
+        resolveRun = resolve
+        rejectRun = reject
+      })
 
 
-    if (!runId) {
-      return
+    let unsubscribe: () => void = () => undefined
+
+
+    const cleanup = () => {
+      if (cleaned) return
+      cleaned = true
+      unsubscribe()
+      signal?.removeEventListener('abort', onAbort)
     }
 
 
-    return new Promise<void>((resolve, reject) => {
-
-      let started = false
-      let cleaned = false
-
-
-      const cleanup = () => {
-        if (cleaned) return
-        cleaned = true
-        unsubscribe()
-        signal?.removeEventListener('abort', onAbort)
-      }
-
-
-      const onAbort = () => {
-        cleanup()
-        reject(
-          new DOMException(
-            'The operation was aborted',
-            'AbortError'
-          )
+    const onAbort = () => {
+      cleanup()
+      rejectRun(
+        new DOMException(
+          'The operation was aborted',
+          'AbortError'
         )
+      )
+    }
+
+
+    const processEvent = (
+      event: GatewayEventFrame
+    ) => {
+
+      if (
+        cleaned ||
+        event.type !== 'agent' ||
+        event.runId !== runId
+      ) {
+        return
       }
 
 
-      const unsubscribe =
-        this.client.onEvent((event: GatewayEventFrame) => {
-
-          if (
-            event.type !== 'agent' ||
-            event.runId !== runId
-          ) {
-            return
-          }
+      const {
+        stream,
+        data,
+      } = event
 
 
-          const {
-            stream,
-            data,
-          } = event
+      if (stream === 'assistant') {
+
+        if (!started) {
+          started = true
+          void onStart?.()
+        }
+
+        const delta =
+          data?.delta ?? data?.text ?? ''
+
+        if (delta) {
+          onToken?.(delta)
+        }
+
+        return
+      }
 
 
-          if (stream === 'assistant') {
+      if (stream === 'lifecycle') {
 
-            if (!started) {
-              started = true
-              void onStart?.()
-            }
-
-            const delta =
-              data?.delta ?? data?.text ?? ''
-
-            if (delta) {
-              onToken?.(delta)
-            }
-
-            return
-          }
+        if (data?.phase === 'end') {
+          cleanup()
+          resolveRun()
+        } else if (data?.phase === 'error') {
+          cleanup()
+          rejectRun(
+            new Error('agent run failed')
+          )
+        }
+      }
+    }
 
 
-          if (stream === 'lifecycle') {
+    unsubscribe =
+      this.client.onEvent((event: GatewayEventFrame) => {
 
-            if (data?.phase === 'end') {
-              cleanup()
-              resolve()
-            } else if (data?.phase === 'error') {
-              cleanup()
-              reject(
-                new Error('agent run failed')
-              )
-            }
-          }
-        })
+        if (event.type !== 'agent') {
+          return
+        }
+
+        if (!runId) {
+          bufferedEvents.push(event)
+          return
+        }
+
+        processEvent(event)
+      })
 
 
-      signal?.addEventListener('abort', onAbort)
-    })
+    signal?.addEventListener('abort', onAbort)
+
+    if (signal?.aborted) {
+      onAbort()
+    }
+
+
+    try {
+      const result =
+        await this.client.sendMessage(
+          sessionKey,
+          message
+        )
+
+      runId =
+        (result as { runId?: string } | undefined)?.runId ??
+        null
+
+      if (!runId) {
+        cleanup()
+        return
+      }
+
+
+      for (const event of bufferedEvents.splice(0)) {
+        processEvent(event)
+
+        if (cleaned) {
+          break
+        }
+      }
+
+
+      await finished
+    } catch (error) {
+      cleanup()
+      throw error
+    }
   }
 
 
