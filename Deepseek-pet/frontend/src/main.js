@@ -1,0 +1,1622 @@
+import './style.css'
+
+import {
+  PetDataLoader,
+} from './pet/PetDataLoader.js'
+
+import {
+  AnimationLibrary,
+} from './pet/AnimationLibrary.js'
+
+import {
+  AnimationCache,
+} from './pet/AnimationCache.js'
+
+import {
+  PetRenderer,
+} from './pet/PetRenderer.js'
+
+import {
+  PetAnimator,
+} from './pet/PetAnimator.js'
+
+import {
+  PetAudioManager,
+} from './pet/PetAudioManager.js'
+
+import {
+  PetStates,
+} from './pet/PetStates.js'
+
+import {
+  PetStateMachine,
+} from './pet/PetStateMachine.js'
+
+import {
+  PetHitTest,
+} from './pet/PetHitTest.js'
+
+import {
+  PetInteractionController,
+} from './pet/PetInteractionController.js'
+
+import {
+  MockChatClient,
+} from './chat/MockChatClient.js'
+
+import {
+  ChatController,
+} from './chat/ChatController.js'
+
+
+const CHAT_POSITION_KEY =
+  'deepseek-pet-chat-position-v2'
+
+
+const app =
+  document.querySelector(
+    '#app'
+  )
+
+
+app.innerHTML = `
+  <main class="app">
+
+    <!-- =========================
+         Debug
+         ========================= -->
+
+    <button
+      id="debug-toggle"
+      class="debug-toggle"
+      type="button">
+      Debug
+    </button>
+
+
+    <section
+      id="debug-panel"
+      class="debug-panel">
+
+      <h1>
+        Deepseek Pet
+      </h1>
+
+      <p id="status">
+        正在初始化...
+      </p>
+
+      <div class="debug-grid">
+
+        <span>当前状态</span>
+        <strong id="state-name">BOOT</strong>
+
+        <span>上一状态</span>
+        <strong id="previous-state">-</strong>
+
+        <span>当前动作</span>
+        <strong id="action-name">-</strong>
+
+        <span>最后原因</span>
+        <strong id="transition-reason">-</strong>
+
+        <span>交互事件</span>
+        <strong id="interaction-state">-</strong>
+
+        <span>FPS</span>
+        <strong id="fps">-</strong>
+
+        <span>帧数</span>
+        <strong id="frame-count">-</strong>
+
+        <span>缓存</span>
+        <strong id="cache-count">0</strong>
+
+        <span>音频</span>
+        <strong id="audio-state">无</strong>
+
+        <span>动画时钟</span>
+        <strong id="clock-state">-</strong>
+
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         Floating Chat
+         ========================= -->
+
+    <section
+      id="chat-scene"
+      class="chat-scene">
+
+      <div
+        id="chat-shell"
+        class="chat-shell">
+
+        <div
+          id="chat-drag-handle"
+          class="chat-drag-handle">
+
+          <div class="drag-grip">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+
+
+          <div class="chat-presence">
+
+            <span class="status-dot"></span>
+
+            <span id="chat-status">
+              Mock 在线
+            </span>
+
+          </div>
+
+
+          <span class="drag-hint">
+            拖动
+          </span>
+
+        </div>
+
+
+        <div
+          id="chat-content"
+          class="chat-content">
+
+          <div
+            id="message-list"
+            class="message-list">
+
+            <div class="empty-message">
+              和桌宠说点什么吧。
+            </div>
+
+          </div>
+
+
+          <div class="composer-row">
+
+            <form
+              id="chat-form"
+              class="chat-form">
+
+              <textarea
+                id="chat-input"
+                rows="3"
+                placeholder="What would you like to chat about~">
+              </textarea>
+
+
+              <div class="composer-footer">
+
+                <div class="composer-tools">
+
+                  <span class="tool-pill">
+                    ✦ Mock
+                  </span>
+
+                  <span class="tool-pill">
+                    Streaming
+                  </span>
+
+                </div>
+
+
+                <button
+                  id="send-chat"
+                  class="send-button"
+                  type="submit"
+                  aria-label="发送">
+                  ↑
+                </button>
+
+              </div>
+
+            </form>
+
+
+            <div class="side-rail">
+
+              <button
+                id="stop-chat"
+                class="rail-button"
+                type="button"
+                title="停止生成"
+                disabled>
+                ■
+              </button>
+
+
+              <button
+                id="clear-chat"
+                class="rail-button"
+                type="button"
+                title="清空聊天">
+                ↺
+              </button>
+
+
+              <button
+                id="toggle-chat"
+                class="rail-button"
+                type="button"
+                title="折叠聊天">
+                −
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <button
+          id="chat-collapsed"
+          class="chat-collapsed"
+          type="button"
+          hidden>
+
+          <span class="collapsed-dot"></span>
+
+          <span id="collapsed-text">
+            和我聊天
+          </span>
+
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         Pet
+         ========================= -->
+
+    <div
+      id="pet-root"
+      class="pet-root">
+
+      <div
+        id="pet-bubble"
+        class="pet-bubble"
+        hidden>
+      </div>
+
+
+      <canvas
+        id="pet-canvas"
+        class="pet-canvas">
+      </canvas>
+
+    </div>
+
+  </main>
+`
+
+
+/*
+ * ==========================
+ * Debug DOM
+ * ==========================
+ */
+
+const statusElement =
+  document.querySelector(
+    '#status'
+  )
+
+const stateNameElement =
+  document.querySelector(
+    '#state-name'
+  )
+
+const previousStateElement =
+  document.querySelector(
+    '#previous-state'
+  )
+
+const actionNameElement =
+  document.querySelector(
+    '#action-name'
+  )
+
+const transitionReasonElement =
+  document.querySelector(
+    '#transition-reason'
+  )
+
+const interactionStateElement =
+  document.querySelector(
+    '#interaction-state'
+  )
+
+const fpsElement =
+  document.querySelector(
+    '#fps'
+  )
+
+const frameCountElement =
+  document.querySelector(
+    '#frame-count'
+  )
+
+const cacheCountElement =
+  document.querySelector(
+    '#cache-count'
+  )
+
+const audioStateElement =
+  document.querySelector(
+    '#audio-state'
+  )
+
+const clockStateElement =
+  document.querySelector(
+    '#clock-state'
+  )
+
+const debugToggle =
+  document.querySelector(
+    '#debug-toggle'
+  )
+
+const debugPanel =
+  document.querySelector(
+    '#debug-panel'
+  )
+
+
+/*
+ * ==========================
+ * Chat DOM
+ * ==========================
+ */
+
+const chatScene =
+  document.querySelector(
+    '#chat-scene'
+  )
+
+const chatShell =
+  document.querySelector(
+    '#chat-shell'
+  )
+
+const chatDragHandle =
+  document.querySelector(
+    '#chat-drag-handle'
+  )
+
+const chatContent =
+  document.querySelector(
+    '#chat-content'
+  )
+
+const chatCollapsed =
+  document.querySelector(
+    '#chat-collapsed'
+  )
+
+const collapsedText =
+  document.querySelector(
+    '#collapsed-text'
+  )
+
+const chatStatusElement =
+  document.querySelector(
+    '#chat-status'
+  )
+
+const messageList =
+  document.querySelector(
+    '#message-list'
+  )
+
+const chatForm =
+  document.querySelector(
+    '#chat-form'
+  )
+
+const chatInput =
+  document.querySelector(
+    '#chat-input'
+  )
+
+const sendButton =
+  document.querySelector(
+    '#send-chat'
+  )
+
+const stopButton =
+  document.querySelector(
+    '#stop-chat'
+  )
+
+const clearButton =
+  document.querySelector(
+    '#clear-chat'
+  )
+
+const toggleChatButton =
+  document.querySelector(
+    '#toggle-chat'
+  )
+
+
+/*
+ * ==========================
+ * Pet DOM
+ * ==========================
+ */
+
+const petRoot =
+  document.querySelector(
+    '#pet-root'
+  )
+
+const petBubble =
+  document.querySelector(
+    '#pet-bubble'
+  )
+
+const canvas =
+  document.querySelector(
+    '#pet-canvas'
+  )
+
+
+/*
+ * ==========================
+ * Debug UI
+ * ==========================
+ */
+
+function setupDebug() {
+
+  debugToggle.addEventListener(
+    'click',
+    () => {
+
+      debugPanel.classList.toggle(
+        'is-open'
+      )
+    }
+  )
+}
+
+
+/*
+ * ==========================
+ * Message rendering
+ * ==========================
+ */
+
+function renderMessages(
+  messages
+) {
+
+  messageList.innerHTML =
+    ''
+
+
+  if (
+    messages.length === 0
+  ) {
+
+    const empty =
+      document.createElement(
+        'div'
+      )
+
+    empty.className =
+      'empty-message'
+
+    empty.textContent =
+      '和桌宠说点什么吧。'
+
+
+    messageList.appendChild(
+      empty
+    )
+
+    return
+  }
+
+
+  for (
+    const message
+    of messages
+  ) {
+
+    const item =
+      document.createElement(
+        'div'
+      )
+
+
+    item.className =
+      `message message-${message.role}`
+
+
+    const role =
+      document.createElement(
+        'div'
+      )
+
+
+    role.className =
+      'message-role'
+
+
+    role.textContent =
+      message.role === 'user'
+        ? 'You'
+        : 'Pet'
+
+
+    const content =
+      document.createElement(
+        'div'
+      )
+
+
+    content.className =
+      'message-content'
+
+
+    content.textContent =
+      message.content ||
+      '…'
+
+
+    item.append(
+      role,
+      content
+    )
+
+
+    messageList.appendChild(
+      item
+    )
+  }
+
+
+  messageList.scrollTop =
+    messageList.scrollHeight
+}
+
+
+/*
+ * ==========================
+ * Floating Chat Controller
+ * ==========================
+ */
+
+function setupFloatingChat() {
+
+  let collapsed =
+    false
+
+  let dragging =
+    false
+
+  let pointerId =
+    null
+
+  let startPointerX =
+    0
+
+  let startPointerY =
+    0
+
+  let startLeft =
+    0
+
+  let startTop =
+    0
+
+
+  function clampPosition(
+    left,
+    top
+  ) {
+
+    const rect =
+      chatScene
+        .getBoundingClientRect()
+
+
+    const padding =
+      10
+
+
+    const maxLeft =
+      Math.max(
+        padding,
+        window.innerWidth -
+        rect.width -
+        padding
+      )
+
+
+    const maxTop =
+      Math.max(
+        padding,
+        window.innerHeight -
+        rect.height -
+        padding
+      )
+
+
+    return {
+      left:
+        Math.min(
+          Math.max(
+            padding,
+            left
+          ),
+          maxLeft
+        ),
+
+      top:
+        Math.min(
+          Math.max(
+            padding,
+            top
+          ),
+          maxTop
+        ),
+    }
+  }
+
+
+  function applyPosition(
+    left,
+    top
+  ) {
+
+    const position =
+      clampPosition(
+        left,
+        top
+      )
+
+
+    chatScene.style.left =
+      `${position.left}px`
+
+    chatScene.style.top =
+      `${position.top}px`
+
+    chatScene.style.right =
+      'auto'
+
+    chatScene.style.bottom =
+      'auto'
+
+
+    return position
+  }
+
+
+  function savePosition() {
+
+    const rect =
+      chatScene
+        .getBoundingClientRect()
+
+
+    try {
+
+      localStorage.setItem(
+        CHAT_POSITION_KEY,
+        JSON.stringify({
+          left:
+            rect.left,
+
+          top:
+            rect.top,
+        })
+      )
+
+    } catch {
+      /*
+       * localStorage 不可用时
+       * 直接忽略。
+       */
+    }
+  }
+
+
+  function restorePosition() {
+
+    try {
+
+      const raw =
+        localStorage.getItem(
+          CHAT_POSITION_KEY
+        )
+
+
+      if (raw) {
+
+        const saved =
+          JSON.parse(
+            raw
+          )
+
+
+        if (
+          Number.isFinite(
+            saved.left
+          ) &&
+          Number.isFinite(
+            saved.top
+          )
+        ) {
+
+          applyPosition(
+            saved.left,
+            saved.top
+          )
+
+          return
+        }
+      }
+
+    } catch {
+      /*
+       * 数据损坏时回默认位置。
+       */
+    }
+
+
+    /*
+     * 默认仍接近参考图：
+     * 桌宠左侧、屏幕偏右下。
+     *
+     * 只是初始位置，
+     * 之后用户可以随便拖。
+     */
+    const rect =
+      chatScene
+        .getBoundingClientRect()
+
+
+    const defaultLeft =
+      window.innerWidth -
+      rect.width -
+      300
+
+
+    const defaultTop =
+      window.innerHeight -
+      rect.height -
+      54
+
+
+    applyPosition(
+      defaultLeft,
+      defaultTop
+    )
+  }
+
+
+  function normalizePosition() {
+
+    const rect =
+      chatScene
+        .getBoundingClientRect()
+
+
+    applyPosition(
+      rect.left,
+      rect.top
+    )
+
+
+    savePosition()
+  }
+
+
+  function setCollapsed(
+    value
+  ) {
+
+    collapsed =
+      value
+
+
+    chatShell.classList.toggle(
+      'is-collapsed',
+      collapsed
+    )
+
+
+    chatContent.hidden =
+      collapsed
+
+
+    chatDragHandle.hidden =
+      collapsed
+
+
+    chatCollapsed.hidden =
+      !collapsed
+
+
+    /*
+     * 折叠后尺寸变化，
+     * 下一帧重新做屏幕边界检查。
+     */
+    requestAnimationFrame(
+      normalizePosition
+    )
+  }
+
+
+  function startDrag(
+    event,
+    handle
+  ) {
+
+    if (
+      event.button !== undefined &&
+      event.button !== 0
+    ) {
+      return
+    }
+
+
+    event.preventDefault()
+
+
+    const rect =
+      chatScene
+        .getBoundingClientRect()
+
+
+    dragging =
+      true
+
+    pointerId =
+      event.pointerId
+
+
+    startPointerX =
+      event.clientX
+
+    startPointerY =
+      event.clientY
+
+
+    startLeft =
+      rect.left
+
+    startTop =
+      rect.top
+
+
+    chatScene.classList.add(
+      'is-dragging'
+    )
+
+
+    handle.setPointerCapture(
+      event.pointerId
+    )
+  }
+
+
+  function moveDrag(
+    event
+  ) {
+
+    if (
+      !dragging ||
+      event.pointerId !==
+      pointerId
+    ) {
+      return
+    }
+
+
+    const deltaX =
+      event.clientX -
+      startPointerX
+
+
+    const deltaY =
+      event.clientY -
+      startPointerY
+
+
+    applyPosition(
+      startLeft + deltaX,
+      startTop + deltaY
+    )
+  }
+
+
+  function endDrag(
+    event,
+    handle
+  ) {
+
+    if (
+      !dragging ||
+      event.pointerId !==
+      pointerId
+    ) {
+      return
+    }
+
+
+    try {
+
+      if (
+        handle.hasPointerCapture(
+          event.pointerId
+        )
+      ) {
+
+        handle.releasePointerCapture(
+          event.pointerId
+        )
+      }
+
+    } catch {
+      // ignore
+    }
+
+
+    dragging =
+      false
+
+    pointerId =
+      null
+
+
+    chatScene.classList.remove(
+      'is-dragging'
+    )
+
+
+    savePosition()
+  }
+
+
+  /*
+   * 展开状态：
+   * 顶部细条拖动。
+   */
+
+  chatDragHandle.addEventListener(
+    'pointerdown',
+    (event) => {
+      startDrag(
+        event,
+        chatDragHandle
+      )
+    }
+  )
+
+
+  chatDragHandle.addEventListener(
+    'pointermove',
+    moveDrag
+  )
+
+
+  chatDragHandle.addEventListener(
+    'pointerup',
+    (event) => {
+      endDrag(
+        event,
+        chatDragHandle
+      )
+    }
+  )
+
+
+  chatDragHandle.addEventListener(
+    'pointercancel',
+    (event) => {
+      endDrag(
+        event,
+        chatDragHandle
+      )
+    }
+  )
+
+
+  /*
+   * 折叠状态：
+   * 整个胶囊既能拖，也能点击展开。
+   */
+
+  let collapsedMoved =
+    false
+
+  let collapsedStartX =
+    0
+
+  let collapsedStartY =
+    0
+
+
+  chatCollapsed.addEventListener(
+    'pointerdown',
+    (event) => {
+
+      collapsedMoved =
+        false
+
+      collapsedStartX =
+        event.clientX
+
+      collapsedStartY =
+        event.clientY
+
+
+      startDrag(
+        event,
+        chatCollapsed
+      )
+    }
+  )
+
+
+  chatCollapsed.addEventListener(
+    'pointermove',
+    (event) => {
+
+      if (
+        dragging
+      ) {
+
+        const distance =
+          Math.hypot(
+            event.clientX -
+              collapsedStartX,
+
+            event.clientY -
+              collapsedStartY
+          )
+
+
+        if (
+          distance >
+          5
+        ) {
+          collapsedMoved =
+            true
+        }
+      }
+
+
+      moveDrag(
+        event
+      )
+    }
+  )
+
+
+  chatCollapsed.addEventListener(
+    'pointerup',
+    (event) => {
+
+      endDrag(
+        event,
+        chatCollapsed
+      )
+
+
+      if (
+        !collapsedMoved
+      ) {
+        setCollapsed(
+          false
+        )
+      }
+    }
+  )
+
+
+  chatCollapsed.addEventListener(
+    'pointercancel',
+    (event) => {
+
+      endDrag(
+        event,
+        chatCollapsed
+      )
+    }
+  )
+
+
+  toggleChatButton.addEventListener(
+    'click',
+    () => {
+
+      setCollapsed(
+        true
+      )
+    }
+  )
+
+
+  window.addEventListener(
+    'resize',
+    normalizePosition
+  )
+
+
+  /*
+   * 等浏览器完成布局后
+   * 再恢复位置。
+   */
+  requestAnimationFrame(
+    restorePosition
+  )
+
+
+  return {
+    setCollapsed,
+
+    get collapsed() {
+      return collapsed
+    },
+  }
+}
+
+
+/*
+ * ==========================
+ * Main
+ * ==========================
+ */
+
+async function main() {
+
+  try {
+
+    setupDebug()
+
+
+    /*
+     * ==========================
+     * dsh1
+     * ==========================
+     */
+
+    const loader =
+      new PetDataLoader()
+
+
+    const {
+      actions,
+    } =
+      await loader.load()
+
+
+    const library =
+      new AnimationLibrary(
+        actions
+      )
+
+
+    const cache =
+      new AnimationCache()
+
+
+    const renderer =
+      new PetRenderer(
+        canvas
+      )
+
+
+    const audioManager =
+      new PetAudioManager()
+
+
+    const animator =
+      new PetAnimator({
+        renderer,
+        library,
+        cache,
+        audioManager,
+      })
+
+
+    const stateMachine =
+      new PetStateMachine({
+        animator,
+      })
+
+
+    animator.onAnimationChange =
+      (
+        action,
+        info
+      ) => {
+
+        actionNameElement.textContent =
+          action.id
+
+
+        fpsElement.textContent =
+          action
+            .spritesheet
+            .fps
+
+
+        frameCountElement.textContent =
+          action
+            .spritesheet
+            .frameCount
+
+
+        cacheCountElement.textContent =
+          cache.size
+
+
+        audioStateElement.textContent =
+          info.hasAudio
+            ? '有'
+            : '无'
+
+
+        clockStateElement.textContent =
+          info.usingAudioClock
+            ? 'Audio'
+            : 'Performance'
+      }
+
+
+    animator.onError =
+      (error) => {
+
+        console.error(
+          '[Animator Error]',
+          error
+        )
+
+
+        statusElement.textContent =
+          `动画错误：${error.message}`
+      }
+
+
+    stateMachine.onStateChange =
+      ({
+        from,
+        to,
+        reason,
+      }) => {
+
+        stateNameElement.textContent =
+          to
+
+
+        previousStateElement.textContent =
+          from ?? '-'
+
+
+        transitionReasonElement.textContent =
+          reason
+
+
+        cacheCountElement.textContent =
+          cache.size
+      }
+
+
+    stateMachine.onStateError =
+      (error) => {
+
+        console.error(
+          '[State Error]',
+          error
+        )
+      }
+
+
+    await stateMachine.setState(
+      PetStates.IDLE,
+      {
+        reason:
+          'application-ready',
+      }
+    )
+
+
+    /*
+     * ==========================
+     * Pet interaction
+     * ==========================
+     */
+
+    const hitTest =
+      new PetHitTest({
+        canvas,
+
+        alphaThreshold:
+          25,
+      })
+
+
+    const interactionController =
+      new PetInteractionController({
+        root:
+          petRoot,
+
+        canvas,
+
+        stateMachine,
+
+        hitTest,
+
+        dragThreshold:
+          6,
+      })
+
+
+    interactionController
+      .onInteraction =
+      (event) => {
+
+        interactionStateElement
+          .textContent =
+          event.type
+      }
+
+
+    interactionController.mount()
+
+
+    /*
+     * ==========================
+     * Floating Chat
+     * ==========================
+     */
+
+    const floatingChat =
+      setupFloatingChat()
+
+
+    /*
+     * ==========================
+     * Mock Chat
+     * ==========================
+     */
+
+    const mockChatClient =
+      new MockChatClient({
+        thinkingDelay:
+          900,
+
+        tokenDelay:
+          45,
+      })
+
+
+    const chatController =
+      new ChatController({
+        client:
+          mockChatClient,
+
+        stateMachine,
+      })
+
+
+    chatController
+      .onMessageChange =
+      (messages) => {
+
+        renderMessages(
+          messages
+        )
+      }
+
+
+    chatController
+      .onGeneratingChange =
+      (generating) => {
+
+        sendButton.disabled =
+          generating
+
+
+        stopButton.disabled =
+          !generating
+
+
+        chatInput.disabled =
+          generating
+
+
+        chatStatusElement.textContent =
+          generating
+            ? '正在回复…'
+            : 'Mock 在线'
+
+
+        collapsedText.textContent =
+          generating
+            ? '正在回复…'
+            : '和我聊天'
+      }
+
+
+    chatController
+      .onBubbleChange =
+      (content) => {
+
+        const text =
+          content.trim()
+
+
+        if (!text) {
+
+          petBubble.hidden =
+            true
+
+          petBubble.textContent =
+            ''
+
+          return
+        }
+
+
+        petBubble.hidden =
+          false
+
+
+        petBubble.textContent =
+          text
+
+
+        petBubble.scrollTop =
+          petBubble.scrollHeight
+      }
+
+
+    chatController
+      .onError =
+      (error) => {
+
+        console.error(
+          '[Chat Error]',
+          error
+        )
+
+
+        chatStatusElement.textContent =
+          '错误'
+      }
+
+
+    chatForm.addEventListener(
+      'submit',
+
+      async (event) => {
+
+        event.preventDefault()
+
+
+        const content =
+          chatInput.value.trim()
+
+
+        if (!content) {
+          return
+        }
+
+
+        chatInput.value =
+          ''
+
+
+        try {
+
+          await chatController.send(
+            content
+          )
+
+        } catch (error) {
+
+          console.error(
+            error
+          )
+        }
+      }
+    )
+
+
+    chatInput.addEventListener(
+      'keydown',
+
+      (event) => {
+
+        if (
+          event.key ===
+            'Enter' &&
+          !event.shiftKey
+        ) {
+
+          event.preventDefault()
+
+
+          if (
+            !chatController
+              .isGenerating
+          ) {
+
+            chatForm
+              .requestSubmit()
+          }
+        }
+      }
+    )
+
+
+    stopButton.addEventListener(
+      'click',
+
+      () => {
+
+        chatController.stop()
+      }
+    )
+
+
+    clearButton.addEventListener(
+      'click',
+
+      () => {
+
+        chatController.clear()
+      }
+    )
+
+
+    statusElement.textContent =
+      'Phase 6：Floating Companion UI 已启动'
+
+
+    window.deepseekPet = {
+      library,
+      cache,
+      renderer,
+      animator,
+      stateMachine,
+      hitTest,
+      interactionController,
+      mockChatClient,
+      chatController,
+      floatingChat,
+    }
+
+  } catch (error) {
+
+    console.error(
+      'Deepseek Pet 初始化失败：',
+      error
+    )
+
+
+    statusElement.textContent =
+      `初始化失败：${error.message}`
+  }
+}
+
+
+main()
