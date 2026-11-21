@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 
 import { PetDataLoader } from '../pet/PetDataLoader.js'
@@ -49,7 +49,10 @@ export interface GatewayStatus {
   hint?: string
 }
 
+export interface ExecApproval { id: string; commandText: string; expiresAtMs?: number }
 export interface PetRuntime {
+  approval: ExecApproval | null
+  resolveApproval(decision: 'allow-once' | 'deny'): Promise<void>
   chatController: ChatControllerLike | null
   petState: string
   agentState: string
@@ -78,6 +81,8 @@ export function usePetRuntime(
   canvasRef: RefObject<HTMLCanvasElement>,
   rootRef: RefObject<HTMLDivElement>,
 ): PetRuntime {
+  const gatewayClientRef = useRef<TauriGatewayClient | null>(null)
+  const [approval, setApproval] = useState<ExecApproval | null>(null)
   const [chatController, setChatController] = useState<ChatControllerLike | null>(null)
   const [petState, setPetState] = useState<string>(PetStates.BOOT)
   const [agentState, setAgentState] = useState<string>(AgentStates.OFFLINE)
@@ -148,7 +153,14 @@ export function usePetRuntime(
       if (isTauriRuntime()) {
         const gateway = new TauriGatewayClient()
         gatewayClient = gateway
-        unsubscribeGatewayEvent = gateway.onEvent((event) => store.dispatch({ type: 'gateway/event', event }))
+        gatewayClientRef.current = gateway
+        unsubscribeGatewayEvent = gateway.onEvent((event) => {
+          store.dispatch({ type: 'gateway/event', event })
+          if (event.type !== 'session.approval') return
+          const a = event.approval as { id?: string; presentation?: { kind?: string; commandText?: string; expiresAtMs?: number } } | undefined
+          if (event.phase === 'pending' && a?.id && a.presentation?.kind === 'exec') setApproval({ id: a.id, commandText: a.presentation.commandText ?? '', expiresAtMs: a.presentation.expiresAtMs })
+          else if (event.phase === 'terminal' && a?.id) setApproval((current) => current?.id === a.id ? null : current)
+        })
         unsubscribeConnectionState = gateway.onConnectionState((payload) => store.dispatch({ type: 'connection/state', state: payload.state }))
 
         try {
@@ -282,5 +294,6 @@ export function usePetRuntime(
     }
   }, [canvasRef, rootRef])
 
-  return { chatController, petState, agentState, sending, ready, error, mode, gatewayStatus }
+  const resolveApproval = async (decision: 'allow-once' | 'deny') => { const id = approval?.id; const gateway = gatewayClientRef.current; if (!id || !gateway) return; await gateway.send('exec.approval.resolve', { id, decision }) }
+  return { approval, resolveApproval, chatController, petState, agentState, sending, ready, error, mode, gatewayStatus }
 }

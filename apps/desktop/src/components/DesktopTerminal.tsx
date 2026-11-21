@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { usePetRuntimeContext } from '../runtime/PetRuntimeContext'
 import type { ChatMessage } from '../runtime/PetRuntimeContext'
@@ -6,7 +6,7 @@ import { toGatewayIssue } from '../gateway/GatewayError'
 import type { GatewayIssue } from '../gateway/GatewayError'
 
 export function DesktopTerminal() {
-  const { chatController, sending, agentState, ready, error, mode, gatewayStatus } =
+  const { approval, resolveApproval, chatController, sending, agentState, ready, error, mode, gatewayStatus } =
     usePetRuntimeContext()
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -108,6 +108,7 @@ export function DesktopTerminal() {
         </div>
       )}
 
+      {approval && <div className="terminal-notice terminal-notice-warn"><div className="notice-title">审批请求</div><div className="notice-detail"><code>{approval.commandText}</code></div>{approval.expiresAtMs && <div className="notice-hint">过期 {new Date(approval.expiresAtMs).toLocaleTimeString()}</div>}<div className="terminal-actions"><button type="button" onClick={() => void resolveApproval('allow-once')}>允许</button><button type="button" onClick={() => void resolveApproval('deny')}>拒绝</button></div></div>}
       <div ref={listRef} className="terminal-messages">
         {messages.length === 0 && (
           <div className="terminal-empty">
@@ -176,3 +177,4 @@ export function DesktopTerminal() {
     </section>
   )
 }
+
