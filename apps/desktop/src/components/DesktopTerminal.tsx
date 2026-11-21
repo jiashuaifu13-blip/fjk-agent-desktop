@@ -42,6 +42,7 @@ export function DesktopTerminal() {
     previousModel,
     updateSessionModel,
     rollbackSessionModel,
+    sessionList,
   } =
     usePetRuntimeContext()
 
@@ -82,6 +83,12 @@ export function DesktopTerminal() {
   const [
     settingsPanelOpen,
     setSettingsPanelOpen,
+  ] =
+    useState(false)
+
+  const [
+    sessionPanelOpen,
+    setSessionPanelOpen,
   ] =
     useState(false)
 
@@ -334,6 +341,23 @@ export function DesktopTerminal() {
             type="button"
             className="connection-state-trigger"
             aria-expanded={
+              sessionPanelOpen
+            }
+            aria-controls="session-list-panel"
+            onClick={() => {
+              setSessionPanelOpen(
+                (current) =>
+                  !current,
+              )
+            }}
+          >
+            会话
+          </button>
+
+          <button
+            type="button"
+            className="connection-state-trigger"
+            aria-expanded={
               settingsPanelOpen
             }
             aria-controls="settings-overview-panel"
@@ -510,6 +534,63 @@ export function DesktopTerminal() {
               仅允许修改当前 Session 的模型。
               Gateway 未返回的字段统一显示“未提供”。
             </div>
+          </div>
+        </section>
+      )}
+
+      {sessionPanelOpen && (
+        <section
+          id="session-list-panel"
+          className="connection-state-panel"
+          aria-label="会话列表"
+        >
+          <div className="connection-state-heading">
+            <div>
+              <div className="connection-state-title">
+                会话
+              </div>
+
+              <div className="connection-state-subtitle">
+                sessions.list 只读列表
+              </div>
+            </div>
+
+            <span className="connection-state-badge connection-state-badge-neutral">
+              只读
+            </span>
+          </div>
+
+          <div className="connection-state-grid">
+            {sessionList.length === 0 && (
+              <div className="connection-state-copy">
+                暂无会话
+              </div>
+            )}
+
+            {sessionList.map((session) => (
+              <div
+                className="connection-state-row"
+                key={session.key}
+              >
+                <span className="connection-state-key">
+                  {session.isMain ? 'MAIN' : 'SESSION'}
+                </span>
+
+                <span className="connection-state-value">
+                  {session.key}
+                  {session.key ===
+                  settingsOverview.sessionKey
+                    ? '（当前使用）'
+                    : ''}
+                  {' · '}
+                  {session.updatedAt === null
+                    ? '未提供'
+                    : new Date(
+                        session.updatedAt,
+                      ).toLocaleString()}
+                </span>
+              </div>
+            ))}
           </div>
         </section>
       )}

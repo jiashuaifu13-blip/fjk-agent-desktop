@@ -150,6 +150,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File D:\pet-desp\tools\apply-patc
 base64 规则：`[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('<原文>'))`；
 旧串取 1–3 行且唯一，不要凭记忆补空行。
 
+### 插入型补丁的防重复要求（重要）
+
+- 插入新内容时，**OLD 必须包含锚点行本身，NEW 必须把锚点行一起写回**，
+  使补丁应用后 OLD 不再命中；否则重复执行会重复插入（sessionList 曾被插入 3 次）。
+- 执行前先加 `-DryRun`，确认 `hits=1`；批量命令里可用 `PATCH_SKIP` 兜底，但不能依赖它。
+- 一次补丁只插入一块；需要插入多块时，锚点要各不相同。
+
 ## 十一、多条命令的编号与说明（强制）
 
 一次回复里给多条终端命令时：

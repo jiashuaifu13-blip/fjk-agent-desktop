@@ -77,6 +77,18 @@ export interface SettingsOverview {
   sessionCount: number | null
 }
 
+export interface SessionListItem {
+  key: string
+  isMain: boolean
+  updatedAt: number | null
+}
+
+export interface SessionListItem {
+  key: string
+  isMain: boolean
+  updatedAt: number | null
+}
+
 export interface PetRuntime {
   approval: ExecApproval | null
   resolveApproval(decision: 'allow-once' | 'deny'): Promise<void>
@@ -97,6 +109,7 @@ export interface PetRuntime {
   previousModel: string | null
   updateSessionModel(model: string): Promise<void>
   rollbackSessionModel(): Promise<void>
+  sessionList: SessionListItem[]
 }
 
 function isTauriRuntime(): boolean {
@@ -115,6 +128,7 @@ function isTauriRuntime(): boolean {
 type GatewaySessionSummary = {
   key?: string
   isMain?: boolean
+  updatedAt?: number
   model?: string
   modelName?: string
   toolCount?: number
@@ -216,6 +230,24 @@ function readSettingsOverview(
   }
 }
 
+function readSessionList(
+  list: unknown,
+): SessionListItem[] {
+  return getGatewaySessions(list)
+    .map((session) => ({
+      key:
+        typeof session?.key === 'string'
+          ? session.key
+          : '',
+      isMain: session?.isMain === true,
+      updatedAt:
+        typeof session?.updatedAt === 'number'
+          ? session.updatedAt
+          : null,
+    }))
+    .filter((item) => item.key.length > 0)
+}
+
 export function usePetRuntime(
   canvasRef: RefObject<HTMLCanvasElement>,
   rootRef: RefObject<HTMLDivElement>,
@@ -267,6 +299,9 @@ export function usePetRuntime(
 
   const [previousModel, setPreviousModel] =
     useState<string | null>(null)
+
+  const [sessionList, setSessionList] =
+    useState<SessionListItem[]>([])
 
   const runtimeLogIdRef = useRef(0)
 
@@ -581,6 +616,12 @@ export function usePetRuntime(
             if (!cancelled) {
               setSettingsOverview(
                 readSettingsOverview(list),
+              )
+              setSessionList(
+                readSessionList(list),
+              )
+              setSessionList(
+                readSessionList(list),
               )
             }
 
@@ -938,6 +979,9 @@ export function usePetRuntime(
     setSettingsOverview(
       readSettingsOverview(list),
     )
+    setSessionList(
+      readSessionList(list),
+    )
   }
 
   const updateSessionModel = async (
@@ -1025,5 +1069,6 @@ export function usePetRuntime(
     previousModel,
     updateSessionModel,
     rollbackSessionModel,
+    sessionList,
   }
 }
