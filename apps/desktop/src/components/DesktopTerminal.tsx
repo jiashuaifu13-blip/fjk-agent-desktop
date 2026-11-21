@@ -92,6 +92,40 @@ export function DesktopTerminal() {
   ] =
     useState(false)
 
+  type PanelName =
+    | 'session'
+    | 'settings'
+    | 'log'
+    | 'connection'
+
+  const togglePanel = (
+    panel: PanelName,
+  ) => {
+    const isOpen =
+      (panel === 'session' &&
+        sessionPanelOpen) ||
+      (panel === 'settings' &&
+        settingsPanelOpen) ||
+      (panel === 'log' &&
+        logViewerOpen) ||
+      (panel === 'connection' &&
+        connectionPanelOpen)
+
+    // 互斥：任何时刻最多只开一个面板
+    setSessionPanelOpen(
+      !isOpen && panel === 'session',
+    )
+    setSettingsPanelOpen(
+      !isOpen && panel === 'settings',
+    )
+    setLogViewerOpen(
+      !isOpen && panel === 'log',
+    )
+    setConnectionPanelOpen(
+      !isOpen && panel === 'connection',
+    )
+  }
+
   const [modelDraft, setModelDraft] =
     useState('')
 
@@ -345,10 +379,7 @@ export function DesktopTerminal() {
             }
             aria-controls="session-list-panel"
             onClick={() => {
-              setSessionPanelOpen(
-                (current) =>
-                  !current,
-              )
+              togglePanel('session')
             }}
           >
             会话
@@ -362,10 +393,7 @@ export function DesktopTerminal() {
             }
             aria-controls="settings-overview-panel"
             onClick={() => {
-              setSettingsPanelOpen(
-                (current) =>
-                  !current,
-              )
+              togglePanel('settings')
             }}
           >
             设置
@@ -379,12 +407,7 @@ export function DesktopTerminal() {
             }
             aria-controls="runtime-log-viewer"
             onClick={() => {
-              setLogViewerOpen(
-                (
-                  current,
-                ) =>
-                  !current,
-              )
+              togglePanel('log')
             }}
           >
             日志
@@ -398,12 +421,7 @@ export function DesktopTerminal() {
             }
             aria-controls="connection-state-panel"
             onClick={() => {
-              setConnectionPanelOpen(
-                (
-                  current,
-                ) =>
-                  !current,
-              )
+              togglePanel('connection')
             }}
           >
             连接状态
