@@ -14,6 +14,7 @@ import { PetInteractionController } from '../pet/PetInteractionController.js'
 import { ChatController } from '../chat/ChatController.js'
 import { MockChatClient } from '../chat/MockChatClient.js'
 import { AgentStates } from '@fjk/agent-state/AgentStates.js'
+import { createAgentStateReducer } from '@fjk/agent-state/AgentStateReducer.js'
 import { GatewayChatAdapter } from '../gateway/GatewayChatAdapter'
 import { TauriGatewayClient } from '../gateway/TauriGatewayClient'
 import { toGatewayIssue } from '../gateway/GatewayError'
@@ -38,17 +39,6 @@ export interface ChatControllerLike {
 
 // Map the pet's presentation state back to the unified FJK AgentState
 // vocabulary. Full event-driven mapping lands with the Gateway client (P0-021).
-const PET_TO_AGENT: Record<string, string> = {
-  BOOT: AgentStates.OFFLINE,
-  IDLE: AgentStates.IDLE,
-  THINKING: AgentStates.THINKING,
-  SPEAKING: AgentStates.WORKING,
-  WALKING: AgentStates.IDLE,
-  INTERACT: AgentStates.IDLE,
-  DRAGGING: AgentStates.IDLE,
-  ERROR: AgentStates.FAILED,
-}
-
 export type GatewayStatusState = 'connecting' | 'connected' | 'unauthorized' | 'offline' | 'mock'
 
 export interface GatewayStatus {
@@ -89,6 +79,7 @@ export function usePetRuntime(
 ): PetRuntime {
   const [chatController, setChatController] = useState<ChatControllerLike | null>(null)
   const [petState, setPetState] = useState<string>(PetStates.BOOT)
+  const [agentState, setAgentState] = useState<string>(AgentStates.OFFLINE)
   const [sending, setSending] = useState(false)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -104,6 +95,10 @@ export function usePetRuntime(
     let animator: { stop(): Promise<void> } | null = null
     let interaction: { mount(): void; destroy(): void } | null = null
     let gatewayClient: TauriGatewayClient | null = null
+    let agentStore: ReturnType<typeof createAgentStateReducer> | null = null
+    let unsubscribeAgentStore: (() => void) | null = null
+    let unsubscribeGatewayEvent: (() => void) | null = null
+    let unsubscribeConnectionState: (() => void) | null = null
 
     async function boot() {
       const canvas = canvasRef.current
@@ -142,6 +137,13 @@ export function usePetRuntime(
       if (isTauriRuntime()) {
         const gateway = new TauriGatewayClient()
         gatewayClient = gateway
+        const store = createAgentStateReducer()
+        agentStore = store
+        unsubscribeAgentStore = store.subscribe((snapshot: { state: string }) => {
+          if (!cancelled) setAgentState((current) => current === snapshot.state ? current : snapshot.state)
+        })
+        unsubscribeGatewayEvent = gateway.onEvent((event) => store.dispatch({ type: 'gateway/event', event }))
+        unsubscribeConnectionState = gateway.onConnectionState((payload) => store.dispatch({ type: 'connection/state', state: payload.state }))
 
         try {
           await gateway.connect()
@@ -243,13 +245,15 @@ export function usePetRuntime(
 
     return () => {
       cancelled = true
+      unsubscribeGatewayEvent?.()
+      unsubscribeConnectionState?.()
+      unsubscribeAgentStore?.()
+      agentStore?.dispose()
       interaction?.destroy()
       void animator?.stop()
       void gatewayClient?.disconnect()
     }
   }, [canvasRef, rootRef])
-
-  const agentState = PET_TO_AGENT[petState] ?? AgentStates.IDLE
 
   return { chatController, petState, agentState, sending, ready, error, mode, gatewayStatus }
 }
