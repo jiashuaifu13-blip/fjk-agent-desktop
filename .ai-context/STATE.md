@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261121-1935
-HEAD_AT_SYNC: ef76ecc
-UPDATED: 2026-11-21T19:35+08:00
-TASK: Approval deny 回归 / Settings·Log Viewer（二选一，尚未开始）
+STATE_ID: 20261121-1945
+HEAD_AT_SYNC: c544080
+UPDATED: 2026-11-21T19:45+08:00
+TASK: Settings / Connection State / Log Viewer（下一步，尚未开始）
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -11,16 +11,21 @@ DONE:
 - P1-003 事件驱动 AgentState（单测 10/10，T1–T4）
 - P1-004 release 回归
 - P1-005 NSIS 安装包回归
-- P1-006 Approval 卡片 + resolve（**allow only**）
+- P1-006 Approval 卡片 + resolve（**allow 与 deny 均已验证**）
+
+VERIFIED_DETAIL:
+- allow：whoami 执行，exit 0，482ms，审批移除
+- deny：`exec.approval.resolved {decision:"deny", resolvedBy:"FJK Desktop"}`，命令未执行
+  （"Exec denied ... user-denied"，transcript 无执行输出）
 
 UNVERIFIED:
-- deny 路径（拒绝后命令不得执行、run 应结束）
+- Settings / Connection State / Log Viewer
+- GatewayChatAdapter 快速失败竞态（已知未修）
 
 NEXT:
-1. deny 回归
-2. Settings / Connection State / Log Viewer
-3. 修复 GatewayChatAdapter 快速失败竞态
-4. 改动后重新回归构建与安装包
+1. Settings / Connection State / Log Viewer
+2. 修复 GatewayChatAdapter 快速失败竞态
+3. 改动后重新回归构建与安装包
 
 FACTS:
 - caps 必须在 connect 顶层，放 client 会 invalid-handshake

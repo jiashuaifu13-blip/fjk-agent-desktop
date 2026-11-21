@@ -24,23 +24,22 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 - 分支：`main`
 - 环境：Windows 11、Windows PowerShell 5.1、Node 18+、Rust stable、本地 OpenClaw Gateway（`ws://127.0.0.1:18789`）
 
-## 三、当前状态（2026-11-21 17:55 更新）
+## 三、当前状态（2026-11-21 19:45 更新）
 
-- 最新提交：以 `git log -1` 为准（恢复卡/规则文档更新）
-- 未提交改动：`apps/desktop/src-tauri/src/gateway.rs`
-  （connect 参数已把 `caps` 移到顶层 `["approvals","exec-approvals"]`，握手已验证通过）
-
-- 当前任务：**Approval UI**，现状必须按下面事实理解，不要凭记忆：
+- 最新提交：以 `git log -1` 为准
+- 未提交改动：无（代码已提交）
+- 当前任务：**Settings / Connection State / Log Viewer**，现状按下面事实理解，不要凭记忆：
 
   | 项 | 真实状态 |
   |---|---|
-  | 审批 UI 代码 | **不存在**（`apps/desktop/src` 中 approval 匹配为 0），不会出现审批卡片 |
-  | runtime 订阅 | **未实现**：没有调用 `sessions.messages.subscribe(includeApprovals:true)` |
-  | caps | 已加且握手成功 |
-  | 订阅能力 | **已用独立探针验证可用**：返回 `subscribed:true` + `approvalReplay` |
-  | 真实审批事件 | **未验证**：Agent 尚未真正发起 command-mode exec，无 `exec.approval.requested` / `session.approval` 样本 |
+  | 审批 UI | **已实现**：`DesktopTerminal` 有卡片（标题/命令/过期/允许/拒绝） |
+  | runtime 订阅 | **已实现**：`sessions.messages.subscribe { key, includeApprovals:true }` |
+  | caps | 已加在 connect 顶层，握手成功 |
+  | allow 路径 | **已验证**：whoami 执行，exit 0，482ms，审批移除 |
+  | deny 路径 | **已验证**：`exec.approval.resolved {decision:"deny"}`，命令未执行（user-denied） |
+  | 未验证 | Settings / Connection State / Log Viewer；GatewayChatAdapter 快速失败竞态 |
 
-- 因此下一步不是"再发一次消息看卡片"，而是**把订阅接进 runtime**，再验证事件。
+- 下一步：实现 Settings / Connection State / Log Viewer，不要再重复验证审批。
 
 ## 四、已完成（P1-001 ~ P1-005）
 
@@ -77,11 +76,10 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 - 本地验证助手会检查：git 状态、`tsc`、`node --test packages/agent-state/*.test.mjs`、关键符号与文件内容、`???` 编码。
 - 网页端只需要依赖【本地检查 · STEP N】摘要（结论 / 证据 / 下一步），不要索要完整日志。
 - 未验证的内容必须标「未验证」，不得写成已验证。
-- **输出纪律与精简 STEP 格式以 `.ai-context/START_HERE.md` 第八节为准**：每条回复 ≤10 行、不贴大段代码、一次一个 STEP。
+- **输出纪律与精简 STEP 格式以 `.ai-context/START_HERE.md` 第八节为准**：说明文字 ≤10 行、代码照给不减料、一次一个 STEP。
 
 ## 八、下一步
 
-1. **Approval UI**：先验证 `sessions.messages.subscribe(includeApprovals: true)` 能否让桌面端收到
-   `session.approval`；确认后再做审批卡片与 resolve 调用。
-2. Settings / Connection State / Log Viewer。
+1. **Settings / Connection State / Log Viewer**。
+2. 修复 `GatewayChatAdapter` 快速失败竞态。
 3. （可选）MSI 安装包、代码签名、自动更新。

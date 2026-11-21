@@ -72,7 +72,7 @@ Approval 卡片 + resolve 已完成，allow 路径已真实验证。
   - `exec.approval.resolved`
 - resolve 方法：`exec.approval.resolve { id, decision }`。
 - allow 路径实测通过：审批卡片出现后点击“允许”，`whoami` 真实执行并返回 `laptop-qqmq9j32\付家康`，`exitCode=0`，耗时 `482ms`，随后审批记录被移除。
-- deny 路径：未验证。
+- deny 路径实测通过：点击「拒绝」后 `exec.approval.resolved` 记录 `decision:"deny"`、`resolvedBy:"FJK Desktop"`，命令未执行（user-denied）。
 ### P1-001
 Gateway transport moved to Rust (`src-tauri/src/gateway.rs`), removing the
 WebView `Origin` header that made OpenClaw clear operator scopes. Tauri commands:

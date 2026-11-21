@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-11-21 — Approval deny 回归
+
+### Verified
+- deny 路径：点击「拒绝」后 `exec.approval.resolved` 记录 `decision:"deny"`、`resolvedBy:"FJK Desktop"`，
+  命令未执行（`Exec denied ... user-denied`，会话记录无执行输出）。
+- allow 路径（此前）：`whoami` 执行，`exitCode=0`，482ms。
+
+### Notes
+- 审批约 38 秒内必须处理，超时后 run 中止、审批被清理（`APPROVAL_NOT_FOUND`），属预期行为。
+- 首次 `echo` 尝试被策略拒绝（`SYSTEM_RUN_DENIED: approval requires a resolved executable`），
+  改用可解析的可执行文件后才进入审批流程。
+
 ## 2026-11-20
 
 ### Added

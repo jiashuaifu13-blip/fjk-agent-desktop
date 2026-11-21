@@ -4,7 +4,7 @@
 
 Phase 1（桌面框架）进行中 / Phase 2 部分完成。
 
-事件驱动 AgentState 已完成并经过真实桌面运行验证；Approval 链路已完成 allow 路径真实验证（deny 未验证）。当前主数据流为：
+事件驱动 AgentState 已完成并经过真实桌面运行验证；Approval 链路 allow 与 deny 双路径均已真实验证。当前主数据流为：
 
 `Gateway 事件 / 连接状态 + 本地请求意图 → AgentStateReducer → AgentState → AgentToPetState → PetStateMachine`
 
@@ -106,10 +106,9 @@ Phase 1（桌面框架）进行中 / Phase 2 部分完成。
   - 显示断线提示
   - 输入被禁用
 - T4：重启 Gateway 后重新启动桌面端，恢复正常连接与运行路径。
-- `waiting_approval` / Approval 路径：**部分验证（allow only）**。
-  - 卡片真实出现，点击「允许」后 `whoami` 真实执行；
-  - 实测输出 `laptop-qqmq9j32\付家康`，`exitCode=0`，482ms，随后审批记录被移除（`APPROVAL_NOT_FOUND`）；
-  - **deny 路径未验证**。
+- `waiting_approval` / Approval 路径：**allow 与 deny 均已验证**。
+  - allow：点击「允许」后 `whoami` 真实执行，输出 `laptop-qqmq9j32\付家康`，`exitCode=0`，482ms；
+  - deny：点击「拒绝」后 `exec.approval.resolved {decision:"deny", resolvedBy:"FJK Desktop"}`，命令未执行（user-denied）。
 
 ## Known Issues
 
@@ -131,12 +130,12 @@ Phase 1（桌面框架）进行中 / Phase 2 部分完成。
 
 必须基于真实 runId / 事件时序实现，不允许 mock 假终态。
 
-### 2. Approval deny 路径未验证
+### 2. Approval deny 路径已验证（已关闭）
 
-`waiting_approval` 的映射、reducer 优先级、卡片展示与 allow 路径均已真实验证；
-但**拒绝（deny）路径尚未回归**：需要确认点「拒绝」后命令不执行、run 正常结束。
+`waiting_approval` 映射、reducer 优先级、卡片展示、allow 与 deny 均已真实验证：
+点击「拒绝」后 `exec.approval.resolved {decision:"deny", resolvedBy:"FJK Desktop"}`，命令未执行（user-denied）。
 
-另：审批请求约 **38 秒**内必须处理，超时后 run 中止、审批被清理（再查为 `APPROVAL_NOT_FOUND`），属预期行为。
+保留提示：审批请求约 **38 秒**内必须处理，超时后 run 中止、审批被清理（再查为 `APPROVAL_NOT_FOUND`），属预期行为。
 
 ### 3. 无自动重连
 
@@ -160,10 +159,9 @@ Windows 系统代理若指向 `127.0.0.1:7897`，当前 OpenClaw 环境可能触
 
 ## Next Task
 
-1. **补 Approval deny 路径回归**：触发 exec 审批后点「拒绝」，确认命令未执行、run 结束、卡片消失。
-2. 补齐 Settings / Connection State / Log Viewer。
-3. 修复 `GatewayChatAdapter` 快速失败竞态（订阅早于 `chat.send`，或缓存早到事件）。
-4. 回归 `npm run tauri build` 与 NSIS 安装包（安装包已做过一轮，改动后需复验）。
+1. **补齐 Settings / Connection State / Log Viewer**。
+2. 修复 `GatewayChatAdapter` 快速失败竞态（订阅早于 `chat.send`，或缓存早到事件）。
+3. 回归 `npm run tauri build` 与 NSIS 安装包（安装包已做过一轮，改动后需复验）。
 
 ## Constraints Reminder
 

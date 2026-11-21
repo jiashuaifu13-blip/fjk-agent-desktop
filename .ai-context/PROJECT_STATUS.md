@@ -28,7 +28,7 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 |---|---|---|---|
 | Phase 0 | OpenClaw 调查与基础验证 | ✅ **完成** | P0-001~023 全部完成；技术选型报告 GO（OpenClaw 作为 Agent Core） |
 | Phase 1 | FJK Desktop 基础框架（Tauri 2 + React + TS + Rust） | 🟡 **进行中** | Rust Gateway 通道、权限探测、错误映射、事件驱动 AgentState、release exe 回归已完成；Settings / Log Viewer 未做 |
-| Phase 2 | Agent Desktop Terminal | 🟡 **部分** | 真实 Gateway 对话、流式回复、连接断线状态、Approval 卡片（allow 路径）已跑通；Session 管理、历史记录、deny 路径未做 |
+| Phase 2 | Agent Desktop Terminal | 🟡 **部分** | 真实 Gateway 对话、流式回复、连接断线状态、Approval 卡片（allow/deny 均验证）已跑通；Session 管理、历史记录未做 |
 | Phase 3 | Deepseek-pet 桌宠整合 | **部分（仅 3A + 部分 3D）** | 3A 审计已完成；AgentState→PetState Adapter 与 runtime 驱动已接通；3B/3C/3E 未完成 |
 | Phase 4 | Blog Adapter | **未开始** | 无对应代码 |
 | Phase 5 | Local Project / Git / GitHub | **未开始** | 无对应产品功能代码 |
@@ -79,7 +79,7 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
   - 桌面端已订阅 `sessions.messages.subscribe { key, includeApprovals: true }`，可收到 `session.approval`；
   - 审批卡片可渲染（命令、过期时间、允许/拒绝）；
   - allow 路径实测通过：点击「允许」后 `whoami` 真实执行（输出 `laptop-qqmq9j32\付家康`，`exitCode=0`，482ms），随后审批记录被移除；
-  - **deny 路径未验证**。
+  - **deny 路径已验证**：点击「拒绝」后命令未执行（user-denied），run 正常结束。
 
 ## Release 构建回归
 
@@ -110,13 +110,13 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 - 解决：`exec.approval.resolve { id, decision }`，decision 为 `allow-once` 或 `deny`。
 - 实测（allow）：卡片出现后点击「允许」，`whoami` 真实执行，输出 `laptop-qqmq9j32\付家康`，
   `exitCode=0`、482ms，随后审批记录被移除（再查为 `APPROVAL_NOT_FOUND`）。
-- 未验证：deny 路径（拒绝后命令不得执行、run 应结束）。
+- 未验证：无（allow 与 deny 均已验证）。
 - 相关提交：`55d5b08`（订阅 + caps 顶层）、`0675933`（审批卡片 UI）。
 
 ## 已知问题（需处理）
 
 1. **模型快速失败竞态（未修复）**：模型调用极快失败时 UI 可能停在 `thinking`。当前定位为 `GatewayChatAdapter` 先执行 `chat.send`，之后才建立该轮事件订阅；run 秒失败时可能漏掉 `lifecycle error`。必须作为独立任务处理。
-2. **Approval deny 路径未验证**：allow 路径已实测通过；deny（拒绝后命令不执行、run 结束）尚未回归。
+2. **Approval 双路径已验证**：allow（命令执行）与 deny（命令未执行、user-denied）均已真实回归。
 3. **无自动重连**：运行中断线后需恢复 Gateway，并手动重新启动桌面端。
 4. **子模块未正确注册**：`Deepseek-pet` 为 gitlink，但无 `.gitmodules`，新克隆无法按标准子模块流程拉取。
 5. **安全风险**：`frontend/tauri/tauri.conf.json` 的历史配置存在过宽权限问题，仍需后续核查。
@@ -143,6 +143,6 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 
 继续 **Phase 1/2**：
 1. 独立修复 `GatewayChatAdapter` 的快速失败事件订阅竞态。
-2. 补 Approval deny 路径回归（拒绝后命令不得执行、run 应结束）；allow 路径已通过。
+2. 补齐 Settings / Connection State / Log Viewer。
 3. 补齐 Settings / Connection State / Log Viewer。
 4. 安装包后续形态：MSI、代码签名、自动更新（NSIS 已完成安装/运行/卸载回归）。
