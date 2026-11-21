@@ -11,7 +11,7 @@
 - **Approval UI。**
   `waiting_approval` 映射与 reducer 逻辑已存在，但桌面端真实 approval 流程尚未实测，当前仍标记为**未验证**。
 - Settings / Connection State / Log Viewer。
-- 回归 `npm run tauri build` 打包产物。
+- 安装包回归（NSIS / MSI）。当前 `bundle.active = false`，release exe 已验证，但尚未生成或验证安装器。
 - 设备配对（device identity）作为浏览器端接入的可选路径。
 
 ## BLOCKED
@@ -19,6 +19,21 @@
 None.
 
 ## DONE
+
+### P1-004
+Release 构建与运行回归通过。
+
+- 从 `D:\pet-desp\apps\desktop` 执行 `npm run tauri build`：成功，无 error。
+- 前端 production 产物 `apps/desktop/dist/` 已生成：12 个文件，约 11.6 MB。
+- release exe：
+  `apps/desktop/src-tauri/target/release/fjk-desktop.exe`
+- exe 大小：**20.24 MB**。
+- 发布形态直接运行验证：
+  1. 窗口正常打开，无白屏、无崩溃；
+  2. 成功连接本地 Gateway，徽标为 `Gateway`，`agent: idle`；
+  3. 真实流式对话成功，记录 runId `83a787ed`；
+  4. 关闭窗口后 `fjk-desktop` 进程正常退出，无残留。
+- 本轮仅验证 standalone release exe；`bundle.active = false`，未生成/验证 NSIS 或 MSI 安装包。
 
 ### P1-003
 事件驱动 AgentState 已完成。

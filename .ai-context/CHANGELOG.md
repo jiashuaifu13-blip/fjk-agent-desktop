@@ -107,3 +107,30 @@ http://localhost:5173` reproduces the exact error payload.
   protection (`SsrFBlockedError`) and make model requests fail immediately.
   During diagnosis, disable that system proxy first before treating the failure
   as an application regression.
+
+### Phase 1 — Release build regression
+
+#### Verified
+- Ran `npm run tauri build` from `apps/desktop`.
+- Frontend production output generated successfully in `apps/desktop/dist/`:
+  12 files, approximately 11.6 MB, including `index.html`, `assets` and pet
+  resources.
+- Rust release build generated:
+  `apps/desktop/src-tauri/target/release/fjk-desktop.exe`.
+- Release executable size: **20.24 MB**.
+- Release executable build timestamp: **13:20:32**.
+- Direct release-exe validation passed:
+  - window opened normally with no white screen or crash;
+  - connected to local Gateway with `Gateway` badge and `agent: idle`;
+  - real streaming `chat.send` completed successfully;
+  - observed runId `83a787ed`;
+  - closing the window terminated the `fjk-desktop` process with no residual
+    process left behind.
+- During this release validation, Gateway logs showed
+  `SsrFBlockedError = 0`.
+
+#### Boundary
+- `apps/desktop/src-tauri/tauri.conf.json` still has `bundle.active = false`.
+- This regression validates the standalone release executable only.
+- No NSIS or MSI installer was generated or validated in this task.
+- Installer/bundling validation remains a separate task.
