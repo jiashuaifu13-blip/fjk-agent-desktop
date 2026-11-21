@@ -350,6 +350,7 @@ pub async fn gateway_connect(
             json!({
                 "minProtocol": 4,
                 "maxProtocol": 4,
+                "caps": ["approvals", "exec-approvals"],
                 "client": {
                     "id": "gateway-client",
                     "displayName": "FJK Desktop",

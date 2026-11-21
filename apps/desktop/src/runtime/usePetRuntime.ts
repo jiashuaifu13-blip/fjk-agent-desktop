@@ -100,6 +100,7 @@ export function usePetRuntime(
     let unsubscribeAgentStore: (() => void) | null = null
     let unsubscribeGatewayEvent: (() => void) | null = null
     let unsubscribeConnectionState: (() => void) | null = null
+    let approvalSubscriptionKey: string | null = null
 
     async function boot() {
       const canvas = canvasRef.current
@@ -188,6 +189,21 @@ export function usePetRuntime(
           }
 
           client = new GatewayChatAdapter(gateway, sessionKey)
+
+          // Register this connection as an approval subscriber for the current
+          // session so `session.approval` events are actually delivered here.
+          // Failure is non-fatal: chat still works without approval delivery.
+          if (sessionKey) {
+            try {
+              await gateway.send('sessions.messages.subscribe', {
+                key: sessionKey,
+                includeApprovals: true,
+              })
+              approvalSubscriptionKey = sessionKey
+            } catch (subscribeError) {
+              console.warn('[FJK] approval subscription failed:', subscribeError)
+            }
+          }
         } catch (connectError) {
           const issue = toGatewayIssue(connectError)
           console.warn('[FJK] gateway connect failed, falling back to mock:', issue.kind, issue.detail)
@@ -251,6 +267,11 @@ export function usePetRuntime(
 
     return () => {
       cancelled = true
+      if (approvalSubscriptionKey && gatewayClient) {
+        void gatewayClient
+          .send('sessions.messages.unsubscribe', { key: approvalSubscriptionKey })
+          .catch(() => undefined)
+      }
       unsubscribeGatewayEvent?.()
       unsubscribeConnectionState?.()
       unsubscribeAgentStore?.()
