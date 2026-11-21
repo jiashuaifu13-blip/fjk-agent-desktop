@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261121-2120
-HEAD_AT_SYNC: fb108f7
-UPDATED: 2026-11-21T21:20+08:00
-TASK: 功能收尾（Settings 写操作/更多项 或 新一轮需求）
+STATE_ID: 20261121-2125
+HEAD_AT_SYNC: 869e7a7
+UPDATED: 2026-11-21T21:25+08:00
+TASK: 等待下一轮功能（Settings 写操作 / Session 管理 / 自动重连）
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -17,6 +17,7 @@ DONE:
 - Settings 只读概览（用户确认截图无问题：模型/工具数量/当前 Session/总数，未提供时降级）
 - GatewayChatAdapter 订阅先于发送 + 早到事件缓冲（普通对话正常）
 - release 构建 + NSIS 安装/运行/卸载复验（安装 0、卸载 0、目录/快捷方式/进程均清理）
+- 文档收尾：TASKS / PROJECT_STATUS / AI_HANDOFF 已同步（提交 869e7a7）
 
 
 VERIFIED_DETAIL:
