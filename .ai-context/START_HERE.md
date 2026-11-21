@@ -57,17 +57,26 @@ ACK FJK-DRIVER-8 | DOC_HEAD=<本文件第一行的原文> | NEXT=STEP 1
 - 口令是 `FJK-DRIVER-8`，只有读过本文件才知道。
 - 如果我把口令写错或没读到文件，你必须指出，而不是照抄。
 
-## 六、开始工作前先读状态
+## 六、开始工作前先读状态（强制回显）
 
-项目进度不在本文件里，去读：
+状态不在本文件里。必须先读这个**小文件**：
 
 ```text
-https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-context/WEB_AI_SESSION.md
+https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-context/STATE.md
 ```
 
-（抓取时建议加 `?v=<时间戳>` 避免缓存。）
+（抓取时加 `?v=<时间戳>` 避免缓存。）
 
-读完状态后，按第三节格式给 **STEP 1**，不要复述整份文档，也不要重复已完成的任务。
+规则：
+
+1. 读完 STATE 后，**第一行必须原样回显**：
+   `STATE: <STATE_ID> | <HEAD_AT_SYNC>`
+2. 我在开场消息里会给「期望值」；**如果你回显的值和期望值不一致**，
+   必须停止，只回一句：`STATE_MISMATCH`，不要继续给 STEP。
+3. 回显一致后，再用 ≤3 行复述：当前任务 / 下一步 / 未验证项。
+4. 然后才按第三节格式给 STEP 1；不要重复已完成的任务。
+
+> 只有 STATE 回显通过，才证明你读到的是最新版本；跳过这一步等于没读。
 
 ## 七、本机速查（避免重复踩坑）
 
