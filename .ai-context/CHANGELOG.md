@@ -13,7 +13,6 @@
 - .ai-context/AI_HANDOFF.md
 
 ### Phase 1 — Gateway transport moved into Rust
-
 #### Why
 The desktop WebSocket carried the WebView `Origin` header. OpenClaw 2026.11.6
 classifies such a handshake as a browser client, and for token auth without a
@@ -56,3 +55,55 @@ http://localhost:5173` reproduces the exact error payload.
 - Real round-trip in the app: 「hfhf」and「你好」both received agent replies.
 - Error mapping assertions pass for MISSING_SCOPE, device-identity, token
   mismatch, origin rejection, offline, timeout, config and string payloads.
+
+### Phase 1 — Gateway-driven AgentState
+
+#### Added
+- `packages/agent-state/AgentStateReducer.js` — unified AgentState reducer/service
+  consuming local request actions, Gateway events and connection state.
+- Reducer timing is injectable through `now` / `setTimeout` / `clearTimeout`.
+- Terminal `completed` / `failed` states hold for 1500 ms before returning to
+  `idle`; epoch protection prevents an old timer from overwriting a new run.
+- `apps/desktop/src/gateway/TauriGatewayClient.ts` now exposes an independent
+  `onConnectionState()` channel for `gateway://state`.
+
+#### Changed
+- `apps/desktop/src/chat/ChatController.js` no longer holds or directly writes
+  `PetStateMachine`; it dispatches `local/request-started` and
+  `local/request-settled` actions.
+- `apps/desktop/src/runtime/usePetRuntime.ts` now owns the AgentState store.
+  The single Agent-driven pet path is:
+  `AgentState → AgentToPetState → PetStateMachine.setState`.
+  A separate boot initialization `setState(IDLE)` remains.
+- `apps/desktop/src/components/DesktopTerminal.tsx` now reflects runtime
+  `offline` state in its badge, notice and input availability.
+
+#### Fixed
+- Runtime Gateway disconnect now produces a visible `Gateway · 离线` state,
+  disconnect notice and disabled input instead of leaving the terminal looking
+  connected. UI fix commit: `1dc315a`.
+
+#### Verified
+- `AgentStateReducer` tests: **10/10 passed**.
+- T1: real streaming conversation passed; observed
+  `thinking → working → completed → idle`, with pet state following.
+- T2: sending a new request within the 1500 ms terminal hold did not produce an
+  old-timer `idle` flicker.
+- T3: stopping Gateway during runtime produced `offline`; terminal showed the
+  offline state and disabled input.
+- T4: after restarting Gateway and restarting the desktop app, the normal
+  connected path recovered successfully.
+- Approval / `waiting_approval` desktop path remains **unverified**.
+
+#### Known issue
+- **Unfixed:** very fast model failures can leave the UI in `thinking`.
+  Current diagnosis: `GatewayChatAdapter` performs `chat.send` before installing
+  the per-run event subscription, so a run that fails immediately can emit and
+  lose its `lifecycle error` before the adapter begins listening.
+  This is intentionally left for a separate task.
+
+#### Ops note
+- A Windows system proxy at `127.0.0.1:7897` can trigger OpenClaw SSRF
+  protection (`SsrFBlockedError`) and make model requests fail immediately.
+  During diagnosis, disable that system proxy first before treating the failure
+  as an application regression.
