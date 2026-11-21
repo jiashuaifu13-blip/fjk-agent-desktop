@@ -3,82 +3,18 @@
 > 用途：换任何网页 AI 窗口、或聊天记录丢失后，把它作为第一条消息（或让它先读本文件）即可恢复工作模式与项目进度。
 > 原则：**以仓库为准，不相信记忆**。
 
-## 一、工作模式：远程指挥
-
-> 项目进度一律以第三节为准（原始提示词里的进度已过时）。
+## 一、给新窗口的第一条消息（复制即用）
 
 ```text
-你现在的角色是「远程开发指挥」，我是你的手和眼睛。
-你不能执行命令、不能读写本地文件，只能：
-1) 阅读仓库（GitHub public，可用 raw / api.github.com）；
-2) 输出我能在 Windows PowerShell 5.1 里直接执行的命令；
-3) 根据我贴回的结果决定下一步。
+你是本项目的远程开发指挥。请先读：
+https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-context/WEB_AI_SESSION.md
 
-一、每次回复的固定格式（一次只给一个步骤）
-【STEP N】一句话目标
-【为什么】1–2 句
-【执行】一个可直接复制的 PowerShell 代码块（不超过 20 行）
-【预期】正常输出长什么样
-【回传】我要贴回哪些内容
-【风险】可能出什么问题、怎么处理
+读完后用 5 行以内复述：当前 HEAD、已完成到哪个任务、当前任务、下一步第一步。
+然后只给下一步 STEP 的一条命令，不要一次给多步。
 
-规则：
-- 一个步骤只做一件事，不要给“顺便”任务
-- 兼容 PowerShell 5.1：不要用 ??、三元、&&、||、bash 语法
-- 路径写 D:\pet-desp\...；写中文文件必须显式 UTF-8
-- 删文件、改配置、force push、装全局包：先说明后果并等我确认
-
-二、改文件的约定
-A. 小文件（<150 行）：给完整内容
-   $content = @'
-   <完整内容>
-   '@
-   [System.IO.File]::WriteAllText('D:\pet-desp\<路径>', $content, (New-Object System.Text.UTF8Encoding($false)))
-B. 大文件：给精确的「查找替换」（文件 / 把 / 换成），并先让我 Copy-Item 备份
-改完必须给一条验证命令（npm run build、cargo check、git diff --stat 等）。
-
-三、排错
-- 失败：让我原样贴报错，先分析再动手
-- 同一命令连续失败两次：改成诊断命令，不要重复撞墙
-- 看文件用 Get-Content -TotalCount 80 或 Select-String，不要让我贴整文件
-- 环境不明先让我跑：git status --short；git log --oneline -3；node -v；cargo -V
-
-四、工作节奏
-完成一个可运行的小任务后：验证 → 提交（git add 指定文件 + commit -m "..."）→ push（失败重试，不 force）→ 更新 .ai-context 文档。
-
-五、本机已知问题
-- 卡巴斯基拦 Rust build script（os error 5/32）：删对应 target\debug\build\<crate> 重试；仍失败加 target 排除项
-- 5173 被残留 Vite 占用：netstat -ano | findstr :5173 → taskkill /PID <pid> /F
-- 前端构建 spawn EPERM：让我换普通 PowerShell 窗口
-- tauri dev 要前台运行，不要放后台任务
+工作方式：你给命令，我在 Windows PowerShell 5.1 执行；本地另有一位验证助手检查构建与文件，
+我只会把【本地检查 · STEP N】摘要贴给你，不要要求完整终端输出。
 ```
-
-## 一之二、给新窗口的第一条消息（模板）
-
-```text
-先读：https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-context/WEB_AI_SESSION.md
-用 5 行以内复述：当前 HEAD、已完成到哪个任务、当前任务、下一步第一步。
-然后只给一个 STEP，不要一次给多步。
-```
-
-## 一之三、回传约定（本地检查摘要）
-
-```text
-【本地检查 · STEP N】
-结论：<通过 / 有条件通过 / 阻塞>，<能否进入下一步>
-证据：<3–5 条已核实的事实>
-下一步：<只给一件事 + 必须覆盖的点>
-```
-
-规则：
-
-1. 把摘要当作「命令已执行、结果已核实」，不要要求重新粘贴 build/test 的完整输出。
-   唯一例外：摘要标注「阻塞」时会附 1–2 行关键报错，据此分析。
-2. 不要复述已确认的事实；摘要没写的内容一律视为未验证。
-3. 给命令时写明：这条命令跑完验证者应检查什么；失败时最可能的错误特征。
-4. 每条回复控制在 10 行以内（涉及风险或取舍时最多 20 行）。
-5. 摘要出现「缺测试 / 有 .bak / 未跟踪文件」时，只针对它给下一步，不要扩大成重构。
-6. 验收标准不因摘要而降低：摘要没提到的验证项视为没做。
 
 ## 二、项目事实
 
@@ -88,13 +24,13 @@ B. 大文件：给精确的「查找替换」（文件 / 把 / 换成），并�
 - 分支：`main`
 - 环境：Windows 11、Windows PowerShell 5.1、Node 18+、Rust stable、本地 OpenClaw Gateway（`ws://127.0.0.1:18789`）
 
-## 三、当前状态（2026-11-21）
+## 三、当前状态（2026-11-21 17:00 更新）
 
-- 最新提交：以 `git log -1` 为准（当前为协作模式/文档更新）
-- 未提交改动：`apps/desktop/src-tauri/src/gateway.rs`（connect 参数已加
-  `"caps": ["approvals", "exec-approvals"]`，待审批事件验证通过后再提交）
-- 当前任务：**Approval UI** 的验证阶段——caps 已加、桌面端已用新二进制重启，
-  待手动发送 `请使用 exec 执行只读命令 whoami` 验证是否出现审批事件。
+- 最新提交：`b589cb3`（恢复卡恢复为「远程指挥」单一模式）；另有 3 个本地提交待推送
+- 未提交改动：`apps/desktop/src-tauri/src/gateway.rs`
+  （connect 参数已加 `"caps": ["approvals", "exec-approvals"]`，待审批事件验证后提交）
+- 当前任务：**Approval UI** 验证阶段——caps 已加、桌面端已用新二进制重启；
+  待手动发送 `请使用 exec 执行只读命令 whoami`，确认是否出现审批事件。
   若仍无事件，下一步加 `sessions.messages.subscribe(includeApprovals: true)`。
 
 ## 四、已完成（P1-001 ~ P1-005）
@@ -109,31 +45,33 @@ B. 大文件：给精确的「查找替换」（文件 / 把 / 换成），并�
 
 ## 五、未完成与已知问题
 
-- 安装包：**NSIS 已完成并验证**；MSI 未做。
-- Approval UI：`waiting_approval` 未在桌面端实测。
+- Approval UI：桌面端尚无审批卡片；客户端 caps 已加，待验证事件是否到达。
 - 无自动重连：断线后需重开桌面端。
+- MSI 安装包、代码签名、自动更新未做。
 - 已知缺陷（已记录、**暂不修**）：`GatewayChatAdapter` 先 `chat.send` 后订阅事件，run 秒失败会漏 `lifecycle error`，UI 可能卡 `thinking`。
 
 ## 六、硬规则（踩过坑，别重复）
 
-1. **网页 AI 只输出文件与修改，不输出 shell 命令**；落盘、构建、测试、运行、提交由本地助手完成。
-2. 一次只推进一个可验证的最小改动；等本地回执再继续。
-3. 中文文件由本地助手用 UTF-8 写入；网页 AI 不需要处理 PowerShell 转义或编码。
-4. 不要用「补丁片段」描述多个大文件的改动；给整文件或唯一 old/new。
-5. 不重构无关代码、不改 OpenClaw Core、不用 mock 冒充功能。
-6. 不改 identifier / productName / version；不签名。
-7. 提交信息建议用 `feat:` / `fix:` / `docs:` / `chore:`。
-8. 未验证的内容必须标「未验证」，不得写成已验证。
+1. **一次一个 STEP**，格式：目标 / 为什么 / 执行 / 预期 / 回传 / 风险。
+2. 命令必须兼容 **Windows PowerShell 5.1**：不要用 `??`、`&&`、`||`、三元运算符。
+3. **改中文文件**只能用完整文件 + UTF-8，或 Base64；写后自检 `???` 必须为 0，出错立即 `git checkout -- <文件>`。
+   **禁止**用 `Get-Content`/`Set-Content`/`-replace` 直接改含中文的文件（会写坏）。
+4. **不要用 `git apply` 打补丁**（上下文经常不匹配）；改用整文件替换。
+5. 卡巴斯基会拦 Rust 新生成的 build script（`os error 5 / 32`）：删除对应 `target\debug\build\<crate>` 后重试一次，仍失败则加 `target` 排除项。
+6. **代理冲突**：系统代理 `127.0.0.1:7897` 开着 → GitHub 可推，但 OpenClaw 触发 `SsrFBlockedError`（模型秒失败）；关着 → 模型正常但推 GitHub 失败。建议切 TUN 模式。
+   - 打包/推送阶段可开代理；运行对话验证前必须关。
+7. 不改 identifier / productName / version；不签名；不改 OpenClaw Core。
+8. 提交信息用 `feat:` / `fix:` / `docs:` / `chore:`；不 force push。
 
 ## 七、验证约定
 
-- 本地助手负责：落盘、`tsc --noEmit`、`node --test packages/agent-state/*.test.mjs`、构建/运行、Git 提交与推送。
-- 网页 AI 只依赖【本地回执】：改动清单、构建/测试结果、运行结果、关键报错、下一步需要你做什么。
-- 网页 AI 不需要、也不应该索要完整终端日志。
+- 本地验证助手会检查：git 状态、`tsc`、`node --test packages/agent-state/*.test.mjs`、关键符号与文件内容、`???` 编码。
+- 网页端只需要依赖【本地检查 · STEP N】摘要（结论 / 证据 / 下一步），不要索要完整日志。
+- 未验证的内容必须标「未验证」，不得写成已验证。
 
 ## 八、下一步
 
-1. **Approval UI**：`waiting_approval` 在桌面端尚未实测，先用真实 approval 触发一次，再做审批界面。
-2. Settings / Connection State / Log Viewer。
-3. （可选）MSI 安装包、代码签名、自动更新。
-4. （可选）修复 `GatewayChatAdapter` 快速失败竞态。
+1. STEP 3：`npm run tauri build`，产出并定位 `apps/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe`；
+2. STEP 4：安装并验证启动 / Gateway / 对话；
+3. STEP 5：卸载并确认清理；
+4. STEP 6：文档更新 + 提交（`feat(build): enable NSIS installer`）。
