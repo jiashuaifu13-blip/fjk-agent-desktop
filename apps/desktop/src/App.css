@@ -367,3 +367,182 @@ body {
 .pet-badge-loading {
   color: #a1a1aa;
 }
+/* ---- Connection State ---- */
+
+.connection-state-trigger {
+  padding: 3px 8px;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  background: transparent;
+  color: #a1a1aa;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.connection-state-trigger:hover {
+  border-color: #52525b;
+  background: #27272a;
+  color: #e4e4e7;
+}
+
+.connection-state-trigger[aria-expanded='true'] {
+  border-color: #3b82f6;
+  background: #172554;
+  color: #bfdbfe;
+}
+
+.connection-state-panel {
+  padding: 14px 16px;
+  border-bottom: 1px solid #2c2c34;
+  background: #18181f;
+  font-size: 12px;
+}
+
+.connection-state-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.connection-state-title {
+  color: #f4f4f5;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.connection-state-subtitle {
+  margin-top: 2px;
+  color: #71717a;
+  font-size: 11px;
+}
+
+.connection-state-badge {
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #27272a;
+  color: #a1a1aa;
+  font-size: 11px;
+}
+
+.connection-state-badge-ok {
+  background: #14301f;
+  color: #86efac;
+}
+
+.connection-state-badge-pending {
+  background: #352b10;
+  color: #fde047;
+}
+
+.connection-state-badge-error {
+  background: #3f1d1d;
+  color: #fca5a5;
+}
+
+.connection-state-badge-neutral {
+  background: #27272a;
+  color: #d4d4d8;
+}
+
+.connection-state-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #2c2c34;
+  border-radius: 8px;
+  background: #2c2c34;
+}
+
+.connection-state-row {
+  min-width: 0;
+  padding: 8px 10px;
+  background: #141419;
+}
+
+.connection-state-key {
+  display: block;
+  margin-bottom: 2px;
+  color: #71717a;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.connection-state-value {
+  display: block;
+  overflow: hidden;
+  color: #e4e4e7;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connection-state-section {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #26262e;
+}
+
+.connection-state-section-title {
+  margin-bottom: 5px;
+  color: #a1a1aa;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.connection-state-copy {
+  color: #d4d4d8;
+  line-height: 1.55;
+}
+
+.connection-state-hint {
+  margin-top: 4px;
+  color: #a1a1aa;
+  line-height: 1.55;
+}
+
+.connection-state-error {
+  padding: 8px 10px;
+  border: 1px solid #3f1d1d;
+  border-radius: 7px;
+  background: #251616;
+}
+
+.connection-state-error-title {
+  margin-bottom: 3px;
+  color: #fca5a5;
+  font-weight: 600;
+}
+
+.connection-state-empty {
+  color: #71717a;
+}
+
+.connection-state-raw {
+  margin-top: 7px;
+}
+
+.connection-state-raw summary {
+  color: #71717a;
+  cursor: pointer;
+}
+
+.connection-state-raw code {
+  display: block;
+  margin-top: 5px;
+  padding: 7px 8px;
+  overflow-wrap: anywhere;
+  border-radius: 6px;
+  background: #101014;
+  color: #a1a1aa;
+  font-size: 11px;
+}
+
+@media (max-width: 680px) {
+  .connection-state-grid {
+    grid-template-columns: 1fr;
+  }
+}
