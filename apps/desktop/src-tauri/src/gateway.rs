@@ -169,6 +169,7 @@ impl Session {
 #[derive(Default)]
 pub struct GatewayState {
     session: Mutex<Option<Arc<Session>>>,
+    epoch: Arc<AtomicU64>,
 }
 
 /// Static information about the gateway connection (never the token itself).
@@ -190,6 +191,11 @@ pub async fn gateway_connect(
 ) -> Result<Value, Value> {
     let token = read_token()?;
     let url = gateway_url();
+
+    // Invalidate every older reader before shutting down the previous session.
+    // A late offline event from an older socket must never overwrite a newer
+    // connection's state.
+    let connection_epoch = state.epoch.fetch_add(1, Ordering::SeqCst) + 1;
 
     let previous = { state.session.lock().await.take() };
     if let Some(previous) = previous {
@@ -232,6 +238,7 @@ pub async fn gateway_connect(
     let (challenge_sender, challenge_receiver) = oneshot::channel::<()>();
     let reader_session = Arc::clone(&session);
     let reader_app = app.clone();
+    let reader_epoch = Arc::clone(&state.epoch);
     let pong_sender = outbound.clone();
 
     // Reader task: resolves pending requests and forwards gateway events.
@@ -333,7 +340,9 @@ pub async fn gateway_connect(
             let _ = sender.send(Err(offline_error("gateway 连接已断开")));
         }
 
-        let _ = reader_app.emit("gateway://state", json!({ "state": "offline" }));
+        if reader_epoch.load(Ordering::SeqCst) == connection_epoch {
+            let _ = reader_app.emit("gateway://state", json!({ "state": "offline" }));
+        }
     });
 
     if tokio::time::timeout(CONNECT_TIMEOUT, challenge_receiver)

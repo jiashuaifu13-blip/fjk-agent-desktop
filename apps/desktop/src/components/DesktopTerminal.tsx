@@ -815,13 +815,10 @@ export function DesktopTerminal() {
             </div>
 
             <div className="connection-state-copy">
-              当前版本尚未提供独立的一键重连接口。
-              如 Gateway
-              已断开，请确认
-              OpenClaw Gateway
-              正常运行后重启
-              FJK Desktop，
-              桌面端会在启动阶段重新建立连接。
+              断线后会自动重连：按 1s / 2s / 4s / 8s / 15s
+              退避尝试，共 5 次；成功后自动恢复当前
+              Session、审批订阅与连接状态。
+              连续 5 次失败才需要手动重启 FJK Desktop。
             </div>
           </div>
         </section>

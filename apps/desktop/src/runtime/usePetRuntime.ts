@@ -259,6 +259,14 @@ export function usePetRuntime(
   const gatewayChatAdapterRef =
     useRef<GatewayChatAdapter | null>(null)
 
+  const activeSessionKeyRef =
+    useRef<string | null>(null)
+
+  const reconnectEnabledRef = useRef(false)
+  const reconnectRunningRef = useRef(false)
+  const reconnectTimerRef =
+    useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const [approval, setApproval] =
     useState<ExecApproval | null>(null)
 
@@ -575,13 +583,200 @@ export function usePetRuntime(
             }
           })
 
+        const waitForReconnectDelay = (
+          delayMs: number,
+        ) =>
+          new Promise<void>((resolve) => {
+            reconnectTimerRef.current =
+              setTimeout(() => {
+                reconnectTimerRef.current = null
+                resolve()
+              }, delayMs)
+          })
+
+        const runAutoReconnect = async () => {
+          if (
+            cancelled ||
+            !reconnectEnabledRef.current ||
+            reconnectRunningRef.current
+          ) {
+            return
+          }
+
+          reconnectRunningRef.current = true
+
+          const delays =
+            [1000, 2000, 4000, 8000, 15000]
+
+          setGatewayStatus({
+            state: 'connecting',
+            title: '正在自动重连…',
+            detail:
+              'Gateway 连接已断开，正在尝试恢复。',
+          })
+
+          for (
+            let attempt = 0;
+            attempt < delays.length;
+            attempt += 1
+          ) {
+            const jitter =
+              Math.floor(Math.random() * 250)
+
+            await waitForReconnectDelay(
+              delays[attempt] + jitter,
+            )
+
+            if (
+              cancelled ||
+              !reconnectEnabledRef.current
+            ) {
+              reconnectRunningRef.current = false
+              return
+            }
+
+            try {
+              await gateway.connect()
+
+              const list =
+                await gateway.send(
+                  'sessions.list',
+                  {},
+                )
+
+              const sessions =
+                readSessionList(list)
+
+              const preferredKey =
+                activeSessionKeyRef.current
+
+              const targetKey =
+                preferredKey &&
+                sessions.some(
+                  (session) =>
+                    session.key === preferredKey,
+                )
+                  ? preferredKey
+                  : pickMainSessionKey(list)
+
+              if (!targetKey) {
+                throw new Error(
+                  'No session available after reconnect',
+                )
+              }
+
+              await gateway.send(
+                'sessions.messages.subscribe',
+                {
+                  key: targetKey,
+                  includeApprovals: true,
+                },
+              )
+
+              const adapter =
+                gatewayChatAdapterRef.current
+
+              if (!adapter) {
+                throw new Error(
+                  'Gateway session adapter unavailable after reconnect',
+                )
+              }
+
+              adapter.setSessionKey(targetKey)
+              activeSessionKeyRef.current =
+                targetKey
+              approvalSubscriptionKey =
+                targetKey
+
+              const overview =
+                readSettingsOverview(list)
+
+              setSettingsOverview({
+                ...overview,
+                sessionKey: targetKey,
+              })
+              setSessionList(sessions)
+              setApproval(null)
+              setError(null)
+              setMode('gateway')
+              setGatewayStatus({
+                state: 'connected',
+                title: '网关已连接',
+                detail:
+                  '自动重连成功，Session 与审批订阅已恢复。',
+              })
+
+              if (reconnectTimerRef.current) {
+                clearTimeout(
+                  reconnectTimerRef.current,
+                )
+                reconnectTimerRef.current = null
+              }
+
+              appendRuntimeLog(
+                'info',
+                'gateway',
+                'Gateway auto reconnect succeeded',
+                `attempt=${attempt + 1}; session=${targetKey}; approvals=true`,
+              )
+
+              reconnectRunningRef.current = false
+              return
+            } catch (reconnectError) {
+              appendRuntimeLog(
+                'warn',
+                'gateway',
+                'Gateway auto reconnect attempt failed',
+                `attempt=${attempt + 1}/${delays.length}; ${
+                  reconnectError instanceof Error
+                    ? reconnectError.message
+                    : String(reconnectError)
+                }`,
+              )
+            }
+          }
+
+          reconnectRunningRef.current = false
+          reconnectEnabledRef.current = false
+
+          if (!cancelled) {
+            setApproval(null)
+            setGatewayStatus({
+              state: 'offline',
+              title: '自动重连失败',
+              detail:
+                '连续 5 次自动重连均失败。',
+              hint:
+                '请手动重启 FJK Desktop。',
+            })
+            setError(
+              '自动重连失败，请手动重启',
+            )
+            appendRuntimeLog(
+              'error',
+              'gateway',
+              'Gateway auto reconnect stopped',
+              'attempts=5; manual restart required',
+            )
+          }
+        }
+
         unsubscribeConnectionState =
           gateway.onConnectionState(
-            (payload) =>
+            (payload) => {
               store.dispatch({
                 type: 'connection/state',
                 state: payload.state,
-              }),
+              })
+
+              if (
+                payload.state === 'offline' &&
+                reconnectEnabledRef.current &&
+                !cancelled
+              ) {
+                void runAutoReconnect()
+              }
+            },
           )
 
         try {
@@ -616,6 +811,8 @@ export function usePetRuntime(
 
             sessionKey =
               pickMainSessionKey(list)
+            activeSessionKeyRef.current =
+              sessionKey
 
             if (!cancelled) {
               setSettingsOverview(
@@ -753,6 +950,7 @@ export function usePetRuntime(
               )
             }
           }
+          reconnectEnabledRef.current = true
         } catch (
           connectError
         ) {
@@ -930,6 +1128,13 @@ export function usePetRuntime(
 
     return () => {
       cancelled = true
+      reconnectEnabledRef.current = false
+      reconnectRunningRef.current = false
+
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current)
+        reconnectTimerRef.current = null
+      }
 
       if (
         approvalSubscriptionKey &&
@@ -1085,6 +1290,8 @@ export function usePetRuntime(
       }
 
       adapter.setSessionKey(targetKey)
+      activeSessionKeyRef.current =
+        targetKey
       setApproval(null)
       setSettingsOverview((current) => ({
         ...current,
