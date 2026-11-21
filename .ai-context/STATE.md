@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261121-2035
-HEAD_AT_SYNC: 345d9ce
-UPDATED: 2026-11-21T20:35+08:00
-TASK: 修复 GatewayChatAdapter 快速失败竞态（下一步）
+STATE_ID: 20261121-2105
+HEAD_AT_SYNC: fb108f7
+UPDATED: 2026-11-21T21:05+08:00
+TASK: 重新回归构建与安装包（下一步）
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -15,6 +15,7 @@ DONE:
 - Connection State 面板（构建通过、界面实测：字段/错误占位/重连说明）
 - Log Viewer（构建通过、界面实测：7 条启动事件、清空/关闭按钮、订阅 approvals=true）
 - Settings 只读概览（用户确认截图无问题：模型/工具数量/当前 Session/总数，未提供时降级）
+- GatewayChatAdapter 订阅先于发送 + 早到事件缓冲（普通对话正常）
 
 
 VERIFIED_DETAIL:
@@ -23,11 +24,11 @@ VERIFIED_DETAIL:
   （"Exec denied ... user-denied"，transcript 无执行输出）
 
 UNVERIFIED:
-- GatewayChatAdapter 快速失败竞态（已知未修）
+- 快速失败行为未实测（开代理场景表现为挂起，非秒失败）
 
 NEXT:
-1. 修复 GatewayChatAdapter 快速失败竞态
-2. 改动后重新回归构建与安装包
+1. 重新回归 npm run tauri build 与 NSIS 安装包
+2. （可选）快速失败的确定性复现（临时改错模型名）
 3. （可选）Settings 写操作/更多项
 
 FACTS:
