@@ -15,6 +15,7 @@ param(
   [Parameter(Mandatory = $true)][string]$Path,
   [string]$OldB64 = '',
   [string]$NewB64 = '',
+  [string]$Tag = '',
   [switch]$WholeFile,
   [switch]$DryRun,
   [switch]$AllowMulti
@@ -22,9 +23,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = 'D:\pet-desp'
+$tagPrefix = if ([string]::IsNullOrWhiteSpace($Tag)) { '' } else { "tag=$Tag " }
 
 function Fail([string]$code, [string]$detail) {
-  Write-Output ("PATCH_FAIL {0}: {1}" -f $code, $detail)
+  Write-Output ("{0}PATCH_FAIL {1}: {2}" -f $tagPrefix, $code, $detail)
   exit $code
 }
 
@@ -50,7 +52,7 @@ if ([string]::IsNullOrEmpty($new)) { Fail 5 'NewB64 is empty' }
 $exists = Test-Path -LiteralPath $full
 
 if ($WholeFile) {
-  if ($DryRun) { Write-Output ("PATCH_DRYRUN mode=whole-file path={0} exists={1} bytes={2}" -f $Path, $exists, $new.Length); exit 0 }
+  if ($DryRun) { Write-Output ("{0}PATCH_DRYRUN mode=whole-file path={1} exists={2} bytes={3}" -f $tagPrefix, $Path, $exists, $new.Length); exit 0 }
   $dir = Split-Path -Parent $full
   if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
   [System.IO.File]::WriteAllText($full, $new, (New-Object System.Text.UTF8Encoding($false)))
@@ -69,7 +71,7 @@ if ($WholeFile) {
   if ($hits -eq 0) {
     # idempotent: if NEW already present, treat as success (already applied)
     if ($text.Contains($new)) {
-      Write-Output ("PATCH_SKIP path={0} reason=already-applied" -f $Path)
+      Write-Output ("{0}PATCH_SKIP path={1} reason=already-applied" -f $tagPrefix, $Path)
       exit 0
     }
     Fail 2 "OLD_NOT_FOUND path=$Path"
@@ -84,7 +86,7 @@ if ($WholeFile) {
   }
 
   if ($DryRun) {
-    Write-Output ("PATCH_DRYRUN mode=replace path={0} hits={1} firstLine={2} eol={3} bytes={4}" -f $Path, $hits, ($lines -join ','), ($eol -replace "`r", '\r' -replace "`n", '\n'), $text.Length)
+    Write-Output ("{0}PATCH_DRYRUN mode=replace path={1} hits={2} firstLine={3} eol={4} bytes={5}" -f $tagPrefix, $Path, $hits, ($lines -join ','), ($eol -replace "`r", '\r' -replace "`n", '\n'), $text.Length)
     exit 0
   }
 
@@ -105,7 +107,7 @@ if ($WholeFile) {
   $pos = $checkText.IndexOf($sig)
   $newLine = if ($pos -ge 0) { 1 + ([regex]::Matches($checkText.Substring(0, $pos), "`n")).Count } else { -1 }
 
-  Write-Output ("PATCH_OK path={0} hits={1} eol={2} NUL={3} BOM={4} ???={5} newLine={6} bytes={7}" -f `
+  Write-Output ("{0}PATCH_OK path={1} hits={2} eol={3} NUL={4} BOM={5} ???={6} newLine={7} bytes={8}" -f $tagPrefix, `
     $Path, $hits, ($(if ($eol -eq "`r`n") { 'CRLF' } else { 'LF' })), $nul, $bom, $qqq, $newLine, $checkBytes.Length)
   if ($nul -ne 0 -or $bom -or $qqq -ne 0 -or $newLine -lt 0) { exit 6 }
   exit 0
@@ -114,6 +116,6 @@ if ($WholeFile) {
 $checkBytes = [System.IO.File]::ReadAllBytes($full)
 $nul = ($checkBytes | Where-Object { $_ -eq 0 }).Count
 $bom = ($checkBytes.Length -ge 3 -and $checkBytes[0] -eq 239 -and $checkBytes[1] -eq 187 -and $checkBytes[2] -eq 191)
-Write-Output ("PATCH_OK path={0} mode=whole-file exists={1} NUL={2} BOM={3} bytes={4}" -f $Path, $exists, $nul, $bom, $checkBytes.Length)
+Write-Output ("{0}PATCH_OK path={1} mode=whole-file exists={2} NUL={3} BOM={4} bytes={5}" -f $tagPrefix, $Path, $exists, $nul, $bom, $checkBytes.Length)
 if ($nul -ne 0 -or $bom) { exit 6 }
 exit 0
