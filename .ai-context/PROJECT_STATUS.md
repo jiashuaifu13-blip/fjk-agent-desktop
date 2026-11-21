@@ -32,7 +32,7 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 | Phase 3 | Deepseek-pet 桌宠整合 | **部分（仅 3A + 部分 3D）** | 3A 审计已完成；AgentState→PetState Adapter 与 runtime 驱动已接通；3B/3C/3E 未完成 |
 | Phase 4 | Blog Adapter | **未开始** | 无对应代码 |
 | Phase 5 | Local Project / Git / GitHub | **未开始** | 无对应产品功能代码 |
-| Phase 6 | 产品化 | **未开始** | release exe 已回归；安装器、签名、升级等产品化工作仍未开始 |
+| Phase 6 | 产品化 | 🟡 **起步** | NSIS 安装器已生成并完成安装/运行/卸载验证；MSI、签名、升级未做 |
 | Phase 7 | 桌宠动作扩展 | **未开始** | actions.json 已规划动作，实际资源仍少 |
 
 ## Phase 0 子任务明细
@@ -103,7 +103,7 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 3. **无自动重连**：运行中断线后需恢复 Gateway，并手动重新启动桌面端。
 4. **子模块未正确注册**：`Deepseek-pet` 为 gitlink，但无 `.gitmodules`，新克隆无法按标准子模块流程拉取。
 5. **安全风险**：`frontend/tauri/tauri.conf.json` 的历史配置存在过宽权限问题，仍需后续核查。
-6. **安装包尚未验证**：当前 `bundle.active = false`，尚无 NSIS / MSI 安装器回归。
+6. **MSI 安装包未做**：NSIS 安装器已生成并完成安装/运行/卸载验证；MSI、代码签名、自动更新仍未做。
 7. **`packages/gateway-client/client.js` 已不被桌面端使用**，保留为协议参考/烟测脚本。
 
 ## 故障排查
@@ -111,6 +111,16 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 - Windows 系统代理若指向 `127.0.0.1:7897`，当前 OpenClaw 环境可能触发 SSRF 防护，网关日志出现 `SsrFBlockedError`，模型请求会快速失败。遇到“请求秒失败 / UI 停 thinking”时，先确认并关闭该系统代理，再判断是否为代码问题。
 - 卡巴斯基可能拦截 Rust 新生成的 build script，表现为 `os error 5` / `32`。遇到时先删除错误中对应的 `src-tauri\target\debug\build\<crate>` 目录再重试；持续出现则考虑将 `src-tauri\target` 加入排除项。
 - 自动重连不属于当前任务范围；运行中断线后需恢复 Gateway，并手动重启桌面端重新建立连接。
+
+## Release 安装包回归（NSIS）
+
+- 配置：`bundle.active = true`、`targets = ["nsis"]`、显式 5 个图标、`windows.nsis.installMode = "currentUser"`。
+- 构建：`npm run tauri build` 成功；首次自动下载 NSIS 工具。
+- 产物：`target/release/bundle/nsis/FJK Agent_0.1.0_x64-setup.exe`（**13.22 MB**）。
+- 安装：`/S` 静默安装，退出码 0；安装目录 `%LOCALAPPDATA%\FJK Agent`（exe 20.2 MB + uninstall.exe）；开始菜单快捷方式已创建。
+- 运行：安装版启动正常、成功连接 Gateway（网关日志 `client connected`）、真实对话成功（runId `0c46a932`）。
+- 卸载：`uninstall.exe /S` 退出码 0；安装目录与快捷方式清理，无进程残留。
+- 边界：安装包未签名（SmartScreen「未知发布者」属预期）；MSI、代码签名、自动更新未做。
 
 ## 下一步
 

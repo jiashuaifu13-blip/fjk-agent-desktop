@@ -11,7 +11,7 @@
 - **Approval UI。**
   `waiting_approval` 映射与 reducer 逻辑已存在，但桌面端真实 approval 流程尚未实测，当前仍标记为**未验证**。
 - Settings / Connection State / Log Viewer。
-- 安装包回归（NSIS / MSI）。当前 `bundle.active = false`，release exe 已验证，但尚未生成或验证安装器。
+- MSI 安装包（可选）。NSIS 已完成并验证；MSI、代码签名、自动更新未做。
 - 设备配对（device identity）作为浏览器端接入的可选路径。
 
 ## BLOCKED
@@ -19,6 +19,16 @@
 None.
 
 ## DONE
+
+### P1-005
+NSIS 安装包回归通过。
+
+- 配置：`bundle.active = true`、`targets = ["nsis"]`、显式 5 个图标、`windows.nsis.installMode = "currentUser"`。
+- 产物：`target/release/bundle/nsis/FJK Agent_0.1.0_x64-setup.exe`（13.22 MB）。
+- 安装：`/S` 静默安装退出码 0；安装到 `%LOCALAPPDATA%\FJK Agent`；开始菜单快捷方式已创建。
+- 运行：安装版启动正常、Gateway 连接成功、真实对话成功（runId `0c46a932`）。
+- 卸载：`uninstall.exe /S` 退出码 0；目录与快捷方式清理，无进程残留。
+- 边界：未签名；MSI、自动更新未做。
 
 ### P1-004
 Release 构建与运行回归通过。

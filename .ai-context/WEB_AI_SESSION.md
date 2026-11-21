@@ -26,12 +26,11 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 
 ## 三、当前状态（2026-11-21）
 
-- 最新提交：`3e221af docs: record tauri build regression pass`
-- 未提交改动：`apps/desktop/src-tauri/tauri.conf.json`
-  （bundle 段已改为 `active: true`、`targets: ["nsis"]`、icon 5 个、`windows.nsis.installMode: "currentUser"`，尚未提交）
-- 当前任务：**安装包回归（NSIS）**，进度停在 **STEP 3**（执行 `npm run tauri build` 并定位 setup.exe）
+- 最新提交：以 `git log -1` 为准（安装包回归提交）
+- 工作区：干净
+- 当前任务：**P1-005 已通过**（NSIS 安装/运行/卸载验证完成）；下一任务从「Approval UI」开始
 
-## 四、已完成（P1-001 ~ P1-004）
+## 四、已完成（P1-001 ~ P1-005）
 
 | 编号 | 内容 | 证据 |
 |---|---|---|
@@ -39,10 +38,11 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 | P1-002 | Gateway 错误映射 + 未授权/离线 UI | 断言通过 |
 | P1-003 | 事件驱动 AgentState（Reducer + ChatController 去直写 + runtime 唯一 Agent→Pet 链 + 断线 UI） | 单测 10/10、T1–T4 |
 | P1-004 | release 构建回归（`npm run tauri build`，exe 20.24 MB） | 启动/连接/对话/退出 |
+| P1-005 | NSIS 安装包回归（setup 13.22 MB，安装/运行/对话/卸载） | 安装 exit 0、runId `0c46a932`、卸载清理 |
 
 ## 五、未完成与已知问题
 
-- 安装包（NSIS/MSI）未生成（当前正在做）。
+- 安装包：**NSIS 已完成并验证**；MSI 未做。
 - Approval UI：`waiting_approval` 未在桌面端实测。
 - 无自动重连：断线后需重开桌面端。
 - 已知缺陷（已记录、**暂不修**）：`GatewayChatAdapter` 先 `chat.send` 后订阅事件，run 秒失败会漏 `lifecycle error`，UI 可能卡 `thinking`。
@@ -68,7 +68,7 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 
 ## 八、下一步
 
-1. STEP 3：`npm run tauri build`，产出并定位 `apps/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe`；
-2. STEP 4：安装并验证启动 / Gateway / 对话；
-3. STEP 5：卸载并确认清理；
-4. STEP 6：文档更新 + 提交（`feat(build): enable NSIS installer`）。
+1. **Approval UI**：`waiting_approval` 在桌面端尚未实测，先用真实 approval 触发一次，再做审批界面。
+2. Settings / Connection State / Log Viewer。
+3. （可选）MSI 安装包、代码签名、自动更新。
+4. （可选）修复 `GatewayChatAdapter` 快速失败竞态。

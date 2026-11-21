@@ -134,3 +134,24 @@ http://localhost:5173` reproduces the exact error payload.
 - This regression validates the standalone release executable only.
 - No NSIS or MSI installer was generated or validated in this task.
 - Installer/bundling validation remains a separate task.
+
+### Phase 1 — NSIS installer regression
+
+#### Added
+- Enabled Tauri NSIS bundling in `apps/desktop/src-tauri/tauri.conf.json`:
+  `bundle.active = true`, `targets = ["nsis"]`, explicit 5-icon list,
+  `windows.nsis.installMode = "currentUser"`.
+
+#### Verified
+- `npm run tauri build` succeeded and produced
+  `target/release/bundle/nsis/FJK Agent_0.1.0_x64-setup.exe` (**13.22 MB**).
+- Silent install (`/S`) exited 0; installed to `%LOCALAPPDATA%\FJK Agent`
+  (`fjk-desktop.exe` 20.2 MB + `uninstall.exe`); Start Menu shortcut created.
+- Installed app launched, connected to the local Gateway, and completed a real
+  chat turn (runId `0c46a932`).
+- Silent uninstall (`uninstall.exe /S`) exited 0; install directory and shortcut
+  removed; no residual process.
+
+#### Boundary
+- The installer is unsigned; SmartScreen "unknown publisher" is expected.
+- MSI packaging, code signing and auto-update are not part of this task.
