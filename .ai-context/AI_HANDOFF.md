@@ -10,6 +10,15 @@ Phase 1（桌面框架）主体完成 / Phase 2 部分完成。
 
 桌宠只消费 AgentState，不再由聊天控制器直接写入 Agent 生命周期状态。
 
+## WIP（2026-11-21 夜间，未完成）
+
+自动重连（提交 `a78fe8a`）：1/2/4/8/15s 退避 ×5、成功后恢复 Session/审批订阅/adapter key；
+Rust 加 session epoch 防止旧 reader 的 offline 污染新连接。
+
+已知缺陷：网关刚启动时 `sessions.list` 可能返回空，当前代码直接 throw
+（日志 `No session available after reconnect`），把最后一次尝试浪费掉。
+下一步：改成 5×1s 重试后再判失败，然后实测"杀网关 → 3s 后拉起 → 自动恢复 + header 与面板一致"。
+
 ## Last Changes (2026-11-20 / 11-21)
 
 ### Gateway-driven AgentState

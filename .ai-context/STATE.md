@@ -1,9 +1,10 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261121-2240
-HEAD_AT_SYNC: 1c5ad26
-UPDATED: 2026-11-21T22:40+08:00
-TASK: 等待下一轮（新建会话 / 自动重连 / 其他）
+STATE_ID: 20261121-2310
+HEAD_AT_SYNC: a78fe8a
+UPDATED: 2026-11-21T23:10+08:00
+TASK: 自动重连收尾（**有已知缺陷，未完成**）：网关刚启动时 sessions.list 可能为空，
+      当前代码直接 throw，浪费最后一次尝试；需加 5×1s 重试后再判定失败。
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -22,6 +23,8 @@ DONE:
 - Session 只读列表（界面实测：5 条、MAIN/SESSION、当前使用、时间；提交 1fc704b）
 - UI 布局修复：聊天区内部滚动、输入框固定；四面板互斥并悬浮（用户确认；提交 d495f24）
 - Session 切换（用户确认；订阅迁移 + adapter setSessionKey；提交 1c5ad26）
+- 自动重连（**WIP**，提交 a78fe8a）：1/2/4/8/15s 退避、5 次、成功后恢复 Session/订阅/adapter；
+  Rust 侧加 session epoch，避免旧 reader 的 offline 事件污染新连接。
 
 
 VERIFIED_DETAIL:
@@ -31,11 +34,13 @@ VERIFIED_DETAIL:
 
 UNVERIFIED:
 - 快速失败行为未实测（开代理场景表现为挂起，非秒失败）
+- 自动重连成功路径未验证（当前环境网关无法常驻；且存在 sessions.list 空列表缺陷）
+- 重连后 header 与 Connection State 一致性（epoch 修复待实测）
 
 NEXT:
-1. （可选）快速失败的确定性复现（临时改错模型名）
-2. （可选）Settings 写操作/更多项
-3. 等待新需求
+1. 修自动重连的 sessions.list 空列表重试（5×1s），再测"杀网关→3s 后拉起→自动恢复"。
+2. 确认 epoch 修复后 header 不再显示离线（面板与 header 一致）。
+3. （可选）快速失败的确定性复现；新建/删除会话。
 
 FACTS:
 - caps 必须在 connect 顶层，放 client 会 invalid-handshake

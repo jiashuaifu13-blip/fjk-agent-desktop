@@ -2,12 +2,15 @@
 
 ## DOING
 
-- Phase 1/2 收尾：Connection State / Log Viewer / Settings（只读+模型修改回滚）/
-  Session 列表与切换 / UI 布局均已完成并实测；等待下一轮功能。
+- **自动重连（WIP，提交 a78fe8a）**：1/2/4/8/15s 退避 ×5 次；成功后恢复 Session / 审批订阅 / adapter key；
+  Rust 侧加 session epoch，防止旧 reader 的 offline 事件污染新连接。
+  **已知缺陷**：网关刚启动时 `sessions.list` 可能为空，当前直接 throw（日志 `No session available after reconnect`），
+  需改为 5×1s 重试后再判定失败。成功路径尚未实测。
 
 ## TODO
 
-- **下一轮候选**：新建/删除会话（写操作，删除需二次确认）、自动重连、Settings 更多项（工具开关/执行模式展示）。
+- 修上面的 sessions.list 空列表重试，然后实测"杀网关 → 3s 后拉起 → 自动恢复、header 与面板一致"。
+- **下一轮候选**：新建/删除会话（写操作，删除需二次确认）、Settings 更多项（工具开关/执行模式展示）。
 - **（可选）快速失败场景的确定性复现。**
   订阅先于发送的修复已落地、普通对话正常；但"run 秒失败"场景无法稳定构造
   （开系统代理表现为挂起而非秒失败），该路径仍标**未实测**。
