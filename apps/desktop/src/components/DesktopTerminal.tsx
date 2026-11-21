@@ -1,13 +1,33 @@
-﻿import { useEffect, useRef, useState } from 'react'
+﻿import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
+
 import type {
   FormEvent,
   KeyboardEvent as ReactKeyboardEvent,
 } from 'react'
 
-import { usePetRuntimeContext } from '../runtime/PetRuntimeContext'
-import type { ChatMessage } from '../runtime/PetRuntimeContext'
-import { toGatewayIssue } from '../gateway/GatewayError'
-import type { GatewayIssue } from '../gateway/GatewayError'
+import {
+  usePetRuntimeContext,
+} from '../runtime/PetRuntimeContext'
+
+import type {
+  ChatMessage,
+} from '../runtime/PetRuntimeContext'
+
+import {
+  toGatewayIssue,
+} from '../gateway/GatewayError'
+
+import type {
+  GatewayIssue,
+} from '../gateway/GatewayError'
+
+import {
+  RuntimeLogViewer,
+} from './RuntimeLogViewer'
 
 export function DesktopTerminal() {
   const {
@@ -18,107 +38,176 @@ export function DesktopTerminal() {
     error,
     mode,
     gatewayStatus,
-  } = usePetRuntimeContext()
+  } =
+    usePetRuntimeContext()
 
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [input, setInput] = useState('')
-  const [lastError, setLastError] = useState<GatewayIssue | null>(null)
-  const [connectionPanelOpen, setConnectionPanelOpen] = useState(false)
+  const [
+    messages,
+    setMessages,
+  ] =
+    useState<ChatMessage[]>(
+      [],
+    )
 
-  const listRef = useRef<HTMLDivElement>(null)
+  const [
+    input,
+    setInput,
+  ] =
+    useState('')
+
+  const [
+    lastError,
+    setLastError,
+  ] =
+    useState<
+      GatewayIssue | null
+    >(null)
+
+  const [
+    connectionPanelOpen,
+    setConnectionPanelOpen,
+  ] =
+    useState(false)
+
+  const [
+    logViewerOpen,
+    setLogViewerOpen,
+  ] =
+    useState(false)
+
+  const listRef =
+    useRef<HTMLDivElement>(
+      null,
+    )
 
   useEffect(() => {
-    if (!chatController) return
-
-    chatController.onMessageChange = (next: ChatMessage[]) => {
-      setMessages([...next])
+    if (!chatController) {
+      return
     }
 
+    chatController.onMessageChange =
+      (
+        next:
+          ChatMessage[],
+      ) => {
+        setMessages([
+          ...next,
+        ])
+      }
+
     return () => {
-      chatController.onMessageChange = null
+      chatController.onMessageChange =
+        null
     }
   }, [chatController])
 
   useEffect(() => {
-    const el = listRef.current
+    const el =
+      listRef.current
+
     if (el) {
-      el.scrollTop = el.scrollHeight
+      el.scrollTop =
+        el.scrollHeight
     }
   }, [messages, sending])
 
-  const unauthorized = gatewayStatus.state === 'unauthorized'
-  const offline = agentState === 'offline'
+  const unauthorized =
+    gatewayStatus.state ===
+    'unauthorized'
+
+  const offline =
+    agentState ===
+    'offline'
 
   const connected =
-    Boolean(chatController) &&
+    Boolean(
+      chatController,
+    ) &&
     ready &&
     !error &&
     !unauthorized &&
     !offline
 
-  const modeLabel = unauthorized
-    ? 'Gateway · 未授权'
-    : offline
-      ? mode === 'gateway'
-        ? 'Gateway · 离线'
-        : '离线 · Mock'
-      : mode === 'gateway'
-        ? 'Gateway'
-        : 'Mock 模式'
+  const modeLabel =
+    unauthorized
+      ? 'Gateway · 未授权'
+      : offline
+        ? mode ===
+          'gateway'
+          ? 'Gateway · 离线'
+          : '离线 · Mock'
+        : mode ===
+            'gateway'
+          ? 'Gateway'
+          : 'Mock 模式'
 
   const modeTone =
-    unauthorized || offline
+    unauthorized ||
+    offline
       ? 'warn'
-      : mode === 'gateway'
+      : mode ===
+          'gateway'
         ? 'ok'
         : undefined
 
   const noticeTitle =
-    offline && gatewayStatus.state !== 'offline'
+    offline &&
+    gatewayStatus.state !==
+      'offline'
       ? '网关连接已断开'
       : gatewayStatus.title
 
   const noticeDetail =
-    offline && gatewayStatus.state !== 'offline'
+    offline &&
+    gatewayStatus.state !==
+      'offline'
       ? '桌面端当前未连接到 Gateway。'
       : gatewayStatus.detail
 
-  const connectionLabel = (() => {
-    switch (gatewayStatus.state) {
-      case 'connected':
-        return '已连接'
+  const connectionLabel =
+    (() => {
+      switch (
+        gatewayStatus.state
+      ) {
+        case 'connected':
+          return '已连接'
 
-      case 'connecting':
-        return '连接中'
+        case 'connecting':
+          return '连接中'
 
-      case 'unauthorized':
-        return '未授权'
+        case 'unauthorized':
+          return '未授权'
 
-      case 'offline':
-        return '离线'
+        case 'offline':
+          return '离线'
 
-      case 'mock':
-        return 'Mock'
+        case 'mock':
+          return 'Mock'
 
-      default:
-        return gatewayStatus.state
-    }
-  })()
+        default:
+          return gatewayStatus.state
+      }
+    })()
 
   const connectionTone =
-    gatewayStatus.state === 'connected'
+    gatewayStatus.state ===
+    'connected'
       ? 'ok'
-      : gatewayStatus.state === 'connecting'
+      : gatewayStatus.state ===
+          'connecting'
         ? 'pending'
-        : gatewayStatus.state === 'mock'
+        : gatewayStatus.state ===
+            'mock'
           ? 'neutral'
           : 'error'
 
   const latestErrorTitle =
     lastError?.title ??
     (
-      gatewayStatus.state === 'offline' ||
-      gatewayStatus.state === 'unauthorized'
+      gatewayStatus.state ===
+        'offline' ||
+      gatewayStatus.state ===
+        'unauthorized'
         ? gatewayStatus.title
         : null
     )
@@ -126,8 +215,10 @@ export function DesktopTerminal() {
   const latestErrorDetail =
     lastError?.detail ??
     (
-      gatewayStatus.state === 'offline' ||
-      gatewayStatus.state === 'unauthorized'
+      gatewayStatus.state ===
+        'offline' ||
+      gatewayStatus.state ===
+        'unauthorized'
         ? gatewayStatus.detail
         : null
     )
@@ -135,49 +226,75 @@ export function DesktopTerminal() {
   const latestErrorHint =
     lastError?.hint ??
     (
-      gatewayStatus.state === 'offline' ||
-      gatewayStatus.state === 'unauthorized'
+      gatewayStatus.state ===
+        'offline' ||
+      gatewayStatus.state ===
+        'unauthorized'
         ? gatewayStatus.hint
         : undefined
     )
 
-  const handleSubmit = async (
-    e: FormEvent<HTMLFormElement>,
-  ) => {
-    e.preventDefault()
-
-    if (!chatController || sending) {
-      return
-    }
-
-    const text = input.trim()
-
-    if (!text) {
-      return
-    }
-
-    setInput('')
-    setLastError(null)
-
-    try {
-      await chatController.send(text)
-    } catch (err) {
-      console.error('[FJK] send failed:', err)
-      setLastError(toGatewayIssue(err))
-    }
-  }
-
-  const handleKeyDown = (
-    e: ReactKeyboardEvent<HTMLTextAreaElement>,
-  ) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleSubmit =
+    async (
+      e:
+        FormEvent<HTMLFormElement>,
+    ) => {
       e.preventDefault()
 
-      if (!sending) {
-        e.currentTarget.form?.requestSubmit()
+      if (
+        !chatController ||
+        sending
+      ) {
+        return
+      }
+
+      const text =
+        input.trim()
+
+      if (!text) {
+        return
+      }
+
+      setInput('')
+      setLastError(null)
+
+      try {
+        await chatController.send(
+          text,
+        )
+      } catch (err) {
+        console.error(
+          '[FJK] send failed:',
+          err,
+        )
+
+        setLastError(
+          toGatewayIssue(
+            err,
+          ),
+        )
       }
     }
-  }
+
+  const handleKeyDown =
+    (
+      e:
+        ReactKeyboardEvent<HTMLTextAreaElement>,
+    ) => {
+      if (
+        e.key ===
+          'Enter' &&
+        !e.shiftKey
+      ) {
+        e.preventDefault()
+
+        if (!sending) {
+          e.currentTarget
+            .form
+            ?.requestSubmit()
+        }
+      }
+    }
 
   return (
     <section className="terminal">
@@ -185,8 +302,11 @@ export function DesktopTerminal() {
         <div className="terminal-title">
           <span
             className="terminal-dot"
-            data-state={agentState}
+            data-state={
+              agentState
+            }
           />
+
           FJK Agent Terminal
         </div>
 
@@ -194,10 +314,36 @@ export function DesktopTerminal() {
           <button
             type="button"
             className="connection-state-trigger"
-            aria-expanded={connectionPanelOpen}
+            aria-expanded={
+              logViewerOpen
+            }
+            aria-controls="runtime-log-viewer"
+            onClick={() => {
+              setLogViewerOpen(
+                (
+                  current,
+                ) =>
+                  !current,
+              )
+            }}
+          >
+            日志
+          </button>
+
+          <button
+            type="button"
+            className="connection-state-trigger"
+            aria-expanded={
+              connectionPanelOpen
+            }
             aria-controls="connection-state-panel"
             onClick={() => {
-              setConnectionPanelOpen((current) => !current)
+              setConnectionPanelOpen(
+                (
+                  current,
+                ) =>
+                  !current,
+              )
             }}
           >
             连接状态
@@ -214,10 +360,24 @@ export function DesktopTerminal() {
           </span>
 
           <span className="terminal-agent">
-            agent: {agentState}
+            agent:{' '}
+            {agentState}
           </span>
         </div>
       </header>
+
+      <div id="runtime-log-viewer">
+        <RuntimeLogViewer
+          open={
+            logViewerOpen
+          }
+          onClose={() => {
+            setLogViewerOpen(
+              false,
+            )
+          }}
+        />
+      </div>
 
       {connectionPanelOpen && (
         <section
@@ -228,18 +388,23 @@ export function DesktopTerminal() {
           <div className="connection-state-heading">
             <div>
               <div className="connection-state-title">
-                Connection State
+                Connection
+                State
               </div>
 
               <div className="connection-state-subtitle">
-                OpenClaw Gateway 当前连接信息
+                OpenClaw
+                Gateway
+                当前连接信息
               </div>
             </div>
 
             <span
               className={`connection-state-badge connection-state-badge-${connectionTone}`}
             >
-              {connectionLabel}
+              {
+                connectionLabel
+              }
             </span>
           </div>
 
@@ -250,7 +415,9 @@ export function DesktopTerminal() {
               </span>
 
               <span className="connection-state-value">
-                {gatewayStatus.title}
+                {
+                  gatewayStatus.title
+                }
               </span>
             </div>
 
@@ -260,7 +427,8 @@ export function DesktopTerminal() {
               </span>
 
               <span className="connection-state-value">
-                {mode === 'gateway'
+                {mode ===
+                'gateway'
                   ? 'Gateway'
                   : 'Mock'}
               </span>
@@ -272,7 +440,9 @@ export function DesktopTerminal() {
               </span>
 
               <span className="connection-state-value">
-                {agentState}
+                {
+                  agentState
+                }
               </span>
             </div>
 
@@ -282,7 +452,9 @@ export function DesktopTerminal() {
               </span>
 
               <span className="connection-state-value">
-                {ready ? 'Ready' : 'Starting'}
+                {ready
+                  ? 'Ready'
+                  : 'Starting'}
               </span>
             </div>
           </div>
@@ -293,12 +465,16 @@ export function DesktopTerminal() {
             </div>
 
             <div className="connection-state-copy">
-              {gatewayStatus.detail}
+              {
+                gatewayStatus.detail
+              }
             </div>
 
             {gatewayStatus.hint && (
               <div className="connection-state-hint">
-                {gatewayStatus.hint}
+                {
+                  gatewayStatus.hint
+                }
               </div>
             )}
           </div>
@@ -311,25 +487,38 @@ export function DesktopTerminal() {
             {latestErrorTitle ? (
               <div className="connection-state-error">
                 <div className="connection-state-error-title">
-                  {latestErrorTitle}
+                  {
+                    latestErrorTitle
+                  }
                 </div>
 
                 {latestErrorDetail && (
                   <div className="connection-state-copy">
-                    {latestErrorDetail}
+                    {
+                      latestErrorDetail
+                    }
                   </div>
                 )}
 
                 {latestErrorHint && (
                   <div className="connection-state-hint">
-                    {latestErrorHint}
+                    {
+                      latestErrorHint
+                    }
                   </div>
                 )}
 
                 {lastError?.raw && (
                   <details className="connection-state-raw">
-                    <summary>原始错误</summary>
-                    <code>{lastError.raw}</code>
+                    <summary>
+                      原始错误
+                    </summary>
+
+                    <code>
+                      {
+                        lastError.raw
+                      }
+                    </code>
                   </details>
                 )}
               </div>
@@ -347,31 +536,43 @@ export function DesktopTerminal() {
 
             <div className="connection-state-copy">
               当前版本尚未提供独立的一键重连接口。
-              如 Gateway 已断开，请确认 OpenClaw Gateway
-              正常运行后重启 FJK Desktop，
+              如 Gateway
+              已断开，请确认
+              OpenClaw Gateway
+              正常运行后重启
+              FJK Desktop，
               桌面端会在启动阶段重新建立连接。
             </div>
           </div>
         </section>
       )}
 
-      {(unauthorized || offline) && (
+      {(unauthorized ||
+        offline) && (
         <div
           className={`terminal-notice terminal-notice-${
-            unauthorized ? 'warn' : 'info'
+            unauthorized
+              ? 'warn'
+              : 'info'
           }`}
         >
           <div className="notice-title">
-            {noticeTitle}
+            {
+              noticeTitle
+            }
           </div>
 
           <div className="notice-detail">
-            {noticeDetail}
+            {
+              noticeDetail
+            }
           </div>
 
           {gatewayStatus.hint && (
             <div className="notice-hint">
-              {gatewayStatus.hint}
+              {
+                gatewayStatus.hint
+              }
             </div>
           )}
         </div>
@@ -381,7 +582,8 @@ export function DesktopTerminal() {
         ref={listRef}
         className="terminal-messages"
       >
-        {messages.length === 0 && (
+        {messages.length ===
+          0 && (
           <div className="terminal-empty">
             {ready
               ? '向桌宠说点什么吧。'
@@ -389,22 +591,26 @@ export function DesktopTerminal() {
           </div>
         )}
 
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`msg msg-${m.role}`}
-          >
-            <div className="msg-role">
-              {m.role === 'user'
-                ? 'You'
-                : 'Agent'}
-            </div>
+        {messages.map(
+          (m) => (
+            <div
+              key={m.id}
+              className={`msg msg-${m.role}`}
+            >
+              <div className="msg-role">
+                {m.role ===
+                'user'
+                  ? 'You'
+                  : 'Agent'}
+              </div>
 
-            <div className="msg-content">
-              {m.content || '…'}
+              <div className="msg-content">
+                {m.content ||
+                  '…'}
+              </div>
             </div>
-          </div>
-        ))}
+          ),
+        )}
 
         {sending && (
           <div className="msg msg-assistant">
@@ -418,48 +624,72 @@ export function DesktopTerminal() {
       {lastError && (
         <div className="terminal-error">
           <div className="error-title">
-            发送失败：{lastError.title}
+            发送失败：
+            {
+              lastError.title
+            }
           </div>
 
           <div className="error-detail">
-            {lastError.detail}
+            {
+              lastError.detail
+            }
           </div>
 
           {lastError.hint && (
             <div className="error-hint">
-              {lastError.hint}
+              {
+                lastError.hint
+              }
             </div>
           )}
 
           <details className="error-raw">
-            <summary>原始错误</summary>
-            <code>{lastError.raw}</code>
+            <summary>
+              原始错误
+            </summary>
+
+            <code>
+              {
+                lastError.raw
+              }
+            </code>
           </details>
         </div>
       )}
 
       <form
         className="terminal-input"
-        onSubmit={handleSubmit}
+        onSubmit={
+          handleSubmit
+        }
       >
         <textarea
           value={input}
           onChange={(e) => {
-            setInput(e.target.value)
+            setInput(
+              e.target.value,
+            )
           }}
-          onKeyDown={handleKeyDown}
+          onKeyDown={
+            handleKeyDown
+          }
           placeholder={
             unauthorized
               ? '未授权，暂时无法发送'
               : connected
                 ? '输入消息，Enter 发送'
                 : offline
-                  ? mode === 'gateway'
+                  ? mode ===
+                    'gateway'
                     ? '网关已断开，请重启桌面端'
                     : '网关离线，当前为 Mock 对话'
                   : '等待桌宠就绪…'
           }
-          disabled={!connected || sending}
+          disabled={
+            !connected ||
+            sending
+          }
           rows={2}
         />
 
@@ -490,7 +720,9 @@ export function DesktopTerminal() {
 
           <button
             type="button"
-            disabled={!chatController}
+            disabled={
+              !chatController
+            }
             onClick={() => {
               chatController?.clear()
             }}
