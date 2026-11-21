@@ -26,7 +26,7 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 
 ## 三、当前状态（2026-11-21 17:00 更新）
 
-- 最新提交：`b589cb3`（恢复卡恢复为「远程指挥」单一模式）；另有 3 个本地提交待推送
+- 最新提交：`2993e09 docs(context): restore original card, refresh project state`（已推送）
 - 未提交改动：`apps/desktop/src-tauri/src/gateway.rs`
   （connect 参数已加 `"caps": ["approvals", "exec-approvals"]`，待审批事件验证后提交）
 - 当前任务：**Approval UI** 验证阶段——caps 已加、桌面端已用新二进制重启；
