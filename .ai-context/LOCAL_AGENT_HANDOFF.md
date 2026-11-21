@@ -63,24 +63,21 @@
 5. **受限沙箱**：`node --test`、`npm run build`、`cargo` 可能 spawn EPERM；需要时申请完全权限并说明理由。
 6. **`.tmp` 目录**是临时验收脚本，已被 `*.tmp` 规则忽略，不要提交。
 
-## 七、当前状态（2026-11-21 19:20）
+## 七、当前状态（2026-11-21 20:30）
 
-- `HEAD = origin/main = db33f8a`，工作区干净。
-- 已完成：P1-001 Gateway 通道、P1-002 错误映射、P1-003 事件驱动 AgentState、P1-004 release 回归、P1-005 NSIS 包、P1-006 Approval 卡片（allow 路径）。
-- Approval 关键事实：
-  - `caps` 必须在 connect 顶层，放 `client` 里会 `invalid-handshake`；
-  - 订阅 `sessions.messages.subscribe { key, includeApprovals:true }`，退订 `sessions.messages.unsubscribe { key }`；
-  - 事件：`exec.approval.requested` / `session.approval`(pending→terminal) / `exec.approval.resolved`；
-  - resolve：`exec.approval.resolve { id, decision }`；
-  - allow 实测：`whoami` 执行，输出 `laptop-qqmq9j32\付家康`，exit 0，482ms，随后 `APPROVAL_NOT_FOUND`。
-- 未验证：**deny 路径**（拒绝后命令不得执行、run 应结束）。
-- 下一步：deny 回归 → Settings / Connection State / Log Viewer → AI_HANDOFF.md 收尾。
-- 验收技巧：触发审批后约 38 秒内必须点按钮，否则 run 中止、审批被清理（再查为 NOT_FOUND）。
+- `HEAD = origin/main = 10fcd98`（规则文档）；`STATE_ID = 20261121-2015`。
+- 已完成：P1-001~P1-005；P1-006 Approval（**allow 与 deny 均验证**）；Connection State；Log Viewer。
+- 进行中：Settings 只读概览（模型/工具数量/当前 Session/总数），代码已改、build PASS、UI 待用户确认，**未提交**。
+- 未验证：Settings 其余项；`GatewayChatAdapter` 快速失败竞态（已知未修）。
+- 下一步：确认 Settings 后提交 → 修复竞态 → 重新回归构建与安装包。
 
 ## 八、交接约定
 
 - **每次状态变化（完成任务/出现阻塞/改待办）后更新 `.ai-context/STATE.md`**：改 `STATE_ID`、`HEAD_AT_SYNC`、`UPDATED`、任务与未验证项，并提交；否则网页 AI 会读到旧进度。
 - 用户会贴网页 AI 的 STEP（含【预期】【回传】【风险】），我只按【回传】验、按【风险】判失败类型。
 - 用户只要求一次「检查」时，不要顺带改代码或重构。
-- **截图、点击、GUI 操作默认由用户完成**：不要申请截图/自动化权限，也不要绕过；需要画面证据时请用户提供截图。
+- **截图、点击、GUI 操作默认由用户完成**：不要申请截图/自动化权限，也不要绕过。
+- **用户能直接确认的测试**：用户回复「没问题 / 测试通过 / 无异常」等，即视为已实测通过；
+  记录为「用户口头确认」即可，不必再索要截图。
+- **用户没把握时**会主动发截图或实际证据；不要追问，也不要把"没给证据"当成失败。
 - 有阻塞时给 1–2 行关键报错，不要贴全量输出。
