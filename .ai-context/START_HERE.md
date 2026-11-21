@@ -98,13 +98,14 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
    只限本 STEP 涉及的文件，不要贴无关文件，不要在代码外逐行解说。
 8. **代码不得为省 token 减料**：禁止用 `...`、"其余不变"、伪代码代替可落盘内容；
    需要完整文件就给完整文件。篇幅优先服从正确性，简短只针对说明文字。
-9. **代码交付一律给终端命令**（本条覆盖旧的"只给位置"规则；新文件与局部修改都一样）：
-   - 每条命令必须含**精确绝对路径**，并在命令内完成写入，不要求我手工改文件；
-   - 新文件：here-string + `[System.IO.File]::WriteAllText($p,$c,(New-Object System.Text.UTF8Encoding($false)))`；
-   - 局部修改：`$t=[System.IO.File]::ReadAllText($p)` → `$t=$t.Replace('<唯一旧串>','<新串>')` → 写回；
-     旧串必须**逐字且唯一**，并在说明里写明它所在的函数/组件与大致行号（供核对，不作为操作步骤）；
-   - 每条写文件的命令后面**附一条自检命令**（grep 新符号、`???`=0、NUL=0）；
-   - 禁止"找到某行自己改"或"在合适位置加上"这类无法执行的说法。
+9. **代码交付 = 一条 `apply-patch` 命令**（覆盖旧的手写 PowerShell 规则）：
+   - 只用本地执行器 `D:\pet-desp\tools\apply-patch.ps1`，**不要自己拼 here-string / Set-Content / Replace 脚本**；
+   - 参数只用 ASCII：`-Path '<相对路径>'`、`-OldB64 '<UTF-8 base64>'`、`-NewB64 '<UTF-8 base64>'`；
+   - 新文件用 `-WholeFile`（此时不需要 `-OldB64`）；
+   - 命令固定前缀：`powershell -NoProfile -ExecutionPolicy Bypass -File D:\pet-desp\tools\apply-patch.ps1`；
+   - 旧串只取 1–3 行、必须唯一；说明里附函数名/大致行号供核对，但不作为操作步骤；
+   - 每条命令最后一行必须是 `PATCH_OK` 或 `PATCH_FAIL ...`；失败即停，不要继续给下一步；
+   - 多文件 / 多处 = 多条命令，一条只改一处，不要合并。
 10. 不提议"顺便优化""顺手重构"，只推进当前任务。
 11. 收到【本地检查 · 阻塞】时：1–2 行原因 + 下一个最小验证步骤。
 12. 输出完即停，不追加鼓励、总结或"如需继续请告诉我"。
@@ -112,8 +113,8 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 ## 九、硬性禁止与已知边界
 
 1. **禁止 `git apply`**：补丁上下文经常不匹配（已失败过）。
-   改文件只能用「整文件写入」或「精确 old/new 单行替换」，改完给验证命令。
-2. **写中文文件必须用 .NET API**：
+   改文件只能通过 `tools\apply-patch.ps1`（见第十节）或整文件写入，不手写 Replace 脚本。
+2. **写中文文件必须用 .NET API / apply-patch.ps1**：
    ```powershell
    [System.IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding($false)))
    ```
@@ -123,6 +124,29 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
    文档只允许「在指定锚点插入」或「删除指定行」，并在回传里给出各条目命中数。
 4. **审批有时限**：触发 exec 审批后约 **38 秒**内必须点击允许/拒绝；
    超时后 run 中止、审批被清理，再查会得到 `APPROVAL_NOT_FOUND`。这是预期行为，不是 bug。
-5. **deny 路径未验证**：任何文档、提交信息、总结都不得写「审批链路全部通过」；
-   只能写「allow 已验证、deny 未验证」。
+5. **未实测的内容不得写为已验证**：当前 Approval allow/deny 已验证；
+   「快速失败瞬时事件」仍未实测，任何文档都不得写"全链路全部通过"。
+
+## 十、补丁命令格式（apply-patch.ps1）
+
+局部替换（一条命令只改一处）：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File D:\pet-desp\tools\apply-patch.ps1 -Path 'apps\desktop\src\runtime\usePetRuntime.ts' -OldB64 '<UTF-8 base64>' -NewB64 '<UTF-8 base64>'
+```
+
+新文件 / 整文件写入：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File D:\pet-desp\tools\apply-patch.ps1 -Path 'apps\desktop\src\components\NewPanel.tsx' -NewB64 '<UTF-8 base64>' -WholeFile
+```
+
+执行器保证：
+- 自动做 CRLF/LF 归一化后再匹配（**这是之前失败的主因**），写回时保持原换行风格；
+- 断言旧串存在且唯一，0 或 >1 直接失败（`PATCH_FAIL 2/3`）；
+- 写后自检 `NUL/BOM/???`，并输出新内容所在行号；
+- 最后一行必为 `PATCH_OK ...` 或 `PATCH_FAIL ...`，可直接进【本地检查】。
+
+base64 规则：`[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('<原文>'))`；
+旧串取 1–3 行且唯一，不要凭记忆补空行。
 
