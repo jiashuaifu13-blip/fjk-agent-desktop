@@ -24,15 +24,26 @@ function createIdempotencyKey(): string {
  */
 export class TauriGatewayClient implements GatewayTransport {
   private listeners = new Set<(event: GatewayEventFrame) => void>()
-  private unlisten: (() => void) | null = null
+  private stateListeners = new Set<(state: { state: string; url?: string }) => void>()
+  private eventUnlisten: (() => void) | null = null
+  private stateUnlisten: (() => void) | null = null
   private disposed = false
 
   /** Runs the handshake and returns the gateway `hello-ok` payload. */
   async connect(): Promise<unknown> {
-    if (!this.unlisten) {
-      this.unlisten = await listen<GatewayEventFrame>('gateway://event', (event) => {
+    if (!this.eventUnlisten) {
+      this.eventUnlisten = await listen<GatewayEventFrame>('gateway://event', (event) => {
         if (this.disposed) return
         for (const listener of this.listeners) {
+          listener(event.payload)
+        }
+      })
+    }
+
+    if (!this.stateUnlisten) {
+      this.stateUnlisten = await listen<{ state: string; url?: string }>('gateway://state', (event) => {
+        if (this.disposed) return
+        for (const listener of this.stateListeners) {
           listener(event.payload)
         }
       })
@@ -71,10 +82,19 @@ export class TauriGatewayClient implements GatewayTransport {
     }
   }
 
+  onConnectionState(listener: (state: { state: string; url?: string }) => void): () => void {
+    this.stateListeners.add(listener)
+    return () => {
+      this.stateListeners.delete(listener)
+    }
+  }
+
   async disconnect(): Promise<void> {
     this.disposed = true
-    this.unlisten?.()
-    this.unlisten = null
+    this.eventUnlisten?.()
+    this.stateUnlisten?.()
+    this.eventUnlisten = null
+    this.stateUnlisten = null
     try {
       await invoke('gateway_disconnect')
     } catch {
