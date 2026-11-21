@@ -68,10 +68,11 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 - 本地验证助手会检查：git 状态、`tsc`、`node --test packages/agent-state/*.test.mjs`、关键符号与文件内容、`???` 编码。
 - 网页端只需要依赖【本地检查 · STEP N】摘要（结论 / 证据 / 下一步），不要索要完整日志。
 - 未验证的内容必须标「未验证」，不得写成已验证。
+- **输出纪律与精简 STEP 格式以 `.ai-context/START_HERE.md` 第八节为准**：每条回复 ≤10 行、不贴大段代码、一次一个 STEP。
 
 ## 八、下一步
 
-1. STEP 3：`npm run tauri build`，产出并定位 `apps/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe`；
-2. STEP 4：安装并验证启动 / Gateway / 对话；
-3. STEP 5：卸载并确认清理；
-4. STEP 6：文档更新 + 提交（`feat(build): enable NSIS installer`）。
+1. **Approval UI**：先验证 `sessions.messages.subscribe(includeApprovals: true)` 能否让桌面端收到
+   `session.approval`；确认后再做审批卡片与 resolve 调用。
+2. Settings / Connection State / Log Viewer。
+3. （可选）MSI 安装包、代码签名、自动更新。
