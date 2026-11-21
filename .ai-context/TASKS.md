@@ -20,6 +20,15 @@ None.
 
 ## DONE
 
+### P1-010
+Session 管理 —— 只读会话列表（已实测）。
+
+- 顶部「会话」面板展示 sessions.list 的 key、MAIN/SESSION、更新时间；
+- 与 settingsOverview.sessionKey 相同的一条标「（当前使用）」；
+- updatedAt 缺失显示「未提供」，不推算；
+- 本步不新建/删除/切换会话；
+- 提交 1fc704b。
+
 ### P1-009
 Settings 模型修改 + 单次回滚（已实测）。
 

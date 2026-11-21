@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261121-2145
-HEAD_AT_SYNC: fd3866a
-UPDATED: 2026-11-21T21:45+08:00
-TASK: 等待下一轮功能（Session 管理 / 自动重连 / Settings 更多项）
+STATE_ID: 20261121-2200
+HEAD_AT_SYNC: 1fc704b
+UPDATED: 2026-11-21T22:00+08:00
+TASK: Session 管理下一步（切换/新建/删除，尚未开始）
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -19,6 +19,7 @@ DONE:
 - release 构建 + NSIS 安装/运行/卸载复验（安装 0、卸载 0、目录/快捷方式/进程均清理）
 - 文档收尾：TASKS / PROJECT_STATUS / AI_HANDOFF 已同步（提交 869e7a7）
 - Settings 模型修改 + 单次回滚（RPC 与 UI 均实测通过：deepseek-flash→deepseek-chat→回滚）
+- Session 只读列表（界面实测：5 条、MAIN/SESSION、当前使用、时间；提交 1fc704b）
 
 
 VERIFIED_DETAIL:
