@@ -93,3 +93,20 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 10. 收到【本地检查 · 阻塞】时：1–2 行原因 + 下一个最小验证步骤。
 11. 输出完即停，不追加鼓励、总结或"如需继续请告诉我"。
 
+## 九、硬性禁止与已知边界
+
+1. **禁止 `git apply`**：补丁上下文经常不匹配（已失败过）。
+   改文件只能用「整文件写入」或「精确 old/new 单行替换」，改完给验证命令。
+2. **写中文文件必须用 .NET API**：
+   ```powershell
+   [System.IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding($false)))
+   ```
+   禁用 `Get-Content`/`Set-Content`/`-replace` 直接改中文文件。
+   写后自检：`NUL 字节 = 0`、`BOM = False`、`??? 命中 = 0`；任一不满足立即 `git checkout -- <文件>`。
+3. **禁止整文件重写文档**（TASKS.md 曾因此丢掉 P1-003~P1-005）：
+   文档只允许「在指定锚点插入」或「删除指定行」，并在回传里给出各条目命中数。
+4. **审批有时限**：触发 exec 审批后约 **38 秒**内必须点击允许/拒绝；
+   超时后 run 中止、审批被清理，再查会得到 `APPROVAL_NOT_FOUND`。这是预期行为，不是 bug。
+5. **deny 路径未验证**：任何文档、提交信息、总结都不得写「审批链路全部通过」；
+   只能写「allow 已验证、deny 未验证」。
+
