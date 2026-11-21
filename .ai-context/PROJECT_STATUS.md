@@ -17,7 +17,7 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 - **AgentState 已改为事件驱动**：`gateway://event` / `gateway://state` → `AgentStateReducer` → `AgentToPetState` → `PetStateMachine`；`ChatController` 不再直接持有或写入 `PetStateMachine`。
 - Gateway 错误已映射为未授权 / 未配对 / 来源拒绝 / 离线 / 超时 / 配置等状态并在 UI 呈现。
 - **release 发布形态已完成回归**：`npm run tauri build` 成功，生成 `apps/desktop/src-tauri/target/release/fjk-desktop.exe`（20.24 MB）；直接运行 release exe 已验证窗口启动、Gateway 连接、真实流式对话和正常退出。
-- `tauri.conf.json` 当前 `bundle.active = false`，因此本轮只验证 release exe，**尚未生成或验证 NSIS / MSI 安装包**。
+- NSIS 安装包已生成并完成安装/运行/卸载回归（详见下文「Release 安装包回归（NSIS）」）；MSI、代码签名、自动更新仍未做。
 - Gateway Client 接口已定义（`packages/gateway-client/`，仅类型/接口，未实现）。
 - 远程仓库 `origin` 已配置并持续推送 `main`。
 - 尚未有任何 Extensions。
@@ -28,7 +28,7 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 |---|---|---|---|
 | Phase 0 | OpenClaw 调查与基础验证 | ✅ **完成** | P0-001~023 全部完成；技术选型报告 GO（OpenClaw 作为 Agent Core） |
 | Phase 1 | FJK Desktop 基础框架（Tauri 2 + React + TS + Rust） | 🟡 **进行中** | Rust Gateway 通道、权限探测、错误映射、事件驱动 AgentState、release exe 回归已完成；Settings / Log Viewer 未做 |
-| Phase 2 | Agent Desktop Terminal | 🟡 **部分** | 真实 Gateway 对话、流式回复、连接断线状态已跑通；Session 管理、Approval UI、历史记录未做 |
+| Phase 2 | Agent Desktop Terminal | 🟡 **部分** | 真实 Gateway 对话、流式回复、连接断线状态、Approval 卡片（allow 路径）已跑通；Session 管理、历史记录、deny 路径未做 |
 | Phase 3 | Deepseek-pet 桌宠整合 | **部分（仅 3A + 部分 3D）** | 3A 审计已完成；AgentState→PetState Adapter 与 runtime 驱动已接通；3B/3C/3E 未完成 |
 | Phase 4 | Blog Adapter | **未开始** | 无对应代码 |
 | Phase 5 | Local Project / Git / GitHub | **未开始** | 无对应产品功能代码 |
@@ -75,7 +75,11 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 - T2：`completed` 后 1.5 秒内追发新请求，无旧 timer 将新 run 打回 idle 的抖动。
 - T3：运行中关闭 Gateway，AgentState 进入 `offline`；终端显示离线、输入禁用。
 - T4：重启 Gateway 后重新启动桌面端，恢复连接与正常运行路径。
-- `waiting_approval` / approval 路径：**尚未在桌面端真实触发，未验证**。
+- `waiting_approval` / approval 路径：**部分验证（allow only）**。
+  - 桌面端已订阅 `sessions.messages.subscribe { key, includeApprovals: true }`，可收到 `session.approval`；
+  - 审批卡片可渲染（命令、过期时间、允许/拒绝）；
+  - allow 路径实测通过：点击「允许」后 `whoami` 真实执行（输出 `laptop-qqmq9j32\付家康`，`exitCode=0`，482ms），随后审批记录被移除；
+  - **deny 路径未验证**。
 
 ## Release 构建回归
 
@@ -94,12 +98,25 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
   4. 关闭窗口后 `fjk-desktop` 进程正常退出，无残留。
   5. 验证期间 Gateway 日志未出现 `SsrFBlockedError`。
 - 结论：**当前 release exe 发布形态回归通过，不阻断后续 Phase 1 工作。**
-- 边界：`bundle.active = false`，因此本轮**没有生成、安装或验证 NSIS/MSI 安装包**；安装包回归应另立任务。
+- 边界：release exe 已回归；NSIS 安装包后续已单独完成安装/运行/卸载验证（见下文）。
+
+## Approval 链路（部分验证）
+
+- 订阅：桌面端在拿到 session key 后调用 `sessions.messages.subscribe { key, includeApprovals: true }`，
+  卸载时 `sessions.messages.unsubscribe { key }`；失败只记录，不阻断聊天。
+- 握手：`caps` 必须放在 `connect` 参数**顶层**；放进 `client` 会被网关以
+  `invalid connect params: at /client: unexpected property 'caps'` 拒绝。
+- 事件：`exec.approval.requested`、`session.approval`（pending → terminal）、`exec.approval.resolved`。
+- 解决：`exec.approval.resolve { id, decision }`，decision 为 `allow-once` 或 `deny`。
+- 实测（allow）：卡片出现后点击「允许」，`whoami` 真实执行，输出 `laptop-qqmq9j32\付家康`，
+  `exitCode=0`、482ms，随后审批记录被移除（再查为 `APPROVAL_NOT_FOUND`）。
+- 未验证：deny 路径（拒绝后命令不得执行、run 应结束）。
+- 相关提交：`55d5b08`（订阅 + caps 顶层）、`0675933`（审批卡片 UI）。
 
 ## 已知问题（需处理）
 
 1. **模型快速失败竞态（未修复）**：模型调用极快失败时 UI 可能停在 `thinking`。当前定位为 `GatewayChatAdapter` 先执行 `chat.send`，之后才建立该轮事件订阅；run 秒失败时可能漏掉 `lifecycle error`。必须作为独立任务处理。
-2. **Approval 桌面路径未实测**：映射和 reducer 有对应逻辑，但 `waiting_approval` 尚未通过真实桌面对话验证。
+2. **Approval deny 路径未验证**：allow 路径已实测通过；deny（拒绝后命令不执行、run 结束）尚未回归。
 3. **无自动重连**：运行中断线后需恢复 Gateway，并手动重新启动桌面端。
 4. **子模块未正确注册**：`Deepseek-pet` 为 gitlink，但无 `.gitmodules`，新克隆无法按标准子模块流程拉取。
 5. **安全风险**：`frontend/tauri/tauri.conf.json` 的历史配置存在过宽权限问题，仍需后续核查。
@@ -126,6 +143,6 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 
 继续 **Phase 1/2**：
 1. 独立修复 `GatewayChatAdapter` 的快速失败事件订阅竞态。
-2. 实测并实现 Approval UI（`waiting_approval` 路径当前未验证）。
+2. 补 Approval deny 路径回归（拒绝后命令不得执行、run 应结束）；allow 路径已通过。
 3. 补齐 Settings / Connection State / Log Viewer。
-4. 单独立项验证安装包（NSIS / MSI）；当前 `bundle.active = false`，不要与 release exe 回归混为一项。
+4. 安装包后续形态：MSI、代码签名、自动更新（NSIS 已完成安装/运行/卸载回归）。
