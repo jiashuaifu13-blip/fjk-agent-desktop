@@ -1,20 +1,15 @@
-import {
-  PetStates,
-} from '../pet/PetStates.js'
-
-
 export class ChatController {
 
   constructor({
     client,
-    stateMachine,
+    dispatchAgentAction = action => {},
   }) {
 
     this.client =
       client
 
-    this.stateMachine =
-      stateMachine
+    this.dispatchAgentAction =
+      dispatchAgentAction
 
 
     this.messages =
@@ -121,18 +116,7 @@ export class ChatController {
        * ↓
        * THINKING
        */
-      await this.stateMachine
-        .setState(
-          PetStates.THINKING,
-          {
-            reason:
-              'chat-request',
-          }
-        )
-
-
-      let speakingStarted =
-        false
+      this.dispatchAgentAction({ type: 'local/request-started' })
 
 
       await this.client.send({
@@ -149,31 +133,6 @@ export class ChatController {
          * 第一批内容到来之前
          * 切换到 SPEAKING。
          */
-        onStart:
-          async () => {
-
-            if (
-              speakingStarted
-            ) {
-              return
-            }
-
-
-            speakingStarted =
-              true
-
-
-            await this.stateMachine
-              .setState(
-                PetStates.SPEAKING,
-                {
-                  reason:
-                    'chat-stream-start',
-                }
-              )
-          },
-
-
         onToken:
           (token) => {
 
@@ -205,10 +164,7 @@ export class ChatController {
        * ↓
        * IDLE
        */
-      await this.stateMachine
-        .idle(
-          'chat-complete'
-        )
+      this.dispatchAgentAction({ type: 'local/request-settled', outcome: 'completed' })
 
 
       return true
@@ -241,20 +197,7 @@ export class ChatController {
         this.setBubble(
           assistantMessage.content
         )
-
-
-        try {
-          await this.stateMachine
-            .idle(
-              'chat-aborted'
-            )
-        } catch (
-          stateError
-        ) {
-          console.error(
-            stateError
-          )
-        }
+        this.dispatchAgentAction({ type: 'local/request-settled', outcome: 'aborted' })
 
 
         return false
@@ -277,27 +220,7 @@ export class ChatController {
       this.setBubble(
         assistantMessage.content
       )
-
-
-      try {
-
-        await this.stateMachine
-          .setState(
-            PetStates.ERROR,
-            {
-              reason:
-                'chat-error',
-            }
-          )
-
-      } catch (
-        stateError
-      ) {
-
-        console.error(
-          stateError
-        )
-      }
+      this.dispatchAgentAction({ type: 'local/request-settled', outcome: 'failed' })
 
 
       if (

@@ -21,3 +21,11 @@ test('offline clears terminal timer and stays offline', () => { const { r, clock
 test('runId isolation and first non-lifecycle event do not claim run', () => { const { r } = make(); r.dispatch({ type:'local/request-started' }); const before = r.getSnapshot(); assert.strictEqual(dispatch(r, evt('assistant',{},"r1",1,100)), before); dispatch(r, start("r1",2,150)); const current = r.getSnapshot(); assert.strictEqual(dispatch(r, evt('assistant',{},"r2",3,200)), current); dispatch(r, evt('assistant', {},"r1",3,200)); assert.equal(r.getSnapshot().state, AgentStates.WORKING); })
 test('stale seq and ts fallback are ignored; duplicate is idempotent', () => { const { r } = make(); r.dispatch({ type:'local/request-started' }); dispatch(r, start("r1",5,500)); const a = dispatch(r, evt('assistant',{},"r1",6,600)); assert.strictEqual(dispatch(r, evt('assistant', {},"r1",6,600)), a); assert.strictEqual(dispatch(r, evt('tool',{ phase:'start' },"r1",4,700)), a); const noseq = { type:'agent', runId:'r1'.replace(' ',''), ts: 700, stream:'assistant', data:{} }; const b = dispatch(r, noseq); const stale = { ...noseq, ts: 650, stream:'tool', data:{ phase:'start' } }; assert.strictEqual(dispatch(r, stale), b) })
 test('unmapped event keeps state and reference', () => { const { r } = make(); const a = r.dispatch({ type:'local/request-started' }); const b = dispatch(r, { type:'tick' }); assert.strictEqual(a, b); assert.equal(b.state, AgentStates.THINKING); })
+
+test('local settled handles completed failed and aborted', () => {
+  for (const [outcome, expected] of [['completed', AgentStates.COMPLETED], ['failed', AgentStates.FAILED]]) {
+    const { r, clock } = make(); r.dispatch({ type: 'local/request-started' }); r.dispatch({ type: 'local/request-settled', outcome })
+    assert.equal(r.getSnapshot().state, expected); clock.tick(TERMINAL_HOLD_MS); assert.equal(r.getSnapshot().state, AgentStates.IDLE)
+  }
+  const { r } = make(); r.dispatch({ type: 'local/request-started' }); r.dispatch({ type: 'local/request-settled', outcome: 'aborted' }); assert.equal(r.getSnapshot().state, AgentStates.IDLE)
+})

@@ -39,6 +39,14 @@ export function createAgentStateReducer(deps = {}) {
     if (action?.type === 'local/request-started') {
       epoch += 1; clearTimer(); resetOrder(); return emitState(AgentStates.THINKING)
     }
+    if (action?.type === 'local/request-settled') {
+      if (action.outcome === 'aborted') { epoch += 1; clearTimer(); resetOrder(); return emitState(AgentStates.IDLE) }
+      if (action.outcome === 'completed' || action.outcome === 'failed') {
+        const next = action.outcome === 'completed' ? AgentStates.COMPLETED : AgentStates.FAILED
+        const result = emitState(next); armIdle(); return result
+      }
+      return snapshot
+    }
     if (action?.type === 'connection/state') {
       if (action.state === 'offline') { epoch += 1; clearTimer(); resetOrder(); return emitState(AgentStates.OFFLINE) }
       if (action.state === 'connected' && snapshot.state === AgentStates.OFFLINE) return emitState(AgentStates.IDLE)

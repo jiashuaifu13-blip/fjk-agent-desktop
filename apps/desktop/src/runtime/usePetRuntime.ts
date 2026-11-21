@@ -14,6 +14,7 @@ import { PetInteractionController } from '../pet/PetInteractionController.js'
 import { ChatController } from '../chat/ChatController.js'
 import { MockChatClient } from '../chat/MockChatClient.js'
 import { AgentStates } from '@fjk/agent-state/AgentStates.js'
+import { mapAgentStateToPetState } from '@fjk/agent-state/AgentToPetState.js'
 import { createAgentStateReducer } from '@fjk/agent-state/AgentStateReducer.js'
 import { GatewayChatAdapter } from '../gateway/GatewayChatAdapter'
 import { TauriGatewayClient } from '../gateway/TauriGatewayClient'
@@ -124,6 +125,15 @@ export function usePetRuntime(
       stateMachine.onStateError = (err: unknown) => {
         console.error('[FJK] pet state error:', err)
       }
+      const store = createAgentStateReducer()
+      agentStore = store
+      unsubscribeAgentStore = store.subscribe(async (snapshot: { state: string }) => {
+        if (cancelled) return
+        setAgentState((current) => current === snapshot.state ? current : snapshot.state)
+        const nextPetState = mapAgentStateToPetState(snapshot.state)
+        if (nextPetState === stateMachine.currentState) return
+        try { await stateMachine.setState(nextPetState, { reason: `agent:${snapshot.state}` }) } catch (err) { console.error('[FJK] agent-to-pet state error:', err) }
+      })
 
       let client: {
         send(req: {
@@ -137,11 +147,6 @@ export function usePetRuntime(
       if (isTauriRuntime()) {
         const gateway = new TauriGatewayClient()
         gatewayClient = gateway
-        const store = createAgentStateReducer()
-        agentStore = store
-        unsubscribeAgentStore = store.subscribe((snapshot: { state: string }) => {
-          if (!cancelled) setAgentState((current) => current === snapshot.state ? current : snapshot.state)
-        })
         unsubscribeGatewayEvent = gateway.onEvent((event) => store.dispatch({ type: 'gateway/event', event }))
         unsubscribeConnectionState = gateway.onConnectionState((payload) => store.dispatch({ type: 'connection/state', state: payload.state }))
 
@@ -200,6 +205,7 @@ export function usePetRuntime(
           }
         }
       } else if (!cancelled) {
+        store.dispatch({ type: 'connection/state', state: 'connected' })
         setMode('mock')
         setGatewayStatus({
           state: 'mock',
@@ -208,7 +214,7 @@ export function usePetRuntime(
         })
       }
 
-      const controller = new ChatController({ client, stateMachine }) as ChatControllerLike
+      const controller = new ChatController({ client, dispatchAgentAction: (action: unknown) => store.dispatch(action) }) as ChatControllerLike
 
       controller.onGeneratingChange = (generating: boolean) => {
         if (!cancelled) setSending(generating)
