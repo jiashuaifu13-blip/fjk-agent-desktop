@@ -2,13 +2,16 @@
 
 ## DOING
 
-- Phase 1：Terminal 从 Mock 切换到真实 Gateway（已完成连接与授权链路，待补 Settings / Connection State / Log Viewer）。
+- Phase 1：Terminal 已切换到真实 Gateway；继续补 Settings / Connection State / Log Viewer。
 
 ## TODO
 
-- Gateway Client 事件 → AgentState 的真实驱动（P0-021 的映射目前只用于连接状态）。
+- **未修复：GatewayChatAdapter 快速失败竞态。**
+  当前定位：`GatewayChatAdapter` 先执行 `chat.send`，之后才建立该轮事件订阅；如果 run 极快失败，可能漏掉 `lifecycle error`，导致 UI 停在 `thinking`。此问题单独立项处理，不与 AgentState 本轮改动混合。
+- **Approval UI。**
+  `waiting_approval` 映射与 reducer 逻辑已存在，但桌面端真实 approval 流程尚未实测，当前仍标记为**未验证**。
 - Settings / Connection State / Log Viewer。
-- Approval UI。
+- 回归 `npm run tauri build` 打包产物。
 - 设备配对（device identity）作为浏览器端接入的可选路径。
 
 ## BLOCKED
@@ -16,6 +19,22 @@
 None.
 
 ## DONE
+
+### P1-003
+事件驱动 AgentState 已完成。
+
+- 新增 `packages/agent-state/AgentStateReducer.js`：统一消费本地请求意图、Gateway 事件与连接状态；支持 runId 隔离、seq/ts 乱序保护、终态 1500ms 回落、epoch 防竞态，并通过注入 `now` / `setTimeout` / `clearTimeout` 保持可测试。
+- `apps/desktop/src/chat/ChatController.js` 不再持有或直接写入 `PetStateMachine`；改为 dispatch `local/request-started` / `local/request-settled`。
+- `apps/desktop/src/runtime/usePetRuntime.ts` 使用 AgentState 作为唯一 Agent 行为状态源，并建立唯一 Agent 驱动链：
+  `AgentState → AgentToPetState → PetStateMachine.setState`。
+- runtime 中 Agent 生命周期写入桌宠仅保留上述一处；另保留应用启动时的 boot 初始化 `stateMachine.setState(IDLE)`。
+- `TauriGatewayClient` 独立提供 `onEvent()` 与 `onConnectionState()`，运行中断线可将 AgentState 切换到 `offline`。
+- reducer 单元测试：**10/10 通过**。
+- T1 实测：真实流式对话正常，`thinking → working → completed → idle`，桌宠同步。
+- T2 实测：completed 后 1.5 秒内追发新消息，无旧 terminal timer 导致的 idle 抖动。
+- T3 实测：运行中关闭 Gateway，AgentState 进入 `offline`，终端显示离线并禁用输入。
+- T4 实测：重启 Gateway 后重新启动桌面端，可恢复正常连接与运行路径。
+- Approval / `waiting_approval` 桌面真实路径：**未验证**。
 
 ### P1-001
 Gateway transport moved to Rust (`src-tauri/src/gateway.rs`), removing the
@@ -27,7 +46,6 @@ token stays in the backend. Verified with a real chat round-trip.
 Gateway error mapping (`src/gateway/GatewayError.ts`) + UI: unauthorized /
 not-paired / origin-rejected / offline / timeout / config states, banner, mode
 badge and structured chat error block. Assertions pass.
-
 
 ### P0-001
 Project guide established.
