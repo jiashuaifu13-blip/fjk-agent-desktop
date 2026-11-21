@@ -38,6 +38,7 @@ export function DesktopTerminal() {
     error,
     mode,
     gatewayStatus,
+    settingsOverview,
   } =
     usePetRuntimeContext()
 
@@ -69,9 +70,15 @@ export function DesktopTerminal() {
   ] =
     useState(false)
 
-  const [
+    const [
     logViewerOpen,
     setLogViewerOpen,
+  ] =
+    useState(false)
+
+  const [
+    settingsPanelOpen,
+    setSettingsPanelOpen,
   ] =
     useState(false)
 
@@ -315,6 +322,23 @@ export function DesktopTerminal() {
             type="button"
             className="connection-state-trigger"
             aria-expanded={
+              settingsPanelOpen
+            }
+            aria-controls="settings-overview-panel"
+            onClick={() => {
+              setSettingsPanelOpen(
+                (current) =>
+                  !current,
+              )
+            }}
+          >
+            设置
+          </button>
+
+          <button
+            type="button"
+            className="connection-state-trigger"
+            aria-expanded={
               logViewerOpen
             }
             aria-controls="runtime-log-viewer"
@@ -377,7 +401,102 @@ export function DesktopTerminal() {
             )
           }}
         />
-      </div>
+            </div>
+
+      {settingsPanelOpen && (
+        <section
+          id="settings-overview-panel"
+          className="connection-state-panel"
+          aria-label="Settings 只读概览"
+        >
+          <div className="connection-state-heading">
+            <div>
+              <div className="connection-state-title">
+                Settings
+              </div>
+
+              <div className="connection-state-subtitle">
+                当前运行配置只读概览
+              </div>
+            </div>
+
+            <span className="connection-state-badge connection-state-badge-neutral">
+              只读
+            </span>
+          </div>
+
+          <div className="connection-state-grid">
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                模型
+              </span>
+
+              <span
+                className="connection-state-value"
+                title={
+                  settingsOverview.model ??
+                  'Gateway 当前未提供模型信息'
+                }
+              >
+                {settingsOverview.model ??
+                  '未提供'}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                工具数量
+              </span>
+
+              <span className="connection-state-value">
+                {settingsOverview.toolCount ??
+                  '未提供'}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                当前 Session
+              </span>
+
+              <span
+                className="connection-state-value"
+                title={
+                  settingsOverview.sessionKey ??
+                  '未选择 Session'
+                }
+              >
+                {settingsOverview.sessionKey ??
+                  '未选择'}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                Session 总数
+              </span>
+
+              <span className="connection-state-value">
+                {settingsOverview.sessionCount ??
+                  '未提供'}
+              </span>
+            </div>
+          </div>
+
+          <div className="connection-state-section">
+            <div className="connection-state-section-title">
+              数据来源
+            </div>
+
+            <div className="connection-state-copy">
+              本页仅展示启动阶段 Gateway
+              sessions.list 已返回的信息；
+              不修改模型、工具或 Session 配置。
+              Gateway 未返回的字段统一显示“未提供”。
+            </div>
+          </div>
+        </section>
+      )}
 
       {connectionPanelOpen && (
         <section

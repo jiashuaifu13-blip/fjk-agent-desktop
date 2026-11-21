@@ -70,6 +70,13 @@ export interface ExecApproval {
   expiresAtMs?: number
 }
 
+export interface SettingsOverview {
+  model: string | null
+  toolCount: number | null
+  sessionKey: string | null
+  sessionCount: number | null
+}
+
 export interface PetRuntime {
   approval: ExecApproval | null
   resolveApproval(decision: 'allow-once' | 'deny'): Promise<void>
@@ -85,6 +92,8 @@ export interface PetRuntime {
 
   runtimeLogs: RuntimeLogEntry[]
   clearRuntimeLogs(): void
+
+  settingsOverview: SettingsOverview
 }
 
 function isTauriRuntime(): boolean {
@@ -100,22 +109,108 @@ function isTauriRuntime(): boolean {
   )
 }
 
-function pickMainSessionKey(list: unknown): string | null {
+type GatewaySessionSummary = {
+  key?: string
+  isMain?: boolean
+  model?: string
+  modelName?: string
+  toolCount?: number
+  tools?: unknown[]
+  metadata?: {
+    model?: string
+    modelName?: string
+    toolCount?: number
+    tools?: unknown[]
+  }
+}
+
+function getGatewaySessions(
+  list: unknown,
+): GatewaySessionSummary[] {
   const sessions =
     (
       list as {
-        sessions?: Array<{
-          key?: string
-          isMain?: boolean
-        }>
+        sessions?: GatewaySessionSummary[]
       } | null
-    )?.sessions ?? []
+    )?.sessions
 
-  const main =
-    sessions.find((session) => session.isMain) ??
-    sessions[0]
+  return Array.isArray(sessions)
+    ? sessions
+    : []
+}
 
-  return main?.key ?? null
+function pickMainSession(
+  list: unknown,
+): GatewaySessionSummary | null {
+  const sessions = getGatewaySessions(list)
+
+  return (
+    sessions.find(
+      (session) => session.isMain,
+    ) ??
+    sessions[0] ??
+    null
+  )
+}
+
+function pickMainSessionKey(
+  list: unknown,
+): string | null {
+  return pickMainSession(list)?.key ?? null
+}
+
+function readSettingsOverview(
+  list: unknown,
+): SettingsOverview {
+  const sessions = getGatewaySessions(list)
+  const main = pickMainSession(list)
+
+  const model =
+    main?.model ??
+    main?.modelName ??
+    main?.metadata?.model ??
+    main?.metadata?.modelName ??
+    null
+
+  const directToolCount =
+    typeof main?.toolCount === 'number'
+      ? main.toolCount
+      : null
+
+  const metadataToolCount =
+    typeof main?.metadata?.toolCount === 'number'
+      ? main.metadata.toolCount
+      : null
+
+  const toolCount =
+    directToolCount ??
+    (
+      Array.isArray(main?.tools)
+        ? main.tools.length
+        : null
+    ) ??
+    metadataToolCount ??
+    (
+      Array.isArray(main?.metadata?.tools)
+        ? main.metadata.tools.length
+        : null
+    )
+
+  return {
+    model:
+      typeof model === 'string' &&
+      model.trim().length > 0
+        ? model
+        : null,
+
+    toolCount,
+
+    sessionKey:
+      main?.key ?? null,
+
+    sessionCount:
+      sessions.length,
+  }
 }
 
 export function usePetRuntime(
@@ -156,6 +251,16 @@ export function usePetRuntime(
 
   const [runtimeLogs, setRuntimeLogs] =
     useState<RuntimeLogEntry[]>([])
+
+  const [
+    settingsOverview,
+    setSettingsOverview,
+  ] = useState<SettingsOverview>({
+    model: null,
+    toolCount: null,
+    sessionKey: null,
+    sessionCount: null,
+  })
 
   const runtimeLogIdRef = useRef(0)
 
@@ -466,6 +571,12 @@ export function usePetRuntime(
 
             sessionKey =
               pickMainSessionKey(list)
+
+            if (!cancelled) {
+              setSettingsOverview(
+                readSettingsOverview(list),
+              )
+            }
 
             appendRuntimeLog(
               'info',
@@ -833,5 +944,7 @@ export function usePetRuntime(
 
     runtimeLogs,
     clearRuntimeLogs,
+
+    settingsOverview,
   }
 }
