@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261121-1945
-HEAD_AT_SYNC: c544080
-UPDATED: 2026-11-21T19:45+08:00
-TASK: Settings / Connection State / Log Viewer（下一步，尚未开始）
+STATE_ID: 20261121-1955
+HEAD_AT_SYNC: cea1a7b
+UPDATED: 2026-11-21T19:55+08:00
+TASK: Settings 其余项 / Log Viewer（下一步，尚未开始）
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -12,6 +12,7 @@ DONE:
 - P1-004 release 回归
 - P1-005 NSIS 安装包回归
 - P1-006 Approval 卡片 + resolve（**allow 与 deny 均已验证**）
+- Connection State 面板（构建通过、界面实测：字段/错误占位/重连说明）
 
 VERIFIED_DETAIL:
 - allow：whoami 执行，exit 0，482ms，审批移除
@@ -19,11 +20,11 @@ VERIFIED_DETAIL:
   （"Exec denied ... user-denied"，transcript 无执行输出）
 
 UNVERIFIED:
-- Settings / Connection State / Log Viewer
+- Settings 其余项（模型/工具/会话等）；Log Viewer
 - GatewayChatAdapter 快速失败竞态（已知未修）
 
 NEXT:
-1. Settings / Connection State / Log Viewer
+1. Settings 其余项 / Log Viewer
 2. 修复 GatewayChatAdapter 快速失败竞态
 3. 改动后重新回归构建与安装包
 
