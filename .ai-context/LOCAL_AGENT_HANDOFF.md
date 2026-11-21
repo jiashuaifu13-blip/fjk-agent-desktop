@@ -63,15 +63,19 @@
 5. **受限沙箱**：`node --test`、`npm run build`、`cargo` 可能 spawn EPERM；需要时申请完全权限并说明理由。
 6. **`.tmp` 目录**是临时验收脚本，已被 `*.tmp` 规则忽略，不要提交。
 
-## 七、当前状态（2026-11-21 17:45）
+## 七、当前状态（2026-11-21 19:20）
 
-- `HEAD = origin/main = a388b46`（文档规则更新）。
-- 未提交：`apps/desktop/src-tauri/src/gateway.rs`（connect 参数 caps 移到顶层，等审批链路确认后提交）。
-- 已完成：P1-001 Gateway 通道、P1-002 错误映射、P1-003 事件驱动 AgentState、P1-004 release 回归、P1-005 NSIS 包。
-- 进行中：**Approval UI**。
-  - 已验证：`sessions.messages.subscribe {key, includeApprovals:true}` 可用，返回 `subscribed:true` + `approvalReplay`；caps 顶层被接受。
-  - 未解决：Agent 未真正调用 command-mode exec，因此还没有真实 `exec.approval.requested` / `session.approval` 样本。
-  - 下一步：由网页 AI 给出让 Agent 走 command-mode 的指令或配置项（属配置变更，需用户确认）；或明确以 mock 驱动 UI 并标注未验证。
+- `HEAD = origin/main = db33f8a`，工作区干净。
+- 已完成：P1-001 Gateway 通道、P1-002 错误映射、P1-003 事件驱动 AgentState、P1-004 release 回归、P1-005 NSIS 包、P1-006 Approval 卡片（allow 路径）。
+- Approval 关键事实：
+  - `caps` 必须在 connect 顶层，放 `client` 里会 `invalid-handshake`；
+  - 订阅 `sessions.messages.subscribe { key, includeApprovals:true }`，退订 `sessions.messages.unsubscribe { key }`；
+  - 事件：`exec.approval.requested` / `session.approval`(pending→terminal) / `exec.approval.resolved`；
+  - resolve：`exec.approval.resolve { id, decision }`；
+  - allow 实测：`whoami` 执行，输出 `laptop-qqmq9j32\付家康`，exit 0，482ms，随后 `APPROVAL_NOT_FOUND`。
+- 未验证：**deny 路径**（拒绝后命令不得执行、run 应结束）。
+- 下一步：deny 回归 → Settings / Connection State / Log Viewer → AI_HANDOFF.md 收尾。
+- 验收技巧：触发审批后约 38 秒内必须点按钮，否则 run 中止、审批被清理（再查为 NOT_FOUND）。
 
 ## 八、交接约定
 
