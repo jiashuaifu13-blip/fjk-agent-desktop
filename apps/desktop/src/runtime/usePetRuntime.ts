@@ -110,6 +110,7 @@ export interface PetRuntime {
   updateSessionModel(model: string): Promise<void>
   rollbackSessionModel(): Promise<void>
   sessionList: SessionListItem[]
+  switchSession(sessionKey: string): Promise<void>
 }
 
 function isTauriRuntime(): boolean {
@@ -254,6 +255,9 @@ export function usePetRuntime(
 ): PetRuntime {
   const gatewayClientRef =
     useRef<TauriGatewayClient | null>(null)
+
+  const gatewayChatAdapterRef =
+    useRef<GatewayChatAdapter | null>(null)
 
   const [approval, setApproval] =
     useState<ExecApproval | null>(null)
@@ -691,11 +695,16 @@ export function usePetRuntime(
             }
           }
 
-          client =
+          const adapter =
             new GatewayChatAdapter(
               gateway,
               sessionKey,
             )
+
+          gatewayChatAdapterRef.current =
+            adapter
+
+          client = adapter
 
           // Register this connection as an approval
           // subscriber for the current session so
@@ -1025,6 +1034,83 @@ export function usePetRuntime(
     setPreviousModel(null)
   }
 
+  const switchSession = async (
+    sessionKey: string,
+  ) => {
+    const targetKey = sessionKey.trim()
+    const currentKey =
+      settingsOverview.sessionKey
+    const gateway =
+      gatewayClientRef.current
+    const adapter =
+      gatewayChatAdapterRef.current
+
+    if (!gateway || !adapter) {
+      throw new Error('Gateway/session adapter unavailable')
+    }
+
+    if (sending) {
+      throw new Error('Cannot switch session while a run is active')
+    }
+
+    if (
+      !targetKey ||
+      !sessionList.some(
+        (session) => session.key === targetKey,
+      )
+    ) {
+      throw new Error('Target session is not in the current session list')
+    }
+
+    if (targetKey === currentKey) {
+      return
+    }
+
+    await gateway.send(
+      'sessions.messages.subscribe',
+      {
+        key: targetKey,
+        includeApprovals: true,
+      },
+    )
+
+    try {
+      if (currentKey) {
+        await gateway.send(
+          'sessions.messages.unsubscribe',
+          {
+            key: currentKey,
+          },
+        )
+      }
+
+      adapter.setSessionKey(targetKey)
+      setApproval(null)
+      setSettingsOverview((current) => ({
+        ...current,
+        sessionKey: targetKey,
+      }))
+
+      appendRuntimeLog(
+        'info',
+        'gateway',
+        'Active session changed',
+        `session=${targetKey}; approvals=true`,
+      )
+    } catch (error) {
+      await gateway
+        .send(
+          'sessions.messages.unsubscribe',
+          {
+            key: targetKey,
+          },
+        )
+        .catch(() => undefined)
+
+      throw error
+    }
+  }
+
   const resolveApproval = async (
     decision:
       | 'allow-once'
@@ -1070,5 +1156,6 @@ export function usePetRuntime(
     updateSessionModel,
     rollbackSessionModel,
     sessionList,
+    switchSession,
   }
 }

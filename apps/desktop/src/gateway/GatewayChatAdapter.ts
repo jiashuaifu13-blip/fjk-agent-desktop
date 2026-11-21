@@ -28,6 +28,16 @@ export class GatewayChatAdapter {
     this.sessionKey = initialSessionKey
   }
 
+  setSessionKey(sessionKey: string): void {
+    const next = sessionKey.trim()
+
+    if (!next) {
+      throw new Error('session key is required')
+    }
+
+    this.sessionKey = next
+  }
+
 
   async send(request: ChatRequest): Promise<void> {
 

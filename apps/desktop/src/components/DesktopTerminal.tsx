@@ -43,6 +43,7 @@ export function DesktopTerminal() {
     updateSessionModel,
     rollbackSessionModel,
     sessionList,
+    switchSession,
   } =
     usePetRuntimeContext()
 
@@ -132,6 +133,12 @@ export function DesktopTerminal() {
   const [
     modelWriteStatus,
     setModelWriteStatus,
+  ] =
+    useState<string | null>(null)
+
+  const [
+    sessionSwitchError,
+    setSessionSwitchError,
   ] =
     useState<string | null>(null)
 
@@ -606,10 +613,49 @@ export function DesktopTerminal() {
                     : new Date(
                         session.updatedAt,
                       ).toLocaleString()}
+
+                  {session.key !==
+                    settingsOverview.sessionKey && (
+                    <button
+                      type="button"
+                      className="connection-state-trigger"
+                      disabled={sending}
+                      onClick={() => {
+                        setSessionSwitchError(
+                          null,
+                        )
+                        void switchSession(
+                          session.key,
+                        ).catch((err) => {
+                          setSessionSwitchError(
+                            err instanceof Error
+                              ? err.message
+                              : String(err),
+                          )
+                        })
+                      }}
+                    >
+                      切换
+                    </button>
+                  )}
                 </span>
               </div>
             ))}
           </div>
+
+          {sessionSwitchError && (
+            <div className="connection-state-section">
+              <div className="connection-state-error">
+                <div className="connection-state-error-title">
+                  切换失败
+                </div>
+
+                <div className="connection-state-copy">
+                  {sessionSwitchError}
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       )}
 
