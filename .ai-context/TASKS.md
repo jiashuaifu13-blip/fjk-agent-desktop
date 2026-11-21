@@ -61,6 +61,18 @@ Release 构建与运行回归通过。
 - T4 实测：重启 Gateway 后重新启动桌面端，可恢复正常连接与运行路径。
 - Approval / `waiting_approval` 桌面真实路径：**未验证**。
 
+### P1-006
+Approval 卡片 + resolve 已完成，allow 路径已真实验证。
+
+- 前端订阅与 caps 顶层提交：`55d5b08`。
+- Approval 卡片 UI 提交：`0675933`。
+- 已确认事件：
+  - `exec.approval.requested`
+  - `session.approval`（`pending` → `terminal`）
+  - `exec.approval.resolved`
+- resolve 方法：`exec.approval.resolve { id, decision }`。
+- allow 路径实测通过：审批卡片出现后点击“允许”，`whoami` 真实执行并返回 `laptop-qqmq9j32\付家康`，`exitCode=0`，耗时 `482ms`，随后审批记录被移除。
+- deny 路径：未验证。
 ### P1-001
 Gateway transport moved to Rust (`src-tauri/src/gateway.rs`), removing the
 WebView `Origin` header that made OpenClaw clear operator scopes. Tauri commands:
