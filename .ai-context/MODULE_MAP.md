@@ -1,4 +1,4 @@
-﻿# Module Map
+# Module Map
 
 | Module | Location | Responsibility | Status |
 |---|---|---|---|
@@ -18,7 +18,12 @@
 | FJK Desktop | /apps/desktop/ | Tauri 2 + React + TS desktop shell | In progress |
 | Pet runtime (migrated) | /apps/desktop/src/pet/ | Pet canvas runtime, copied from Deepseek-pet | Migrated |
 | Chat runtime (migrated) | /apps/desktop/src/chat/ | ChatController + MockChatClient | Migrated |
-| PetRuntime | /apps/desktop/src/runtime/ | React wrapper (usePetRuntime + context) | Added |
-| DesktopTerminal | /apps/desktop/src/components/DesktopTerminal.tsx | Terminal UI, mock chat | Added |
+| Gateway transport (Rust) | /apps/desktop/src-tauri/src/gateway.rs | Protocol v4 WS client: handshake, RPC correlation, event pump; Tauri commands `gateway_info` / `gateway_connect` / `gateway_request` / `gateway_disconnect` | Added / verified |
+| TauriGatewayClient | /apps/desktop/src/gateway/TauriGatewayClient.ts | Frontend transport over the Rust bridge (`gateway://event`) | Added / verified |
+| GatewayChatAdapter | /apps/desktop/src/gateway/GatewayChatAdapter.ts | Gateway streaming → `ChatController` transport shape | Updated |
+| GatewayError | /apps/desktop/src/gateway/GatewayError.ts | Gateway error → unauthorized / not_paired / offline / ... vocabulary | Added / verified |
+| Gateway types | /apps/desktop/src/gateway/types.ts | `GatewayTransport` / `GatewayEventFrame` | Added |
+| PetRuntime | /apps/desktop/src/runtime/ | React wrapper (usePetRuntime + context), gateway status | Added |
+| DesktopTerminal | /apps/desktop/src/components/DesktopTerminal.tsx | Terminal UI, real gateway chat, status banner | Updated |
 | PetView | /apps/desktop/src/components/PetView.tsx | Pet canvas host | Added |
 | Extensions | TBD | Blog / Files / Git / GitHub | Not started |

@@ -22,7 +22,8 @@
 
     "baseUrl": ".",
     "paths": {
-      "@fjk/agent-state/*": ["../../packages/agent-state/*"]
+      "@fjk/agent-state/*": ["../../packages/agent-state/*"],
+      "@fjk/gateway-client/*": ["../../packages/gateway-client/*"]
     }
   },
   "include": ["src"]

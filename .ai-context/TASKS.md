@@ -1,16 +1,33 @@
-﻿# Tasks
+# Tasks
 
 ## DOING
 
+- Phase 1：Terminal 从 Mock 切换到真实 Gateway（已完成连接与授权链路，待补 Settings / Connection State / Log Viewer）。
+
 ## TODO
 
-（无待办 —— Phase 0 全部完成）
+- Gateway Client 事件 → AgentState 的真实驱动（P0-021 的映射目前只用于连接状态）。
+- Settings / Connection State / Log Viewer。
+- Approval UI。
+- 设备配对（device identity）作为浏览器端接入的可选路径。
 
 ## BLOCKED
 
 None.
 
 ## DONE
+
+### P1-001
+Gateway transport moved to Rust (`src-tauri/src/gateway.rs`), removing the
+WebView `Origin` header that made OpenClaw clear operator scopes. Tauri commands:
+`gateway_info` / `gateway_connect` / `gateway_request` / `gateway_disconnect`;
+token stays in the backend. Verified with a real chat round-trip.
+
+### P1-002
+Gateway error mapping (`src/gateway/GatewayError.ts`) + UI: unauthorized /
+not-paired / origin-rejected / offline / timeout / config states, banner, mode
+badge and structured chat error block. Assertions pass.
+
 
 ### P0-001
 Project guide established.

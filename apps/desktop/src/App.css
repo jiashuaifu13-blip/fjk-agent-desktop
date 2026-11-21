@@ -107,6 +107,50 @@ body {
   font-size: 11px;
 }
 
+.terminal-mode-ok {
+  color: #22c55e;
+}
+
+.terminal-mode-warn {
+  color: #f87171;
+  background: #3f1d1d;
+}
+
+/* ---- Gateway status notice ---- */
+
+.terminal-notice {
+  padding: 8px 16px;
+  border-bottom: 1px solid #26262e;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.terminal-notice-warn {
+  background: #2a1515;
+  border-bottom-color: #3f1d1d;
+  color: #fca5a5;
+}
+
+.terminal-notice-info {
+  background: #1c1a12;
+  border-bottom-color: #3f3520;
+  color: #fcd34d;
+}
+
+.notice-title {
+  font-weight: 600;
+}
+
+.notice-detail {
+  margin-top: 2px;
+  opacity: 0.9;
+}
+
+.notice-hint {
+  margin-top: 4px;
+  color: #a1a1aa;
+}
+
 .terminal-messages {
   flex: 1;
   overflow-y: auto;
@@ -120,6 +164,50 @@ body {
   margin: auto;
   color: #52525b;
   font-size: 13px;
+}
+
+.terminal-error {
+  padding: 8px 16px;
+  border-top: 1px solid #3f1d1d;
+  background: #2a1515;
+  color: #f87171;
+  font-size: 12px;
+  word-break: break-word;
+}
+
+.error-title {
+  font-weight: 600;
+}
+
+.error-detail {
+  margin-top: 2px;
+  color: #fca5a5;
+}
+
+.error-hint {
+  margin-top: 4px;
+  color: #a1a1aa;
+}
+
+.error-raw {
+  margin-top: 6px;
+  color: #a1a1aa;
+}
+
+.error-raw summary {
+  cursor: pointer;
+  color: #71717a;
+}
+
+.error-raw code {
+  display: block;
+  margin-top: 4px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #101014;
+  color: #a1a1aa;
+  font-size: 11px;
+  word-break: break-all;
 }
 
 .msg {

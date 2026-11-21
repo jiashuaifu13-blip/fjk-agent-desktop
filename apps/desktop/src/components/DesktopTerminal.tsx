@@ -2,11 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { usePetRuntimeContext } from '../runtime/PetRuntimeContext'
 import type { ChatMessage } from '../runtime/PetRuntimeContext'
+import { toGatewayIssue } from '../gateway/GatewayError'
+import type { GatewayIssue } from '../gateway/GatewayError'
 
 export function DesktopTerminal() {
-  const { chatController, sending, agentState, ready, error } = usePetRuntimeContext()
+  const { chatController, sending, agentState, ready, error, mode, gatewayStatus } =
+    usePetRuntimeContext()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
+  const [lastError, setLastError] = useState<GatewayIssue | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -24,7 +28,18 @@ export function DesktopTerminal() {
     if (el) el.scrollTop = el.scrollHeight
   }, [messages, sending])
 
-  const connected = Boolean(chatController) && ready && !error
+  const unauthorized = gatewayStatus.state === 'unauthorized'
+  const offline = gatewayStatus.state === 'offline'
+  const connected = Boolean(chatController) && ready && !error && !unauthorized
+
+  const modeLabel = unauthorized
+    ? 'Gateway · 未授权'
+    : mode === 'gateway'
+      ? 'Gateway'
+      : offline
+        ? '离线 · Mock'
+        : 'Mock 模式'
+  const modeTone = unauthorized || offline ? 'warn' : mode === 'gateway' ? 'ok' : undefined
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -32,10 +47,12 @@ export function DesktopTerminal() {
     const text = input.trim()
     if (!text) return
     setInput('')
+    setLastError(null)
     try {
       await chatController.send(text)
     } catch (err) {
       console.error('[FJK] send failed:', err)
+      setLastError(toGatewayIssue(err))
     }
   }
 
@@ -56,10 +73,20 @@ export function DesktopTerminal() {
           FJK Agent Terminal
         </div>
         <div className="terminal-meta">
-          <span className="terminal-mode">Mock 模式</span>
+          <span className={`terminal-mode${modeTone ? ` terminal-mode-${modeTone}` : ''}`}>
+            {modeLabel}
+          </span>
           <span className="terminal-agent">agent: {agentState}</span>
         </div>
       </header>
+
+      {(unauthorized || offline) && (
+        <div className={`terminal-notice terminal-notice-${unauthorized ? 'warn' : 'info'}`}>
+          <div className="notice-title">{gatewayStatus.title}</div>
+          <div className="notice-detail">{gatewayStatus.detail}</div>
+          {gatewayStatus.hint && <div className="notice-hint">{gatewayStatus.hint}</div>}
+        </div>
+      )}
 
       <div ref={listRef} className="terminal-messages">
         {messages.length === 0 && (
@@ -80,12 +107,32 @@ export function DesktopTerminal() {
         )}
       </div>
 
+      {lastError && (
+        <div className="terminal-error">
+          <div className="error-title">发送失败：{lastError.title}</div>
+          <div className="error-detail">{lastError.detail}</div>
+          {lastError.hint && <div className="error-hint">{lastError.hint}</div>}
+          <details className="error-raw">
+            <summary>原始错误</summary>
+            <code>{lastError.raw}</code>
+          </details>
+        </div>
+      )}
+
       <form className="terminal-input" onSubmit={handleSubmit}>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={connected ? '输入消息，Enter 发送' : '等待桌宠就绪…'}
+          placeholder={
+            unauthorized
+              ? '未授权，暂时无法发送'
+              : connected
+                ? '输入消息，Enter 发送'
+                : offline
+                  ? '网关离线，当前为 Mock 对话'
+                  : '等待桌宠就绪…'
+          }
           disabled={!connected || sending}
           rows={2}
         />

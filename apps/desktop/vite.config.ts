@@ -11,6 +11,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@fjk/agent-state': packagesDir + '/agent-state',
+      '@fjk/gateway-client': packagesDir + '/gateway-client',
     },
   },
   server: {

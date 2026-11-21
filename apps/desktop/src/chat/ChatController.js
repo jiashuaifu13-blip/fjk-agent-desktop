@@ -265,7 +265,10 @@ export class ChatController {
         'error'
 
       assistantMessage.content =
-        '模拟聊天发生错误。'
+        typeof error?.displayMessage === 'string' &&
+        error.displayMessage
+          ? error.displayMessage
+          : '发送失败，请稍后重试。'
 
 
       this.emitMessages()
