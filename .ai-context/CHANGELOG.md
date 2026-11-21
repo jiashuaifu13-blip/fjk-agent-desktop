@@ -155,3 +155,18 @@ http://localhost:5173` reproduces the exact error payload.
 #### Boundary
 - The installer is unsigned; SmartScreen "unknown publisher" is expected.
 - MSI packaging, code signing and auto-update are not part of this task.
+## 2026-11-21 — Approval card and approval subscription
+
+### Added
+- Added `sessions.messages.subscribe` with `includeApprovals` to receive approval lifecycle events.
+- Added Approval card UI with “允许” / “拒绝” actions.
+- Related commits: `55d5b08`, `0675933`.
+
+### Fixed
+- `caps` must be placed at the top level of the connect payload. Placing `caps` inside `client` causes `invalid-handshake`.
+
+### Verified
+- allow path verified end-to-end: Approval card → allow → `whoami` executed successfully with `exitCode=0` in `482ms` → approval removed.
+- Observed approval events: `exec.approval.requested`, `session.approval` (`pending` → `terminal`), `exec.approval.resolved`.
+- Resolve method: `exec.approval.resolve { id, decision }`.
+- deny path: 未验证。
