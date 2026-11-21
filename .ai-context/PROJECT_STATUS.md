@@ -76,6 +76,7 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 - **Log Viewer**：最近 200 条运行事件，展开/关闭/清空；含 handshake、permission probe、subscription（approvals=true）、runtime ready。
 - **Settings 只读概览**：模型、工具数量、当前 Session、Session 总数；Gateway 未返回字段统一显示「未提供」。
 - **GatewayChatAdapter 订阅顺序修复**：先注册 `onEvent` 再 `sendMessage`，缓冲 runId 未知前的早到事件。
+- **Settings 模型修改 + 单次回滚**：`sessions.patch { key, model }` 修改当前 Session 模型，记录原值并可一键回滚；RPC 与 UI 均实测（`deepseek-flash` → `deepseek-chat` → 回滚）。
 - `.ai-context/OPENCLAW_*` 系列文档 — Gateway 事件语义 / 认证契约 / 活动事件 / 状态映射 / Client 接口 / 技术选型报告。
 
 ## AgentState 验证

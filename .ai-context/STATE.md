@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261121-2140
+STATE_ID: 20261121-2145
 HEAD_AT_SYNC: fd3866a
-UPDATED: 2026-11-21T21:40+08:00
-TASK: Settings 模型修改 + 单次回滚（代码已提交，UI 待实测）
+UPDATED: 2026-11-21T21:45+08:00
+TASK: 等待下一轮功能（Session 管理 / 自动重连 / Settings 更多项）
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -18,7 +18,7 @@ DONE:
 - GatewayChatAdapter 订阅先于发送 + 早到事件缓冲（普通对话正常）
 - release 构建 + NSIS 安装/运行/卸载复验（安装 0、卸载 0、目录/快捷方式/进程均清理）
 - 文档收尾：TASKS / PROJECT_STATUS / AI_HANDOFF 已同步（提交 869e7a7）
-- Settings 模型修改 + 单次回滚（RPC 已验证 deepseek-flash→deepseek-chat→回滚；UI 待实测）
+- Settings 模型修改 + 单次回滚（RPC 与 UI 均实测通过：deepseek-flash→deepseek-chat→回滚）
 
 
 VERIFIED_DETAIL:

@@ -20,6 +20,15 @@ None.
 
 ## DONE
 
+### P1-009
+Settings 模型修改 + 单次回滚（已实测）。
+
+- 「设置」中可修改当前 Session 的 `model`，走 `sessions.patch { key, model }`，成功后 `sessions.list` 刷新；
+- 修改前记录原值，可点「回滚模型」一次性恢复；当前模型为空时禁止写入；
+- RPC 实测：`deepseek-flash` → `deepseek-chat` → 回滚 `deepseek-flash`；
+- UI 实测：用户确认保存与回滚均正常；
+- 提交 `fd3866a`。
+
 ### P1-008
 GatewayChatAdapter 订阅顺序修复。
 

@@ -113,6 +113,7 @@ Phase 1（桌面框架）主体完成 / Phase 2 部分完成。
 - Log Viewer：最近 200 条运行事件，展开/关闭/清空；启动日志 7 条，含 subscription（approvals=true）（截图确认）。
 - Settings 只读概览：模型 / 工具数量 / 当前 Session / Session 总数，缺失字段显示「未提供」（截图确认）。
 - GatewayChatAdapter：`onEvent` 在 L138、`sendMessage` 在 L162，subscribe-before-send=True；普通对话正常。
+- Settings 模型修改 + 单次回滚：`sessions.patch { key, model }`，RPC 与 UI 均实测（deepseek-flash → deepseek-chat → 回滚）。
 - release + NSIS 复验：`tauri build` exit 0；静默安装 exit 0（目录 `D:\fjk-agent\FJK Agent`）、
   安装版窗口正常并连接 Gateway、静默卸载 exit 0，目录/快捷方式/进程/注册表均清理。
 
