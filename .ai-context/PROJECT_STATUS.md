@@ -18,6 +18,9 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 - Gateway 错误已映射为未授权 / 未配对 / 来源拒绝 / 离线 / 超时 / 配置等状态并在 UI 呈现。
 - **release 发布形态已完成回归**：`npm run tauri build` 成功，生成 `apps/desktop/src-tauri/target/release/fjk-desktop.exe`（20.24 MB）；直接运行 release exe 已验证窗口启动、Gateway 连接、真实流式对话和正常退出。
 - NSIS 安装包已生成并完成安装/运行/卸载回归（详见下文「Release 安装包回归（NSIS）」）；MSI、代码签名、自动更新仍未做。
+- **Approval 链路已完成**：订阅 `sessions.messages.subscribe(includeApprovals)` + 审批卡片 + `exec.approval.resolve`；allow（命令真实执行）与 deny（user-denied、命令未执行）均已实测。
+- **Connection State / Log Viewer / Settings 只读概览均已完成并界面实测**：连接状态与最近错误、最近 200 条运行事件（可展开/清空）、模型/工具数量/当前 Session/总数（缺失显示「未提供」）。
+- **GatewayChatAdapter 订阅顺序已修复**：先注册 `onEvent` 再 `sendMessage`，并缓冲 runId 未知前的早到事件；普通对话正常，快速失败场景未实测。
 - Gateway Client 接口已定义（`packages/gateway-client/`，仅类型/接口，未实现）。
 - 远程仓库 `origin` 已配置并持续推送 `main`。
 - 尚未有任何 Extensions。
@@ -27,7 +30,7 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 | 阶段 | 目标 | 真实状态 | 证据 / 说明 |
 |---|---|---|---|
 | Phase 0 | OpenClaw 调查与基础验证 | ✅ **完成** | P0-001~023 全部完成；技术选型报告 GO（OpenClaw 作为 Agent Core） |
-| Phase 1 | FJK Desktop 基础框架（Tauri 2 + React + TS + Rust） | 🟡 **进行中** | Rust Gateway 通道、权限探测、错误映射、事件驱动 AgentState、release exe 回归已完成；Settings / Log Viewer 未做 |
+| Phase 1 | FJK Desktop 基础框架（Tauri 2 + React + TS + Rust） | ✅ **主体完成** | Rust Gateway 通道、权限探测、错误映射、事件驱动 AgentState、Connection State / Log Viewer / Settings、release 与 NSIS 回归均已完成 |
 | Phase 2 | Agent Desktop Terminal | 🟡 **部分** | 真实 Gateway 对话、流式回复、连接断线状态、Approval 卡片（allow/deny 均验证）已跑通；Session 管理、历史记录未做 |
 | Phase 3 | Deepseek-pet 桌宠整合 | **部分（仅 3A + 部分 3D）** | 3A 审计已完成；AgentState→PetState Adapter 与 runtime 驱动已接通；3B/3C/3E 未完成 |
 | Phase 4 | Blog Adapter | **未开始** | 无对应代码 |
@@ -66,6 +69,13 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 - **真实对话**：桌面端经 Rust 通道完成 `sessions.list` 权限探测与 `chat.send` 流式回复。
 - **Gateway 错误映射**：`src/gateway/GatewayError.ts` 覆盖未授权、未配对、来源拒绝、离线、超时、配置、协议等错误。
 - **release 构建与运行**：`npm run tauri build` 已成功；release exe 可直接启动、连接 Gateway、完成真实流式对话并正常退出。
+- **Approval 链路**：`usePetRuntime` 订阅 `sessions.messages.subscribe { key, includeApprovals: true }`；
+  `DesktopTerminal` 渲染审批卡片（命令/过期/允许/拒绝）；`exec.approval.resolve` 解决；
+  allow 与 deny 均实测通过（deny 为 user-denied、命令未执行）。
+- **Connection State**：连接徽标、Gateway/模式/Agent/Terminal、连接说明、最近错误、重连说明。
+- **Log Viewer**：最近 200 条运行事件，展开/关闭/清空；含 handshake、permission probe、subscription（approvals=true）、runtime ready。
+- **Settings 只读概览**：模型、工具数量、当前 Session、Session 总数；Gateway 未返回字段统一显示「未提供」。
+- **GatewayChatAdapter 订阅顺序修复**：先注册 `onEvent` 再 `sendMessage`，缓冲 runId 未知前的早到事件。
 - `.ai-context/OPENCLAW_*` 系列文档 — Gateway 事件语义 / 认证契约 / 活动事件 / 状态映射 / Client 接口 / 技术选型报告。
 
 ## AgentState 验证
@@ -115,7 +125,8 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 
 ## 已知问题（需处理）
 
-1. **模型快速失败竞态（未修复）**：模型调用极快失败时 UI 可能停在 `thinking`。当前定位为 `GatewayChatAdapter` 先执行 `chat.send`，之后才建立该轮事件订阅；run 秒失败时可能漏掉 `lifecycle error`。必须作为独立任务处理。
+1. **快速失败场景未实测**：`GatewayChatAdapter` 已改为「先订阅、再发送，并缓冲早到事件」；普通对话正常，
+   但"run 秒失败"无法稳定构造（开系统代理表现为挂起而非秒失败），该路径仍标未实测。
 2. **Approval 双路径已验证**：allow（命令执行）与 deny（命令未执行、user-denied）均已真实回归。
 3. **无自动重连**：运行中断线后需恢复 Gateway，并手动重新启动桌面端。
 4. **子模块未正确注册**：`Deepseek-pet` 为 gitlink，但无 `.gitmodules`，新克隆无法按标准子模块流程拉取。
@@ -134,15 +145,14 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 - 配置：`bundle.active = true`、`targets = ["nsis"]`、显式 5 个图标、`windows.nsis.installMode = "currentUser"`。
 - 构建：`npm run tauri build` 成功；首次自动下载 NSIS 工具。
 - 产物：`target/release/bundle/nsis/FJK Agent_0.1.0_x64-setup.exe`（**13.22 MB**）。
-- 安装：`/S` 静默安装，退出码 0；安装目录 `%LOCALAPPDATA%\FJK Agent`（exe 20.2 MB + uninstall.exe）；开始菜单快捷方式已创建。
+- 安装：`/S` 静默安装，退出码 0；安装目录由卸载注册表解析（本机为 `D:\fjk-agent\FJK Agent`，exe 20.25 MB + uninstall.exe）；开始菜单与桌面快捷方式已创建。
 - 运行：安装版启动正常、成功连接 Gateway（网关日志 `client connected`）、真实对话成功（runId `0c46a932`）。
 - 卸载：`uninstall.exe /S` 退出码 0；安装目录与快捷方式清理，无进程残留。
 - 边界：安装包未签名（SmartScreen「未知发布者」属预期）；MSI、代码签名、自动更新未做。
 
 ## 下一步
 
-继续 **Phase 1/2**：
-1. 独立修复 `GatewayChatAdapter` 的快速失败事件订阅竞态。
-2. 补齐 Settings / Connection State / Log Viewer。
-3. 补齐 Settings / Connection State / Log Viewer。
-4. 安装包后续形态：MSI、代码签名、自动更新（NSIS 已完成安装/运行/卸载回归）。
+继续 **Phase 2**（Phase 1 主体已完成）：
+1. 下一轮功能：Settings 写操作 / Session 管理 / 自动重连（尚未开始）。
+2. （可选）快速失败场景的确定性复现（临时改错模型名），关闭最后一个未实测项。
+3. 安装包后续形态：MSI、代码签名、自动更新（NSIS 已完成安装/运行/卸载回归）。

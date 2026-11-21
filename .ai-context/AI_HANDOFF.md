@@ -2,7 +2,7 @@
 
 ## Current Stage
 
-Phase 1（桌面框架）进行中 / Phase 2 部分完成。
+Phase 1（桌面框架）主体完成 / Phase 2 部分完成。
 
 事件驱动 AgentState 已完成并经过真实桌面运行验证；Approval 链路 allow 与 deny 双路径均已真实验证。当前主数据流为：
 
@@ -109,26 +109,22 @@ Phase 1（桌面框架）进行中 / Phase 2 部分完成。
 - `waiting_approval` / Approval 路径：**allow 与 deny 均已验证**。
   - allow：点击「允许」后 `whoami` 真实执行，输出 `laptop-qqmq9j32\付家康`，`exitCode=0`，482ms；
   - deny：点击「拒绝」后 `exec.approval.resolved {decision:"deny", resolvedBy:"FJK Desktop"}`，命令未执行（user-denied）。
+- Connection State：连接徽标、Gateway/模式/Agent/Terminal、连接说明、最近错误、重连说明（截图确认）。
+- Log Viewer：最近 200 条运行事件，展开/关闭/清空；启动日志 7 条，含 subscription（approvals=true）（截图确认）。
+- Settings 只读概览：模型 / 工具数量 / 当前 Session / Session 总数，缺失字段显示「未提供」（截图确认）。
+- GatewayChatAdapter：`onEvent` 在 L138、`sendMessage` 在 L162，subscribe-before-send=True；普通对话正常。
+- release + NSIS 复验：`tauri build` exit 0；静默安装 exit 0（目录 `D:\fjk-agent\FJK Agent`）、
+  安装版窗口正常并连接 Gateway、静默卸载 exit 0，目录/快捷方式/进程/注册表均清理。
 
 ## Known Issues
 
-### 1. GatewayChatAdapter 快速失败竞态 — 未修复
+### 1. GatewayChatAdapter 快速失败竞态 — 已修复，场景未实测
 
-模型调用非常快失败时，UI 可能停在 `thinking`。
+已改为「先注册 `onEvent`、再 `sendMessage`」，并缓冲 runId 未知前的早到事件（提交 `fb108f7`）。
 
-当前定位：
-
-`GatewayChatAdapter` 先执行 `chat.send`，之后才建立该轮事件订阅。
-
-如果 run 在订阅建立之前立即失败，可能漏掉真实 `lifecycle error`，导致 reducer 收不到终态。
-
-这是下一个独立任务。本轮不要顺手修复。
-
-候选方向：
-- 先建立事件订阅，再执行 `chat.send`；
-- 或在 transport / adapter 层缓存并关联早到事件。
-
-必须基于真实 runId / 事件时序实现，不允许 mock 假终态。
+- 普通对话正常（流式 → idle），`tsc`/build 通过；
+- **"run 秒失败"场景未实测**：开系统代理表现为挂起（30s+），不是秒失败，构造不出稳定场景；
+- 若要关闭此项：临时用 `sessions.patch` 把模型改成不存在的名字，发一条消息观察是否快速进 `failed`，再改回。
 
 ### 2. Approval deny 路径已验证（已关闭）
 
@@ -159,9 +155,9 @@ Windows 系统代理若指向 `127.0.0.1:7897`，当前 OpenClaw 环境可能触
 
 ## Next Task
 
-1. **补齐 Settings / Connection State / Log Viewer**。
-2. 修复 `GatewayChatAdapter` 快速失败竞态（订阅早于 `chat.send`，或缓存早到事件）。
-3. 回归 `npm run tauri build` 与 NSIS 安装包（安装包已做过一轮，改动后需复验）。
+1. 下一轮功能：Settings 写操作 / Session 管理 / 自动重连（尚未开始）。
+2. （可选）快速失败场景的确定性复现（临时改错模型名），关闭最后一个未实测项。
+3. 安装包后续形态：MSI、代码签名、自动更新（NSIS 已复验通过）。
 
 ## Constraints Reminder
 

@@ -2,15 +2,15 @@
 
 ## DOING
 
-- Phase 1：Terminal 已切换到真实 Gateway；继续补 Settings / Connection State / Log Viewer。
+- Phase 1 收尾：核心只读三件套（Connection State / Log Viewer / Settings 概览）已完成并实测；
+  等待下一轮功能（Settings 写操作 / Session 管理 / 自动重连）。
 
 ## TODO
 
-- **未修复：GatewayChatAdapter 快速失败竞态。**
-  当前定位：`GatewayChatAdapter` 先执行 `chat.send`，之后才建立该轮事件订阅；如果 run 极快失败，可能漏掉 `lifecycle error`，导致 UI 停在 `thinking`。此问题单独立项处理，不与 AgentState 本轮改动混合。
-- **Approval UI。**
-  `waiting_approval` 映射与 reducer 逻辑已存在，但桌面端真实 approval 流程尚未实测，当前仍标记为**未验证**。
-- Settings / Connection State / Log Viewer。
+- **（可选）快速失败场景的确定性复现。**
+  订阅先于发送的修复已落地、普通对话正常；但"run 秒失败"场景无法稳定构造
+  （开系统代理表现为挂起而非秒失败），该路径仍标**未实测**。
+- **Settings 写操作 / Session 管理 / 自动重连**（下一轮功能，尚未开始）。
 - MSI 安装包（可选）。NSIS 已完成并验证；MSI、代码签名、自动更新未做。
 - 设备配对（device identity）作为浏览器端接入的可选路径。
 
@@ -20,12 +20,30 @@ None.
 
 ## DONE
 
+### P1-008
+GatewayChatAdapter 订阅顺序修复。
+
+- `send()` 改为**先注册 `onEvent`、再 `sendMessage`**，并对 runId 未知前的早到事件做缓冲；
+- 结果：`onEvent` 在 L138、`sendMessage` 在 L162（subscribe-before-send=True）；
+- `tsc` 0 错误、`npm run build` PASS；普通对话正常（流式 + 回 idle）；
+- 快速失败瞬时事件**未实测**（开系统代理表现为挂起，不是秒失败）；
+- 提交 `fb108f7`。
+
+### P1-007
+Connection State / Log Viewer / Settings 只读概览（均界面实测）。
+
+- Connection State：连接状态徽标、Gateway/模式/Agent/Terminal、连接说明、最近错误、重连说明。
+- Log Viewer：最近 200 条运行事件，展开/关闭/清空；启动日志含 handshake、permission probe、
+  subscription（approvals=true）、runtime ready。
+- Settings：只读展示模型、工具数量、当前 Session、Session 总数；Gateway 未返回的字段统一显示「未提供」，不伪造。
+- 提交：`cea1a7b`（Connection State）、`32189e9`（Log Viewer）、`345d9ce`（Settings）。
+
 ### P1-005
 NSIS 安装包回归通过。
 
 - 配置：`bundle.active = true`、`targets = ["nsis"]`、显式 5 个图标、`windows.nsis.installMode = "currentUser"`。
 - 产物：`target/release/bundle/nsis/FJK Agent_0.1.0_x64-setup.exe`（13.22 MB）。
-- 安装：`/S` 静默安装退出码 0；安装到 `%LOCALAPPDATA%\FJK Agent`；开始菜单快捷方式已创建。
+- 安装：`/S` 静默安装退出码 0；安装目录由卸载注册表解析（本机为 `D:\fjk-agent\FJK Agent`）；开始菜单快捷方式已创建。
 - 运行：安装版启动正常、Gateway 连接成功、真实对话成功（runId `0c46a932`）。
 - 卸载：`uninstall.exe /S` 退出码 0；目录与快捷方式清理，无进程残留。
 - 边界：未签名；MSI、自动更新未做。
