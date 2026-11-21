@@ -4,13 +4,13 @@
 
 Phase 1（桌面框架）进行中 / Phase 2 部分完成。
 
-事件驱动 AgentState 已完成并经过真实桌面运行验证。当前主数据流为：
+事件驱动 AgentState 已完成并经过真实桌面运行验证；Approval 链路已完成 allow 路径真实验证（deny 未验证）。当前主数据流为：
 
 `Gateway 事件 / 连接状态 + 本地请求意图 → AgentStateReducer → AgentState → AgentToPetState → PetStateMachine`
 
 桌宠只消费 AgentState，不再由聊天控制器直接写入 Agent 生命周期状态。
 
-## Last Change (2026-11-20)
+## Last Changes (2026-11-20 / 11-21)
 
 ### Gateway-driven AgentState
 
@@ -67,6 +67,32 @@ Phase 1（桌面框架）进行中 / Phase 2 部分完成。
 - `4aefa3d` — TASKS 更新
 - `87cd24b` — CHANGELOG 更新
 
+### Approval pipeline (2026-11-21)
+
+1. **订阅**
+   - `usePetRuntime` 在拿到 session key 后调用
+     `sessions.messages.subscribe { key, includeApprovals: true }`；
+   - 卸载时 `sessions.messages.unsubscribe { key }`；
+   - 订阅失败只记录，不阻断聊天。
+
+2. **caps 位置（重要）**
+   - `caps: ["approvals","exec-approvals"]` 必须放在 `connect` 参数**顶层**；
+   - 放进 `client` 会被网关拒绝：`invalid connect params: at /client: unexpected property 'caps'`。
+
+3. **事件与解决**
+   - 事件：`exec.approval.requested` / `session.approval`（pending → terminal）/ `exec.approval.resolved`；
+   - 解决：`exec.approval.resolve { id, decision: "allow-once" | "deny" }`。
+
+4. **UI**
+   - `DesktopTerminal.tsx` 渲染审批卡片：标题、命令文本、过期时间、允许/拒绝；
+   - 卡片由事件驱动：pending 显示、terminal 按 id 清除，不本地硬删。
+
+### Related commits (approval)
+
+- `55d5b08` — 订阅 + caps 顶层
+- `0675933` — 审批卡片 UI
+- `f87a3d0` / `db33f8a` / `78be4a4` — TASKS / CHANGELOG / PROJECT_STATUS 文档
+
 ## Verified
 
 - `AgentStateReducer` 单元测试：**10/10 通过**。
@@ -80,7 +106,10 @@ Phase 1（桌面框架）进行中 / Phase 2 部分完成。
   - 显示断线提示
   - 输入被禁用
 - T4：重启 Gateway 后重新启动桌面端，恢复正常连接与运行路径。
-- `waiting_approval` / Approval 桌面真实路径：**未验证**。
+- `waiting_approval` / Approval 路径：**部分验证（allow only）**。
+  - 卡片真实出现，点击「允许」后 `whoami` 真实执行；
+  - 实测输出 `laptop-qqmq9j32\付家康`，`exitCode=0`，482ms，随后审批记录被移除（`APPROVAL_NOT_FOUND`）；
+  - **deny 路径未验证**。
 
 ## Known Issues
 
@@ -102,9 +131,12 @@ Phase 1（桌面框架）进行中 / Phase 2 部分完成。
 
 必须基于真实 runId / 事件时序实现，不允许 mock 假终态。
 
-### 2. Approval 路径未实测
+### 2. Approval deny 路径未验证
 
-`waiting_approval` 的映射和 reducer 优先级已有测试，但桌面端尚未真实触发 Approval 流程，因此仍标记为**未验证**。
+`waiting_approval` 的映射、reducer 优先级、卡片展示与 allow 路径均已真实验证；
+但**拒绝（deny）路径尚未回归**：需要确认点「拒绝」后命令不执行、run 正常结束。
+
+另：审批请求约 **38 秒**内必须处理，超时后 run 中止、审批被清理（再查为 `APPROVAL_NOT_FOUND`），属预期行为。
 
 ### 3. 无自动重连
 
@@ -128,13 +160,10 @@ Windows 系统代理若指向 `127.0.0.1:7897`，当前 OpenClaw 环境可能触
 
 ## Next Task
 
-1. **优先修复 `GatewayChatAdapter` 快速失败竞态。**
-   - 重点确认订阅与 `chat.send` 的先后顺序。
-   - 保持真实流式能力不回归。
-   - 修复后增加针对“秒失败”的测试和真实运行验证。
-2. 完成后再处理 Approval UI，并真实验证 `waiting_approval`。
-3. 后续补 Settings / Connection State / Log Viewer。
-4. 单独回归 `npm run tauri build` 打包产物。
+1. **补 Approval deny 路径回归**：触发 exec 审批后点「拒绝」，确认命令未执行、run 结束、卡片消失。
+2. 补齐 Settings / Connection State / Log Viewer。
+3. 修复 `GatewayChatAdapter` 快速失败竞态（订阅早于 `chat.send`，或缓存早到事件）。
+4. 回归 `npm run tauri build` 与 NSIS 安装包（安装包已做过一轮，改动后需复验）。
 
 ## Constraints Reminder
 
@@ -144,4 +173,7 @@ Windows 系统代理若指向 `127.0.0.1:7897`，当前 OpenClaw 环境可能触
 - 不修改 OpenClaw Core 来绕过权限或 SSRF 安全机制。
 - AgentState 是 Agent 行为状态唯一权威；桌宠只做表现层。
 - 不重新建立 PetState → AgentState 的反向状态源。
-- 未经过真实测试的 Approval 行为不得标记完成。
+- 未经过真实测试的 Approval 行为不得标记完成；deny 未验证，文档只能写「allow 已验证、deny 未验证」。
+- `caps` 必须位于 `connect` 参数顶层；放入 `client` 会被网关以 invalid-handshake 拒绝。
+- 改中文文件只能用 .NET `WriteAllText` + `UTF8Encoding($false)`，写后自检 `NUL=0 / BOM=False / ???=0`。
+- 文档只允许按锚点插入/删除指定行，禁止整文件重写；改文件禁止 `git apply`。
