@@ -20,6 +20,15 @@ None.
 
 ## DONE
 
+### P1-012
+Session 切换（已实测）。
+
+- 非当前会话显示「切换」按钮，运行中禁用；切换后「（当前使用）」立即移动；
+- 顺序：先 sessions.messages.subscribe {key, includeApprovals:true} 新 key，再 unsubscribe 旧 key；
+  旧 key 退订失败则撤销新订阅并保持原会话，不做半切换；
+- Adapter 通过 setSessionKey 使用新 key 发送；审批状态清空；
+- 用户确认测试通过；提交 1c5ad26。
+
 ### P1-011
 UI 布局修复（聊天滚动 + 面板互斥/悬浮，已实测）。
 

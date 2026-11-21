@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261121-2225
-HEAD_AT_SYNC: d495f24
-UPDATED: 2026-11-21T22:25+08:00
-TASK: Session 切换（下一步，尚未开始）
+STATE_ID: 20261121-2240
+HEAD_AT_SYNC: 1c5ad26
+UPDATED: 2026-11-21T22:40+08:00
+TASK: 等待下一轮（新建会话 / 自动重连 / 其他）
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -21,6 +21,7 @@ DONE:
 - Settings 模型修改 + 单次回滚（RPC 与 UI 均实测通过：deepseek-flash→deepseek-chat→回滚）
 - Session 只读列表（界面实测：5 条、MAIN/SESSION、当前使用、时间；提交 1fc704b）
 - UI 布局修复：聊天区内部滚动、输入框固定；四面板互斥并悬浮（用户确认；提交 d495f24）
+- Session 切换（用户确认；订阅迁移 + adapter setSessionKey；提交 1c5ad26）
 
 
 VERIFIED_DETAIL:
