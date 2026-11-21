@@ -94,6 +94,9 @@ export interface PetRuntime {
   clearRuntimeLogs(): void
 
   settingsOverview: SettingsOverview
+  previousModel: string | null
+  updateSessionModel(model: string): Promise<void>
+  rollbackSessionModel(): Promise<void>
 }
 
 function isTauriRuntime(): boolean {
@@ -261,6 +264,9 @@ export function usePetRuntime(
     sessionKey: null,
     sessionCount: null,
   })
+
+  const [previousModel, setPreviousModel] =
+    useState<string | null>(null)
 
   const runtimeLogIdRef = useRef(0)
 
@@ -905,6 +911,76 @@ export function usePetRuntime(
     }
   }, [canvasRef, rootRef])
 
+  const writeSessionModel = async (model: string) => {
+    const gateway =
+      gatewayClientRef.current
+    const key =
+      settingsOverview.sessionKey
+
+    if (!gateway || !key) {
+      throw new Error('Gateway/session unavailable')
+    }
+
+    await gateway.send(
+      'sessions.patch',
+      {
+        key,
+        model,
+      },
+    )
+
+    const list =
+      await gateway.send(
+        'sessions.list',
+        {},
+      )
+
+    setSettingsOverview(
+      readSettingsOverview(list),
+    )
+  }
+
+  const updateSessionModel = async (
+    model: string,
+  ) => {
+    const next =
+      model.trim()
+    const current =
+      settingsOverview.model
+
+    if (!current) {
+      throw new Error(
+        'Current model is unavailable; refusing write',
+      )
+    }
+
+    if (
+      !next ||
+      next === current
+    ) {
+      throw new Error(
+        'Model must be non-empty and different from current value',
+      )
+    }
+
+    await writeSessionModel(next)
+    setPreviousModel(current)
+  }
+
+  const rollbackSessionModel = async () => {
+    if (!previousModel) {
+      throw new Error(
+        'No previous model recorded',
+      )
+    }
+
+    const original =
+      previousModel
+
+    await writeSessionModel(original)
+    setPreviousModel(null)
+  }
+
   const resolveApproval = async (
     decision:
       | 'allow-once'
@@ -946,5 +1022,8 @@ export function usePetRuntime(
     clearRuntimeLogs,
 
     settingsOverview,
+    previousModel,
+    updateSessionModel,
+    rollbackSessionModel,
   }
 }

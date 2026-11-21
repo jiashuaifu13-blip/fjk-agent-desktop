@@ -1,4 +1,4 @@
-# apply-patch.ps1 — 网页 AI 补丁的统一执行器（PowerShell 5.1 兼容）
+﻿# apply-patch.ps1 — 网页 AI 补丁的统一执行器（PowerShell 5.1 兼容）
 #
 # 用法（所有参数均为 ASCII，base64 为 UTF-8 内容）：
 #   局部替换：
@@ -66,7 +66,14 @@ if ($WholeFile) {
   if ([string]::IsNullOrEmpty($old)) { Fail 5 'OldB64 is required for replace mode' }
 
   $hits = ([regex]::Matches($text, [regex]::Escape($old))).Count
-  if ($hits -eq 0) { Fail 2 "OLD_NOT_FOUND path=$Path" }
+  if ($hits -eq 0) {
+    # idempotent: if NEW already present, treat as success (already applied)
+    if ($text.Contains($new)) {
+      Write-Output ("PATCH_SKIP path={0} reason=already-applied" -f $Path)
+      exit 0
+    }
+    Fail 2 "OLD_NOT_FOUND path=$Path"
+  }
   if ($hits -gt 1 -and -not $AllowMulti) { Fail 3 "OLD_NOT_UNIQUE hits=$hits path=$Path" }
 
   $lines = @()

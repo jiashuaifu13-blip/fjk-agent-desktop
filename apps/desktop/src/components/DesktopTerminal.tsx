@@ -1,4 +1,4 @@
-﻿import {
+import {
   useEffect,
   useRef,
   useState,
@@ -39,6 +39,9 @@ export function DesktopTerminal() {
     mode,
     gatewayStatus,
     settingsOverview,
+    previousModel,
+    updateSessionModel,
+    rollbackSessionModel,
   } =
     usePetRuntimeContext()
 
@@ -81,6 +84,15 @@ export function DesktopTerminal() {
     setSettingsPanelOpen,
   ] =
     useState(false)
+
+  const [modelDraft, setModelDraft] =
+    useState('')
+
+  const [
+    modelWriteStatus,
+    setModelWriteStatus,
+  ] =
+    useState<string | null>(null)
 
   const listRef =
     useRef<HTMLDivElement>(
@@ -421,7 +433,7 @@ export function DesktopTerminal() {
             </div>
 
             <span className="connection-state-badge connection-state-badge-neutral">
-              只读
+              模型可写
             </span>
           </div>
 
@@ -431,16 +443,20 @@ export function DesktopTerminal() {
                 模型
               </span>
 
-              <span
-                className="connection-state-value"
-                title={
-                  settingsOverview.model ??
-                  'Gateway 当前未提供模型信息'
-                }
-              >
-                {settingsOverview.model ??
-                  '未提供'}
-              </span>
+              <div className="connection-state-value">
+                <div>{settingsOverview.model ?? '未提供'}</div>
+                <input value={modelDraft} placeholder="输入不同的已允许模型" onChange={(e) => setModelDraft(e.target.value)} />
+                <button type="button" disabled={!settingsOverview.model || !modelDraft.trim()} onClick={async () => {
+                  setModelWriteStatus(`原值：${settingsOverview.model ?? '未提供'}`)
+                  try { await updateSessionModel(modelDraft); setModelDraft(''); setModelWriteStatus('模型修改成功；已记录原值，可回滚') }
+                  catch (err) { setModelWriteStatus(`修改失败：${err instanceof Error ? err.message : String(err)}`) }
+                }}>保存模型</button>
+                <button type="button" disabled={!previousModel} onClick={async () => {
+                  try { await rollbackSessionModel(); setModelWriteStatus('已回滚到原模型') }
+                  catch (err) { setModelWriteStatus(`回滚失败：${err instanceof Error ? err.message : String(err)}`) }
+                }}>回滚模型</button>
+                {modelWriteStatus && <div>{modelWriteStatus}</div>}
+              </div>
             </div>
 
             <div className="connection-state-row">
@@ -489,9 +505,9 @@ export function DesktopTerminal() {
             </div>
 
             <div className="connection-state-copy">
-              本页仅展示启动阶段 Gateway
+              本页展示启动阶段 Gateway
               sessions.list 已返回的信息；
-              不修改模型、工具或 Session 配置。
+              仅允许修改当前 Session 的模型。
               Gateway 未返回的字段统一显示“未提供”。
             </div>
           </div>
