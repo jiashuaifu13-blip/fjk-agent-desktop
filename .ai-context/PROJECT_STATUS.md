@@ -80,6 +80,8 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 - **Session 只读列表**：MAIN/SESSION、key、更新时间、「（当前使用）」标记。
 - **Session 切换**：先订阅新 key（includeApprovals）再退订旧 key，成功后 Adapter/UI 切到新 key，失败不留半切换。
 - **UI 布局**：聊天区内部滚动、输入框固定；四个面板互斥且悬浮，不再挤压聊天区。
+- **自动重连**：断开后按 1/2/4/8/15s 退避 ×5；成功后恢复当前 Session、审批订阅与 adapter key；
+  Rust session epoch 防止旧连接 offline 污染；网关预热期 sessions.list 空时 5×1s 重试（已实测）。
 - `.ai-context/OPENCLAW_*` 系列文档 — Gateway 事件语义 / 认证契约 / 活动事件 / 状态映射 / Client 接口 / 技术选型报告。
 
 ## AgentState 验证

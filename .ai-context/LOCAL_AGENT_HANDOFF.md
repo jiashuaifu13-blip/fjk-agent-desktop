@@ -63,17 +63,15 @@
 5. **受限沙箱**：`node --test`、`npm run build`、`cargo` 可能 spawn EPERM；需要时申请完全权限并说明理由。
 6. **`.tmp` 目录**是临时验收脚本，已被 `*.tmp` 规则忽略，不要提交。
 
-## 七、当前状态（2026-11-21 23:15，夜间保存点）
+## 七、当前状态（2026-11-22 10:15）
 
-- `HEAD = origin/main = a78fe8a`；`STATE_ID = 20261121-2310`。
-- 已完成：P1-001~P1-012（Approval、Connection State、Log Viewer、Settings 只读+模型回滚、
-  Session 列表与切换、UI 布局）。
-- **进行中**：自动重连（WIP）——退避与恢复逻辑已提交；已知缺陷：网关刚启动时
-  `sessions.list` 为空会直接失败（`No session available after reconnect`），需加 5×1s 重试。
-- 未验证：自动重连成功路径、重连后 header 与面板一致性、快速失败瞬时事件。
-- 明天第一步：修 sessions.list 重试 → 起网关（`openclaw daemon start` 或前台 `openclaw gateway`）
-  → 杀网关 3 秒后拉起 → 验证自动恢复与 header 一致。
-- 环境提示：当前网关未运行；`Start-Process` 起的隐藏实例不常驻，建议 daemon 或前台终端。
+- `HEAD = origin/main = 7b201c9`；`STATE_ID = 20261122-1015`。
+- 已完成：P1-001~P1-013（Approval、Connection State、Log Viewer、Settings 只读+模型回滚、
+  Session 列表与切换、UI 布局、**自动重连**）。
+- 自动重连实测：attempt 1..3 连接拒绝 → 4 空列表 → 5 恢复成功；header 与面板一致。
+- 未验证：快速失败瞬时事件；新建/删除会话。
+- 已知小隐患：重连内层 1s 等待未接 `cancelled`（卸载后最多多跑 4s）。
+- 环境提示：`Start-Process` 起的网关不常驻；用 `openclaw daemon start` 或前台 `openclaw gateway --port 18789`。
 
 ## 八、交接约定
 

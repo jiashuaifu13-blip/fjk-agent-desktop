@@ -2,14 +2,10 @@
 
 ## DOING
 
-- **自动重连（WIP，提交 a78fe8a）**：1/2/4/8/15s 退避 ×5 次；成功后恢复 Session / 审批订阅 / adapter key；
-  Rust 侧加 session epoch，防止旧 reader 的 offline 事件污染新连接。
-  **已知缺陷**：网关刚启动时 `sessions.list` 可能为空，当前直接 throw（日志 `No session available after reconnect`），
-  需改为 5×1s 重试后再判定失败。成功路径尚未实测。
+- Phase 1/2 收尾：自动重连已完成并实测通过；等待下一轮功能。
 
 ## TODO
 
-- 修上面的 sessions.list 空列表重试，然后实测"杀网关 → 3s 后拉起 → 自动恢复、header 与面板一致"。
 - **下一轮候选**：新建/删除会话（写操作，删除需二次确认）、Settings 更多项（工具开关/执行模式展示）。
 - **（可选）快速失败场景的确定性复现。**
   订阅先于发送的修复已落地、普通对话正常；但"run 秒失败"场景无法稳定构造
@@ -22,6 +18,17 @@
 None.
 
 ## DONE
+
+### P1-013
+自动重连（已实测通过）。
+
+- 退避 1/2/4/8/15s 共 5 次；同一时刻只有一个重连任务；
+- 成功后恢复：优先用户当前 Session → 审批订阅（includeApprovals）→ adapter.setSessionKey，
+  并清空 approval/error、刷新 settings/sessionList；
+- Rust 侧 session epoch：旧 reader 的 `offline` 事件不再污染新连接（header 与面板一致）；
+- 网关预热期 `sessions.list` 为空时，按 5×1s 重试再判定失败；
+- 实测：attempt 1..3 连接拒绝 → attempt 4 空列表 → attempt 5 恢复成功（session/approvals 均恢复）；
+- 提交 `a78fe8a`、`7b201c9`。
 
 ### P1-012
 Session 切换（已实测）。

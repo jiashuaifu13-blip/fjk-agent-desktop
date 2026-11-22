@@ -1,10 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261121-2310
-HEAD_AT_SYNC: a78fe8a
-UPDATED: 2026-11-21T23:10+08:00
-TASK: 自动重连收尾（**有已知缺陷，未完成**）：网关刚启动时 sessions.list 可能为空，
-      当前代码直接 throw，浪费最后一次尝试；需加 5×1s 重试后再判定失败。
+STATE_ID: 20261122-1015
+HEAD_AT_SYNC: 7b201c9
+UPDATED: 2026-11-22T10:15+08:00
+TASK: 自动重连已完成并实测通过；等待下一轮（新建/删除会话、Settings 更多项、快速失败复现）
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -23,8 +22,9 @@ DONE:
 - Session 只读列表（界面实测：5 条、MAIN/SESSION、当前使用、时间；提交 1fc704b）
 - UI 布局修复：聊天区内部滚动、输入框固定；四面板互斥并悬浮（用户确认；提交 d495f24）
 - Session 切换（用户确认；订阅迁移 + adapter setSessionKey；提交 1c5ad26）
-- 自动重连（**WIP**，提交 a78fe8a）：1/2/4/8/15s 退避、5 次、成功后恢复 Session/订阅/adapter；
-  Rust 侧加 session epoch，避免旧 reader 的 offline 事件污染新连接。
+- 自动重连（**已验证**，提交 a78fe8a + 7b201c9）：1/2/4/8/15s 退避 ×5；成功后恢复 Session/审批订阅/adapter key；
+  Rust session epoch 防止旧连接 offline 污染；sessions.list 空时 5×1s 重试（网关启动预热）。
+  实测：attempt=1..3 连接拒绝 → attempt=4 空列表 → attempt=5 恢复成功，session/approvals 均恢复。
 
 
 VERIFIED_DETAIL:
@@ -34,13 +34,14 @@ VERIFIED_DETAIL:
 
 UNVERIFIED:
 - 快速失败行为未实测（开代理场景表现为挂起，非秒失败）
-- 自动重连成功路径未验证（当前环境网关无法常驻；且存在 sessions.list 空列表缺陷）
-- 重连后 header 与 Connection State 一致性（epoch 修复待实测）
+- 网关刚启动时若此时发消息，会收到
+  "Agent main has not completed startup inspection and preparation"（网关预热未完成，属预期）
+- 内层 1s 重试等待未接 cancelled（组件卸载后最多多跑 4s，小隐患）
 
 NEXT:
-1. 修自动重连的 sessions.list 空列表重试（5×1s），再测"杀网关→3s 后拉起→自动恢复"。
-2. 确认 epoch 修复后 header 不再显示离线（面板与 header 一致）。
-3. （可选）快速失败的确定性复现；新建/删除会话。
+1. 新建/删除会话（写操作，删除需二次确认）。
+2. Settings 更多项（工具开关/执行模式展示）。
+3. （可选）快速失败的确定性复现；内层等待的取消保护。
 
 FACTS:
 - caps 必须在 connect 顶层，放 client 会 invalid-handshake
