@@ -7,6 +7,7 @@ interface ChatRequest {
   onStart?: () => void | Promise<void>
   onToken?: (token: string) => void
   onStage?: (stage: string) => void
+  onDispatch?: (sessionKey: string) => void
 }
 
 
@@ -48,11 +49,15 @@ export class GatewayChatAdapter {
       onStart,
       onToken,
       onStage,
+      onDispatch,
     } = request
 
 
     const sessionKey =
       await this.resolveSessionKey()
+
+    onDispatch?.(sessionKey)
+
 
 
     let runId: string | null = null

@@ -519,6 +519,17 @@ export function usePetRuntime(
     useRef<ReturnType<typeof setTimeout> | null>(null)
   const wasSendingRef = useRef(false)
 
+  const settingsOverviewRef = useRef<SettingsOverview>({
+    model: null,
+    provider: null,
+    toolCount: null,
+    sessionKey: null,
+    sessionCount: null,
+    toolProfile: null,
+    toolsEnabled: null,
+    executionMode: null,
+  })
+
   const historySessionKeyRef =
     useRef<string | null>(null)
 
@@ -584,6 +595,10 @@ export function usePetRuntime(
 
   const [previousModel, setPreviousModel] =
     useState<string | null>(null)
+
+  useEffect(() => {
+    settingsOverviewRef.current = settingsOverview
+  }, [settingsOverview])
 
   useEffect(() => {
     const engine = emotionRef.current
@@ -1290,8 +1305,26 @@ export function usePetRuntime(
                 {},
               )
 
-            sessionKey =
-              pickMainSessionKey(list)
+            const savedKey =
+              (() => {
+                try {
+                  return window.localStorage.getItem(
+                    'fjk-last-session-v1',
+                  )
+                } catch {
+                  return null
+                }
+              })()
+
+            const savedAvailable =
+              Boolean(savedKey) &&
+              getGatewaySessions(list).some(
+                (session) => session.key === savedKey,
+              )
+
+            sessionKey = savedAvailable
+              ? savedKey
+              : pickMainSessionKey(list)
             activeSessionKeyRef.current =
               sessionKey
 
@@ -1511,6 +1544,17 @@ export function usePetRuntime(
             (action: unknown) =>
               store.dispatch(action),
         }) as ChatControllerLike
+
+      ;(controller as any).onDispatch = (targetKey: string) => {
+        const current = settingsOverviewRef.current
+
+        appendRuntimeLog(
+          'info',
+          'chat',
+          'Chat send',
+          `session=${targetKey}; model=${current.model ?? 'n/a'}; provider=${current.provider ?? 'n/a'}`,
+        )
+      }
 
       ;(controller as any).onTiming = (
         timing: { ttftMs: number | null; totalMs: number },
@@ -2141,6 +2185,16 @@ export function usePetRuntime(
       adapter.setSessionKey(targetKey)
       activeSessionKeyRef.current =
         targetKey
+
+      try {
+        window.localStorage.setItem(
+          'fjk-last-session-v1',
+          targetKey,
+        )
+      } catch {
+        // ignore storage failures
+      }
+
       setApproval(null)
       setSettingsOverview((current) => ({
         ...current,

@@ -66,6 +66,12 @@ export class ChatController {
     this.onTiming =
       null
 
+    this.onStage =
+      null
+
+    this.onDispatch =
+      null
+
     this.flushTimer =
       null
 
@@ -178,6 +184,19 @@ export class ChatController {
           this.abortController.signal,
 
 
+        onDispatch: (key) => {
+          if (typeof this.onDispatch === 'function') {
+            this.onDispatch(key)
+          }
+        },
+
+        onStage: (stage) => {
+          if (typeof this.onStage === 'function') {
+            this.onStage(stage)
+          }
+        },
+
+
         /*
          * Mock AI 即将开始输出。
          *
@@ -213,6 +232,10 @@ export class ChatController {
 
       this.cancelScheduledEmit()
       this.reportTiming()
+
+      if (typeof this.onStage === 'function') {
+        this.onStage(null)
+      }
 
       this.emitMessages()
 
