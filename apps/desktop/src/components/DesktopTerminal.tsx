@@ -622,6 +622,9 @@ export function DesktopTerminal() {
                   catch (err) { setModelWriteStatus(`回滚失败：${err instanceof Error ? err.message : String(err)}`) }
                 }}>回滚模型</button>
                 {modelWriteStatus && <div>{modelWriteStatus}</div>}
+                <div className="connection-state-copy">
+                  自定义 provider 的模型请写成 provider/model（例如 newapi/grok-4.7）；只写模型名会被当成 deepseek 的模型。
+                </div>
               </div>
             </div>
 

@@ -245,6 +245,7 @@ pub fn openclaw_configure_custom_provider(
 
     let payload = serde_json::json!({
         "baseUrl": base,
+        "api": "openai-completions",
         "apiKey": format!("{id}:manual"),
         "models": models,
     });
