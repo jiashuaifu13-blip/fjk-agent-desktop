@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261122-1215
-HEAD_AT_SYNC: c801cfd
-UPDATED: 2026-11-22T12:15+08:00
-TASK: P1-015 会话历史（切换加载）已完成并实测通过；下一步收尾或 Settings 更多项
+STATE_ID: 20261122-1600
+HEAD_AT_SYNC: af97ed6
+UPDATED: 2026-11-22T16:00+08:00
+TASK: 面板关闭自动清除会话错误已完成并实测通过；下一步 Settings 更多项或聊天历史分页
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -89,6 +89,12 @@ ROUND_P1-015:
 - 实测（用户）：新建会话切换过去为空历史、切回原会话恢复原样，全部通过。
 - 当前网关会话数 = **1**（仅 `agent:main:main`）：dashboard 测试会话已清空。
 - 设计确认：「MAIN / 当前使用」不显示删除按钮属预期保护，不是 bug。
+
+ROUND_P1-016（小 UX）:
+- 面板关闭时自动清除会话操作错误：`useEffect(() => { if (!sessionPanelOpen) setSessionSwitchError(null) }, [sessionPanelOpen])`
+  位于 `DesktopTerminal.tsx`；不触 runtime、不发 RPC。
+- 实测（用户）：停网关 → 点「新建会话」出现「会话操作失败」→ 关闭再打开面板 → 错误消失；当前会话/历史/数量不变。
+- 测后网关已恢复（`18789` LISTENING）；当前会话数 **5**（main + 4 条 dashboard，测试中新建产生）。
 
 STEP0_BASELINE_20261122:
 - `HEAD = origin/main = ad6ea1d`，工作区 clean。
