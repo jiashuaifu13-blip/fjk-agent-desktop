@@ -135,9 +135,17 @@ export class GatewayChatAdapter {
       }
 
       if (stream === 'execution') {
-        const state = (data as { state?: string } | undefined)?.state
+        const execution = data as
+          | { state?: string; wait?: { kind?: string } }
+          | undefined
 
-        if (state === 'running') {
+        if (execution?.wait?.kind === 'approval') {
+          onStage?.('等待你审批…')
+        } else if (execution?.wait?.kind === 'user_input') {
+          onStage?.('等待你输入…')
+        } else if (execution?.wait?.kind === 'children') {
+          onStage?.('等待子任务…')
+        } else if (execution?.state === 'running') {
           onStage?.('生成中…')
         }
       }

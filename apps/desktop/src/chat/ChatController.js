@@ -75,6 +75,12 @@ export class ChatController {
     this.flushTimer =
       null
 
+    this.watchdogTimer =
+      null
+
+    this.timedOut =
+      false
+
     this.timings =
       null
 
@@ -125,6 +131,21 @@ export class ChatController {
       firstTokenAt: null,
       doneAt: null,
     }
+
+    this.timedOut = false
+    this.clearWatchdog()
+
+    this.watchdogTimer = setTimeout(() => {
+      this.watchdogTimer = null
+
+      if (
+        this.timings &&
+        this.timings.firstTokenAt === null
+      ) {
+        this.timedOut = true
+        this.stop()
+      }
+    }, 90000)
 
 
     const assistantMessage = {
@@ -211,6 +232,7 @@ export class ChatController {
               this.timings.firstTokenAt === null
             ) {
               this.timings.firstTokenAt = Date.now()
+              this.clearWatchdog()
             }
 
             assistantMessage.content +=
@@ -230,6 +252,7 @@ export class ChatController {
       assistantMessage.status =
         'done'
 
+      this.clearWatchdog()
       this.cancelScheduledEmit()
       this.reportTiming()
 
@@ -262,6 +285,7 @@ export class ChatController {
         assistantMessage.status =
           'aborted'
 
+        this.clearWatchdog()
         this.cancelScheduledEmit()
         this.reportTiming()
 
@@ -269,8 +293,9 @@ export class ChatController {
         if (
           !assistantMessage.content
         ) {
-          assistantMessage.content =
-            '（回复已停止）'
+          assistantMessage.content = this.timedOut
+            ? '等待模型响应超时，已自动停止（可重试）'
+            : '（回复已停止）'
         } else {
           assistantMessage.content +=
             '\n（已停止）'
@@ -293,6 +318,7 @@ export class ChatController {
       assistantMessage.status =
         'error'
 
+      this.clearWatchdog()
       this.cancelScheduledEmit()
       this.reportTiming()
 
@@ -466,6 +492,15 @@ export class ChatController {
 
     if (typeof this.onMood === 'function') {
       this.onMood(marker.mood, marker.intensity)
+    }
+  }
+
+
+  clearWatchdog() {
+
+    if (this.watchdogTimer !== null) {
+      clearTimeout(this.watchdogTimer)
+      this.watchdogTimer = null
     }
   }
 
