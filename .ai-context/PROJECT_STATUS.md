@@ -31,7 +31,7 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 |---|---|---|---|
 | Phase 0 | OpenClaw 调查与基础验证 | ✅ **完成** | P0-001~023 全部完成；技术选型报告 GO（OpenClaw 作为 Agent Core） |
 | Phase 1 | FJK Desktop 基础框架（Tauri 2 + React + TS + Rust） | ✅ **主体完成** | Rust Gateway 通道、权限探测、错误映射、事件驱动 AgentState、Connection State / Log Viewer / Settings、release 与 NSIS 回归均已完成 |
-| Phase 2 | Agent Desktop Terminal | 🟡 **部分** | 真实对话/流式/断线、Approval、Connection State、Log Viewer、Settings（只读+模型回滚）、Session 列表与切换、UI 布局均已验证；历史记录、新建/删除会话未做 |
+| Phase 2 | Agent Desktop Terminal | ✅ **基本完成** | 真实对话/流式/断线、Approval、Connection State、Log Viewer、Settings（只读 + 工具 Profile/工具开关/执行模式 + 模型回滚）、Session 列表/切换/新建/删除/切换加载历史、UI 布局、自动重连均已验证 |
 | Phase 3 | Deepseek-pet 桌宠整合 | **部分（仅 3A + 部分 3D）** | 3A 审计已完成；AgentState→PetState Adapter 与 runtime 驱动已接通；3B/3C/3E 未完成 |
 | Phase 4 | Blog Adapter | **未开始** | 无对应代码 |
 | Phase 5 | Local Project / Git / GitHub | **未开始** | 无对应产品功能代码 |
@@ -82,6 +82,15 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 - **UI 布局**：聊天区内部滚动、输入框固定；四个面板互斥且悬浮，不再挤压聊天区。
 - **自动重连**：断开后按 1/2/4/8/15s 退避 ×5；成功后恢复当前 Session、审批订阅与 adapter key；
   Rust session epoch 防止旧连接 offline 污染；网关预热期 sessions.list 空时 5×1s 重试（已实测）。
+- **Session 新建**：`createSession()` → `sessions.create {}`（不发首条消息、不自动切换）→ `sessions.list` 刷新列表与计数 → 日志 `Session created`。
+- **Session 删除**：`deleteSession(key, expectedSessionId)` → 校验（非 main / 非当前 / sessionId 一致）
+  → `sessions.patch { archived: true, expectedSessionId }` → `sessions.delete` → 刷新列表 → 日志 `Session deleted`；
+  UI 二次确认文案含真实 key 与 sessionId，main 与当前会话不显示删除入口（设计保护）。
+- **切换加载历史**：`chat.history { sessionKey, limit: 100 }` → `replaceMessages()`；失败则清空消息并退订；
+  `GatewayChatAdapter` 事件入口按 `sessionKey` 过滤，避免切换瞬间串消息（已实测）。
+- **Settings 更多只读项**：工具 Profile / 工具开关 / 执行模式 三行；`null` 显示「未提供」，
+  工具开关只按布尔值显示，不用 toolCount 推断。
+- **面板错误自清**：关闭 Session 面板时清除上一次「会话操作失败」，重开不残留。
 - `.ai-context/OPENCLAW_*` 系列文档 — Gateway 事件语义 / 认证契约 / 活动事件 / 状态映射 / Client 接口 / 技术选型报告。
 
 ## AgentState 验证
@@ -134,7 +143,8 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 1. **快速失败场景未实测**：`GatewayChatAdapter` 已改为「先订阅、再发送，并缓冲早到事件」；普通对话正常，
    但"run 秒失败"无法稳定构造（开系统代理表现为挂起而非秒失败），该路径仍标未实测。
 2. **Approval 双路径已验证**：allow（命令执行）与 deny（命令未执行、user-denied）均已真实回归。
-3. **无自动重连**：运行中断线后需恢复 Gateway，并手动重新启动桌面端。
+3. **自动重连已实现**：断线后按 1/2/4/8/15s 退避 ×5，成功后恢复当前 Session、审批订阅与 adapter key；
+   已知小隐患：重连内层 1s 等待未接 `cancelled`（组件卸载后最多多跑 4s）。
 4. **子模块未正确注册**：`Deepseek-pet` 为 gitlink，但无 `.gitmodules`，新克隆无法按标准子模块流程拉取。
 5. **安全风险**：`frontend/tauri/tauri.conf.json` 的历史配置存在过宽权限问题，仍需后续核查。
 6. **MSI 安装包未做**：NSIS 安装器已生成并完成安装/运行/卸载验证；MSI、代码签名、自动更新仍未做。
@@ -158,7 +168,10 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 
 ## 下一步
 
-继续 **Phase 2**（Phase 1 主体已完成）：
-1. 下一轮：新建/删除会话（写操作，删除需二次确认）、自动重连、Settings 更多项。
-2. （可选）快速失败场景的确定性复现（临时改错模型名），关闭最后一个未实测项。
-3. 安装包后续形态：MSI、代码签名、自动更新（NSIS 已完成安装/运行/卸载回归）。
+Phase 2 已基本完成（剩余为增强项），后续按以下顺序推进：
+
+1. **P1-019 聊天历史分页**：`chat.history` 目前固定 `limit: 100`，需支持向上滚动加载更早消息。
+2. **Phase 3 桌宠补完**：3B/3C/3E（动作资源与扩展），当前仅 3A 审计 + AgentState→PetState 驱动接通。
+3. **Phase 6 产品化收尾**：MSI 安装包、代码签名、自动更新（NSIS 已完成安装/运行/卸载回归）。
+4. （可选）快速失败场景的确定性复现（临时改错模型名），关闭最后一个未实测项。
+5. **Phase 4 Blog Adapter / Phase 5 本地项目·GitHub 集成 / Phase 7 动作扩展**：未开始。
