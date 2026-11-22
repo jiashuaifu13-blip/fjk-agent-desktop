@@ -79,12 +79,14 @@ export interface SettingsOverview {
 
 export interface SessionListItem {
   key: string
+  sessionId: string | null
   isMain: boolean
   updatedAt: number | null
 }
 
 export interface SessionListItem {
   key: string
+  sessionId: string | null
   isMain: boolean
   updatedAt: number | null
 }
@@ -128,6 +130,7 @@ function isTauriRuntime(): boolean {
 
 type GatewaySessionSummary = {
   key?: string
+  sessionId?: string
   isMain?: boolean
   updatedAt?: number
   model?: string
@@ -240,6 +243,11 @@ function readSessionList(
         typeof session?.key === 'string'
           ? session.key
           : '',
+      sessionId:
+        typeof session?.sessionId === 'string' &&
+        session.sessionId.length > 0
+          ? session.sessionId
+          : null,
       isMain: session?.isMain === true,
       updatedAt:
         typeof session?.updatedAt === 'number'

@@ -603,6 +603,8 @@ export function DesktopTerminal() {
 
                 <span className="connection-state-value">
                   {session.key}
+                  {' · sessionId: '}
+                  {session.sessionId ?? '未提供'}
                   {session.key ===
                   settingsOverview.sessionKey
                     ? '（当前使用）'
