@@ -6,6 +6,7 @@ interface ChatRequest {
   signal?: AbortSignal
   onStart?: () => void | Promise<void>
   onToken?: (token: string) => void
+  onStage?: (stage: string) => void
 }
 
 
@@ -46,6 +47,7 @@ export class GatewayChatAdapter {
       signal,
       onStart,
       onToken,
+      onStage,
     } = request
 
 
@@ -114,6 +116,26 @@ export class GatewayChatAdapter {
         data,
       } = event
 
+
+      if (stream === 'lifecycle') {
+        const phase = (data as { phase?: string } | undefined)?.phase
+
+        if (phase === 'start') {
+          onStage?.('已发送，等待模型…')
+        }
+
+        if (phase === 'model') {
+          onStage?.('模型处理中…')
+        }
+      }
+
+      if (stream === 'execution') {
+        const state = (data as { state?: string } | undefined)?.state
+
+        if (state === 'running') {
+          onStage?.('生成中…')
+        }
+      }
 
       if (stream === 'assistant') {
 
