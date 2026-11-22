@@ -144,6 +144,12 @@ export function DesktopTerminal() {
   ] =
     useState<string | null>(null)
 
+  useEffect(() => {
+    if (!sessionPanelOpen) {
+      setSessionSwitchError(null)
+    }
+  }, [sessionPanelOpen])
+
   const listRef =
     useRef<HTMLDivElement>(
       null,
