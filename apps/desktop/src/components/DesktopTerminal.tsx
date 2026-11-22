@@ -529,6 +529,39 @@ export function DesktopTerminal() {
 
             <div className="connection-state-row">
               <span className="connection-state-key">
+                工具 Profile
+              </span>
+              <span className="connection-state-value">
+                {settingsOverview.toolProfile ??
+                  '未提供'}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                工具开关
+              </span>
+              <span className="connection-state-value">
+                {settingsOverview.toolsEnabled === null
+                  ? '未提供'
+                  : settingsOverview.toolsEnabled
+                    ? '启用'
+                    : '禁用'}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                执行模式
+              </span>
+              <span className="connection-state-value">
+                {settingsOverview.executionMode ??
+                  '未提供'}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
                 当前 Session
               </span>
 

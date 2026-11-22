@@ -74,6 +74,9 @@ export interface ExecApproval {
 export interface SettingsOverview {
   model: string | null
   toolCount: number | null
+  toolProfile: string | null
+  toolsEnabled: boolean | null
+  executionMode: string | null
   sessionKey: string | null
   sessionCount: number | null
 }
@@ -143,11 +146,17 @@ type GatewaySessionSummary = {
   modelName?: string
   toolCount?: number
   tools?: unknown[]
+  toolProfile?: string
+  toolsEnabled?: boolean
+  executionMode?: string
   metadata?: {
     model?: string
     modelName?: string
     toolCount?: number
     tools?: unknown[]
+    toolProfile?: string
+    toolsEnabled?: boolean
+    executionMode?: string
   }
 }
 
@@ -223,6 +232,23 @@ function readSettingsOverview(
         : null
     )
 
+  const toolProfile =
+    main?.toolProfile ??
+    main?.metadata?.toolProfile ??
+    null
+
+  const toolsEnabled =
+    typeof main?.toolsEnabled === 'boolean'
+      ? main.toolsEnabled
+      : typeof main?.metadata?.toolsEnabled === 'boolean'
+        ? main.metadata.toolsEnabled
+        : null
+
+  const executionMode =
+    main?.executionMode ??
+    main?.metadata?.executionMode ??
+    null
+
   return {
     model:
       typeof model === 'string' &&
@@ -231,6 +257,20 @@ function readSettingsOverview(
         : null,
 
     toolCount,
+
+    toolProfile:
+      typeof toolProfile === 'string' &&
+      toolProfile.trim().length > 0
+        ? toolProfile
+        : null,
+
+    toolsEnabled,
+
+    executionMode:
+      typeof executionMode === 'string' &&
+      executionMode.trim().length > 0
+        ? executionMode
+        : null,
 
     sessionKey:
       main?.key ?? null,
@@ -418,6 +458,9 @@ export function usePetRuntime(
     toolCount: null,
     sessionKey: null,
     sessionCount: null,
+    toolProfile: null,
+    toolsEnabled: null,
+    executionMode: null,
   })
 
   const [previousModel, setPreviousModel] =
