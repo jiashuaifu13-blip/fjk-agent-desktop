@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261122-1640
-HEAD_AT_SYNC: 35701ac
-UPDATED: 2026-11-22T16:40+08:00
-TASK: P1-019 聊天历史分页进行中 —— `usePetRuntime.ts` 有 2 行悬空接口未实现，`prependMessages` 补丁已 DryRun 通过，等指令实跑
+STATE_ID: 20261122-1710
+HEAD_AT_SYNC: c25685c
+UPDATED: 2026-11-22T17:10+08:00
+TASK: P1-019 聊天历史分页已完成并实测通过；Phase 2 全部收尾，下一步 Phase 3（桌宠 3B/3C/3E）或 Phase 6（MSI/签名/更新）
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -39,11 +39,10 @@ UNVERIFIED:
 - 内层 1s 重试等待未接 cancelled（组件卸载后最多多跑 4s，小隐患）
 
 NEXT:
-1. P1-019 聊天历史分页：先补 `ChatController.prependMessages`（DryRun 已通过：`hits=1 firstLine=309`），
-   再实现 `loadOlderHistory()`（`chat.history` 带 cursor/offset）与消息区向上滚动的触发。
-2. 若暂缓实现，则回退 `usePetRuntime.ts` 那 2 行悬空声明（避免运行期 TypeError）。
-3. （可选）快速失败的确定性复现；内层等待的取消保护。
-4. Phase 3 桌宠补完 / Phase 6 产品化收尾（见 PROJECT_STATUS.md）。
+1. Phase 3 桌宠补完（3B/3C/3E：动作资源、动作扩展、与 AgentState 的更多映射）。
+2. Phase 6 产品化收尾（MSI、代码签名、自动更新；NSIS 已有）。
+3. （可选）快速失败的确定性复现；重连成功后的历史/审批恢复一致性检查。
+4. 待定：首屏/分页 `limit` 已从 100 调为 50（为可实测），是否恢复 100 由产品决定。
 
 ROUND_P1-014:
 - STEP 0（基线）：HEAD=ad6ea1d clean；tsc 0；reducer 单测通过；网关 18789 有连接；代理 7897 开。
@@ -117,15 +116,18 @@ STEP0_BASELINE_20261122:
 - 网关 `127.0.0.1:18789` 处于 LISTENING，且已有 1 条 ESTABLISHED 连接；Vite `5173` 在 LISTENING。
 - 系统代理 `127.0.0.1:7897` 处于开启（推 GitHub 可用；实测对话前需关）。
 
-ROUND_P1-019（进行中）:
-- 目标：消息区向上滚动加载更早历史（当前 `chat.history` 固定 `limit: 100`，无 cursor/offset）。
-- 已落地（**未提交**）：`usePetRuntime.ts` 仅加 2 行接口声明 — `prependMessages(messages)`、`loadOlderHistory(): Promise<number>`。
-- 悬空风险：`ChatController.js` 无 `prependMessages`（探测 HITS=0）；`tsc` 因 `as ChatControllerLike` 强转不报错，
-  运行期调用会 `TypeError`。必须先实现或回退。
-- 探测结论（P1-019.1）：ChatController 390 行 / `replaceMessages` L286、`addMessage` L309；
-  usePetRuntime `chat.history` 仅 L1627（switchSession 内）。
-- 已备补丁（P1-019.2）：在 `addMessage(` 前插入 `prependMessages`，DryRun `hits=1 firstLine=309`、`PATCH_DRYRUN`，
-  文件未变；等指令实跑。
+ROUND_P1-019（已完成并实测）:
+- 目标：消息区向上滚动加载更早历史（原 `chat.history` 固定 `limit: 100`、无 cursor）。
+- `ChatController.prependMessages(messages)`：空数组直接 return；否则 `[...新, ...旧]` → `emitMessages()`（不调 `stop()`）。
+- `usePetRuntime`：4 个 ref（`historySessionKeyRef` / `historyOlderCursorRef` / `historyHasMoreRef` / `historyLoadingOlderRef`）；
+  `loadOlderHistory()` 用 cursor 原样透传调 `chat.history {sessionKey, cursor, limit: 50}`，
+  返回前校验 `activeSessionKeyRef`（切走不污染）、防重入、`hasMore !== true` 时 cursor 置 null；`return` 已暴露。
+- 基线：**首屏 boot** 与 **切换会话** 都拉一次 `chat.history` 并写入 cursor/hasMore（limit 均 50，原 100）。
+- `DesktopTerminal`：消息区 `scrollTop <= 40` 触发加载，`olderScrollRef` 保持加载后可视位置不跳。
+- 实测（用户）：重启 → 滚到顶部加载更早约 18 条 → 位置不跳 → 再滚到顶不再加载，无异常。
+- 补丁插曲：P1-019.4 被重复执行导致 `OLD_NOT_FOUND`（幂等，无重复插入）；loadOlderHistory 首稿缺
+  `const gateway = gatewayClientRef.current`，首屏块首稿引用了不在作用域的 `sessionKey`，均已本地修正。
+- 提交：见下一行（feat(chat): load older history on scroll）。
 
 FACTS:
 - caps 必须在 connect 顶层，放 client 会 invalid-handshake
