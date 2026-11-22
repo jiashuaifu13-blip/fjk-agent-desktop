@@ -44,6 +44,7 @@ export function DesktopTerminal() {
     rollbackSessionModel,
     sessionList,
     createSession,
+    deleteSession,
     switchSession,
   } =
     usePetRuntimeContext()
@@ -661,6 +662,50 @@ export function DesktopTerminal() {
                       切换
                     </button>
                   )}
+
+                  {!session.isMain &&
+                    session.key !==
+                      settingsOverview.sessionKey &&
+                    session.sessionId && (
+                      <button
+                        type="button"
+                        className="connection-state-trigger"
+                        disabled={sending}
+                        onClick={() => {
+                          const confirmed =
+                            window.confirm(
+                              `确认删除会话？\n\nkey: ${session.key}\nsessionId: ${session.sessionId}\n\n将先归档，再永久删除。此操作不可撤销。`,
+                            )
+
+                          if (!confirmed) {
+                            return
+                          }
+
+                          setSessionSwitchError(
+                            null,
+                          )
+
+                          const sid = session.sessionId
+
+                          if (!sid) {
+                            return
+                          }
+
+                          void deleteSession(
+                            session.key,
+                            sid,
+                          ).catch((err) => {
+                            setSessionSwitchError(
+                              err instanceof Error
+                                ? err.message
+                                : String(err),
+                            )
+                          })
+                        }}
+                      >
+                        删除
+                      </button>
+                    )}
               </div>
             ))}
           </div>
@@ -669,7 +714,7 @@ export function DesktopTerminal() {
             <div className="connection-state-section">
               <div className="connection-state-error">
                 <div className="connection-state-error-title">
-                  切换失败
+                  会话操作失败
                 </div>
 
                 <div className="connection-state-copy">

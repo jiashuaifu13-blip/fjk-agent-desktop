@@ -113,6 +113,10 @@ export interface PetRuntime {
   rollbackSessionModel(): Promise<void>
   sessionList: SessionListItem[]
   createSession(): Promise<string>
+  deleteSession(
+    sessionKey: string,
+    expectedSessionId: string,
+  ): Promise<void>
   switchSession(sessionKey: string): Promise<void>
 }
 
@@ -1335,6 +1339,103 @@ export function usePetRuntime(
     return key
   }
 
+  const deleteSession = async (
+    sessionKey: string,
+    expectedSessionId: string,
+  ): Promise<void> => {
+    const gateway =
+      gatewayClientRef.current
+
+    if (!gateway) {
+      throw new Error('Gateway unavailable')
+    }
+
+    const target =
+      sessionList.find(
+        (session) =>
+          session.key === sessionKey,
+      )
+
+    if (!target) {
+      throw new Error(
+        'Session is not in the current session list',
+      )
+    }
+
+    if (target.isMain) {
+      throw new Error(
+        'Main session cannot be deleted',
+      )
+    }
+
+    if (
+      sessionKey ===
+      settingsOverview.sessionKey
+    ) {
+      throw new Error(
+        'Current session cannot be deleted',
+      )
+    }
+
+    if (
+      !expectedSessionId ||
+      target.sessionId !==
+        expectedSessionId
+    ) {
+      throw new Error(
+        'Session id changed; refresh before deleting',
+      )
+    }
+
+    await gateway.send(
+      'sessions.patch',
+      {
+        key: sessionKey,
+        archived: true,
+        expectedSessionId,
+      },
+    )
+
+    await gateway.send(
+      'sessions.delete',
+      {
+        key: sessionKey,
+        expectedSessionId,
+      },
+    )
+
+    const list =
+      await gateway.send(
+        'sessions.list',
+        {},
+      )
+
+    const refreshedSessions =
+      readSessionList(list)
+
+    const refreshedOverview =
+      readSettingsOverview(list)
+
+    setSessionList(
+      refreshedSessions,
+    )
+
+    setSettingsOverview(
+      (current) => ({
+        ...current,
+        sessionCount:
+          refreshedOverview.sessionCount,
+      }),
+    )
+
+    appendRuntimeLog(
+      'info',
+      'gateway',
+      'Session deleted',
+      `session=${sessionKey}; sessionId=${expectedSessionId}`,
+    )
+  }
+
   const switchSession = async (
     sessionKey: string,
   ) => {
@@ -1460,6 +1561,7 @@ export function usePetRuntime(
     rollbackSessionModel,
     sessionList,
     createSession,
+    deleteSession,
     switchSession,
   }
 }
