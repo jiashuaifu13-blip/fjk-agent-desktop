@@ -30,6 +30,7 @@ export interface ChatControllerLike {
   send(content: string): Promise<boolean>
   stop(): boolean
   clear(): void
+  replaceMessages(messages: ChatMessage[]): void
   isGenerating: boolean
   onMessageChange: ((messages: ChatMessage[]) => void) | null
   onGeneratingChange: ((generating: boolean) => void) | null
@@ -260,6 +261,103 @@ function readSessionList(
           : null,
     }))
     .filter((item) => item.key.length > 0)
+}
+
+function readChatHistoryMessages(
+  history: unknown,
+): ChatMessage[] {
+  const rawMessages =
+    (
+      history as {
+        messages?: unknown[]
+      } | null
+    )?.messages
+
+  if (!Array.isArray(rawMessages)) {
+    return []
+  }
+
+  return rawMessages.flatMap(
+    (rawMessage, index): ChatMessage[] => {
+      if (
+        !rawMessage ||
+        typeof rawMessage !== 'object'
+      ) {
+        return []
+      }
+
+      const message =
+        rawMessage as {
+          id?: unknown
+          role?: unknown
+          content?: unknown
+          text?: unknown
+        }
+
+      if (
+        message.role !== 'user' &&
+        message.role !== 'assistant'
+      ) {
+        return []
+      }
+
+      let content = ''
+
+      if (Array.isArray(message.content)) {
+        content = message.content
+          .map((part) => {
+            if (
+              !part ||
+              typeof part !== 'object'
+            ) {
+              return ''
+            }
+
+            const block =
+              part as {
+                type?: unknown
+                text?: unknown
+              }
+
+            if (
+              block.type !== 'text' ||
+              typeof block.text !== 'string'
+            ) {
+              return ''
+            }
+
+            return block.text
+          })
+          .filter((text) => text.length > 0)
+          .join('\n')
+      } else if (
+        typeof message.content === 'string'
+      ) {
+        content = message.content
+      } else if (
+        typeof message.text === 'string'
+      ) {
+        content = message.text
+      }
+
+      if (!content) {
+        return []
+      }
+
+      return [
+        {
+          id:
+            typeof message.id === 'string' &&
+            message.id.length > 0
+              ? message.id
+              : `history-${index}`,
+          role: message.role,
+          content,
+          status: 'done',
+        },
+      ]
+    },
+  )
 }
 
 export function usePetRuntime(
@@ -1476,6 +1574,35 @@ export function usePetRuntime(
       },
     )
 
+    let historyMessages: ChatMessage[]
+
+    try {
+      const history =
+        await gateway.send(
+          'chat.history',
+          {
+            sessionKey: targetKey,
+            limit: 100,
+          },
+        )
+
+      historyMessages =
+        readChatHistoryMessages(history)
+    } catch (historyError) {
+      chatController?.replaceMessages([])
+
+      await gateway
+        .send(
+          'sessions.messages.unsubscribe',
+          {
+            key: targetKey,
+          },
+        )
+        .catch(() => undefined)
+
+      throw historyError
+    }
+
     try {
       if (currentKey) {
         await gateway.send(
@@ -1494,6 +1621,7 @@ export function usePetRuntime(
         ...current,
         sessionKey: targetKey,
       }))
+      chatController?.replaceMessages(historyMessages)
 
       appendRuntimeLog(
         'info',

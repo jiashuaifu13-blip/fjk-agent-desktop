@@ -283,6 +283,29 @@ export class ChatController {
   }
 
 
+  replaceMessages(
+    messages
+  ) {
+
+    this.stop()
+
+    this.messages =
+      Array.isArray(messages)
+        ? messages.map(
+          (message) => ({
+            ...message,
+          })
+        )
+        : []
+
+    this.setBubble(
+      ''
+    )
+
+    this.emitMessages()
+  }
+
+
   addMessage(
     role,
     content

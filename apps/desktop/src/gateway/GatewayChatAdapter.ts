@@ -99,6 +99,10 @@ export class GatewayChatAdapter {
       if (
         cleaned ||
         event.type !== 'agent' ||
+        (
+          typeof event.sessionKey === 'string' &&
+          event.sessionKey !== sessionKey
+        ) ||
         event.runId !== runId
       ) {
         return
@@ -147,7 +151,13 @@ export class GatewayChatAdapter {
     unsubscribe =
       this.client.onEvent((event: GatewayEventFrame) => {
 
-        if (event.type !== 'agent') {
+        if (
+          event.type !== 'agent' ||
+          (
+            typeof event.sessionKey === 'string' &&
+            event.sessionKey !== sessionKey
+          )
+        ) {
           return
         }
 
