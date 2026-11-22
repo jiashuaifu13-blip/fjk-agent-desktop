@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261122-1015
-HEAD_AT_SYNC: 7b201c9
-UPDATED: 2026-11-22T10:15+08:00
-TASK: 自动重连已完成并实测通过；等待下一轮（新建/删除会话、Settings 更多项、快速失败复现）
+STATE_ID: 20261122-1050
+HEAD_AT_SYNC: ad6ea1d
+UPDATED: 2026-11-22T10:50+08:00
+TASK: 新一轮 STEP-0：新建/删除会话（写操作，删除需二次确认）；基线已复核，等待网页 AI 给 STEP 1
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -39,9 +39,17 @@ UNVERIFIED:
 - 内层 1s 重试等待未接 cancelled（组件卸载后最多多跑 4s，小隐患）
 
 NEXT:
-1. 新建/删除会话（写操作，删除需二次确认）。
-2. Settings 更多项（工具开关/执行模式展示）。
-3. （可选）快速失败的确定性复现；内层等待的取消保护。
+1. 新建会话（`sessions.create`）最小可用：只创建 + 刷新列表，不自动发首条消息、不自动切换（切换已有能力）。
+2. 删除会话（`sessions.patch {archived:true, expectedSessionId}` 或 `sessions.delete`）：**删除前二次确认**；
+   需先把 `sessionId` 读进会话列表（当前 SessionListItem 只有 key/isMain/updatedAt）。
+3. Settings 更多项（工具开关/执行模式展示）。
+4. （可选）快速失败的确定性复现；内层等待的取消保护。
+
+STEP0_BASELINE_20261122:
+- `HEAD = origin/main = ad6ea1d`，工作区 clean。
+- `tsc --noEmit -p apps/desktop` = 0 错误；`node packages/agent-state/AgentStateReducer.test.mjs` 通过（exit 0）。
+- 网关 `127.0.0.1:18789` 处于 LISTENING，且已有 1 条 ESTABLISHED 连接；Vite `5173` 在 LISTENING。
+- 系统代理 `127.0.0.1:7897` 处于开启（推 GitHub 可用；实测对话前需关）。
 
 FACTS:
 - caps 必须在 connect 顶层，放 client 会 invalid-handshake
@@ -53,3 +61,12 @@ FACTS:
   OpenClaw auth store（`deepseek:default` / `deepseek:manual`）。
 - 网络注意：系统代理开 → OpenClaw SSRF 阻断；系统代理关 → 直连 api.deepseek.com 可能 ECONNRESET。
   可用 TUN 模式；不要为此改 OpenClaw 安全配置。
+- HEAD_AT_SYNC 记录「同步时的 HEAD」；只改 `.ai-context` 的 docs 提交会让 HEAD 前进 1，
+  属正常现象，不算漂移（除非有未提交代码）。
+- OpenClaw 2026.11.6 会话写操作（依据本机 `openclaw/docs/gateway/protocol/rpc-session-control.md`）：
+  - `sessions.create`：`{ key?, agentId?, message?, model?, label?, displayName?, titleSource?, fork?, cwd?, projectId? }`，
+    返回 `{ key, entry, runStarted, runId?, runError? }`；不带 `message` 即只建会话、不发首条消息。
+  - 归档/恢复走 `sessions.patch { archived: true|false, expectedSessionId }`，需列表里的 `sessionId`。
+  - `sessions.delete`：docs 说明「先 archive 再 delete 同一代」；权限上**仅 archived-only 请求可 `operator.write`**，
+    其余需 `operator.admin`（本地客户端 connect 顶层已申请 operator.admin）。
+  - 受保护目标：agent main 会话（含 `global`）不能归档/删除，UI 需按 `isMain` 禁用按钮。
