@@ -10,6 +10,7 @@ import { PetStates } from '../pet/PetStates.js'
 import { PetStateMachine } from '../pet/PetStateMachine.js'
 import { PetActionSelector } from '../pet/PetActionSelector.js'
 import { PetMemoryStore } from '../pet/PetMemoryStore.js'
+import { TauriPetMemoryBackend } from '../pet/TauriPetMemoryBackend.js'
 import { PetEmotionEngine } from '../pet/PetEmotionEngine.js'
 import { PetHitTest } from '../pet/PetHitTest.js'
 import { PetInteractionController } from '../pet/PetInteractionController.js'
@@ -722,7 +723,10 @@ export function usePetRuntime(
 
       const petMemory = new PetMemoryStore({
         character,
+        backend: new TauriPetMemoryBackend(),
       } as any)
+
+      await petMemory.hydrate()
 
       workStatesRef.current =
         ((character as any)?.mode?.workStates as string[] | undefined) ??

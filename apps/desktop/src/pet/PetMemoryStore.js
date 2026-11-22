@@ -38,11 +38,13 @@ export class PetMemoryStore {
         : null
     ),
     character = null,
+    backend = null,
   } = {}) {
 
     this.key = key
     this.storage = storage
     this.character = character
+    this.backend = backend
     this.data = this.load()
   }
 
@@ -86,13 +88,67 @@ export class PetMemoryStore {
   }
 
 
+  /* 从 AppData 的 pet-memory.json 恢复（有则覆盖 localStorage 版本） */
+  async hydrate() {
+
+    if (!this.backend || typeof this.backend.load !== 'function') {
+      return false
+    }
+
+    try {
+
+      const raw = await this.backend.load()
+
+      if (!raw) {
+        return false
+      }
+
+      const parsed = JSON.parse(raw)
+
+      if (!parsed || typeof parsed !== 'object') {
+        return false
+      }
+
+      this.data = {
+        ...EMPTY(),
+        ...parsed,
+        counters: {
+          ...EMPTY().counters,
+          ...(parsed.counters ?? {}),
+        },
+        recent: Array.isArray(parsed.recent)
+          ? parsed.recent
+          : [],
+      }
+
+      this.save()
+
+      return true
+    } catch (error) {
+      console.warn('[FJK] pet memory hydrate failed:', error)
+      return false
+    }
+  }
+
+
   save() {
 
     try {
+      const serialized =
+        JSON.stringify(this.data)
+
       this.storage?.setItem(
         this.key,
-        JSON.stringify(this.data),
+        serialized,
       )
+
+      if (this.backend && typeof this.backend.save === 'function') {
+        void this.backend
+          .save(serialized)
+          .catch((error) => {
+            console.warn('[FJK] pet memory file save failed:', error)
+          })
+      }
     } catch (error) {
       console.warn('[FJK] pet memory save failed:', error)
     }
@@ -166,5 +222,9 @@ export class PetMemoryStore {
 
     this.data = EMPTY()
     this.save()
+
+    if (this.backend && typeof this.backend.clear === 'function') {
+      void this.backend.clear().catch(() => undefined)
+    }
   }
 }
