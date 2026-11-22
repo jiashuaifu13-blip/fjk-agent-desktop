@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261122-1200
-HEAD_AT_SYNC: df5b8f8
-UPDATED: 2026-11-22T12:00+08:00
-TASK: P1-014 新建/删除会话已完成并实测通过（会话 16→7，main 保留）；代码待提交本轮删除改动，进入收尾/下一项
+STATE_ID: 20261122-1215
+HEAD_AT_SYNC: c801cfd
+UPDATED: 2026-11-22T12:15+08:00
+TASK: P1-015 会话历史（切换加载）已完成并实测通过；下一步收尾或 Settings 更多项
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -39,9 +39,9 @@ UNVERIFIED:
 - 内层 1s 重试等待未接 cancelled（组件卸载后最多多跑 4s，小隐患）
 
 NEXT:
-1. 删除收尾：确认是否清掉剩余 6 条 `agent:main:dashboard:*`（当前 7 条 = main + 6 dashboard）。
+1. 收尾：dashboard 测试会话已清空（现仅 1 条 `agent:main:main`），确认无需保留。
 2. Settings 更多项（工具开关/执行模式展示）。
-3. （可选）快速失败的确定性复现；内层等待的取消保护；删除后清空 `sessionSwitchError` 之类的 UX 细节。
+3. （可选）快速失败的确定性复现；内层等待的取消保护；`chat.history` 分页（当前 limit=100）与滚动加载。
 
 ROUND_P1-014:
 - STEP 0（基线）：HEAD=ad6ea1d clean；tsc 0；reducer 单测通过；网关 18789 有连接；代理 7897 开。
@@ -77,6 +77,18 @@ ROUND_P1-014-STEP3:
 - 实测（用户）：删除按预期工作；会话从 16 降到 **7**（main + 6 条 dashboard），
   cron 与 3 条 explicit 测试会话也被清掉；main 保留、当前会话未被删。
 - 遗留：本轮删除改动（2 文件）未提交。
+
+ROUND_P1-015:
+- 切换会话时加载历史：`chat.history { sessionKey, limit: 100 }` → `readChatHistoryMessages()` →
+  `chatController.replaceMessages()`（放在 `adapter.setSessionKey` 与设置切换之后）。
+- 历史拉取失败：`replaceMessages([])` + 退订 target key + 抛错（不留旧会话内容）。
+- 事件过滤：`GatewayChatAdapter` 在两处事件入口加 `sessionKey` 校验（不匹配直接丢弃），
+  防止切换瞬间旧会话事件串进新会话；发送链路仍按 runId 过滤。
+- 补丁插曲：C4.5 因锚点失配 `OLD_NOT_FOUND`，导致 `historyMessages` 声明未使用（TS6133）；
+  本地补 `chatController?.replaceMessages(historyMessages)`（dry-run 先验 hits=1）后 `tsc` 0、`build` PASS。
+- 实测（用户）：新建会话切换过去为空历史、切回原会话恢复原样，全部通过。
+- 当前网关会话数 = **1**（仅 `agent:main:main`）：dashboard 测试会话已清空。
+- 设计确认：「MAIN / 当前使用」不显示删除按钮属预期保护，不是 bug。
 
 STEP0_BASELINE_20261122:
 - `HEAD = origin/main = ad6ea1d`，工作区 clean。
