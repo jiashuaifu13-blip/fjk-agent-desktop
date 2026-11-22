@@ -760,10 +760,15 @@ export function usePetRuntime(
               clearTimeout(speechTimerRef.current)
             }
 
+            const duration = Math.min(
+              9000,
+              Math.max(3500, 1200 + line.length * 220),
+            )
+
             speechTimerRef.current = setTimeout(() => {
               setPetSpeech(null)
               speechTimerRef.current = null
-            }, 5000)
+            }, duration)
           }
 
           setPetRelation({
@@ -1445,6 +1450,13 @@ export function usePetRuntime(
             (action: unknown) =>
               store.dispatch(action),
         }) as ChatControllerLike
+
+      ;(controller as any).onMood = (
+        mood: string,
+        intensity: number,
+      ) => {
+        emotion.applyAgentMood(mood, intensity)
+      }
 
       controller.onGeneratingChange =
         (

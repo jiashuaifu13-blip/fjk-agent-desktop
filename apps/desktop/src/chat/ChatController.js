@@ -1,3 +1,32 @@
+const MOOD_TAG = /\[\[mood:([a-z]+)(?::([0-9]))?\]\]/g
+
+function stripMood(text) {
+  const source = String(text ?? '')
+
+  if (!source.includes('[[mood:')) {
+    return source
+  }
+
+  return source.replace(MOOD_TAG, '').replace(/\[\[mood:[^\]]*$/, '').trimEnd()
+}
+
+function readMood(text) {
+  const source = String(text ?? '')
+  let match = null
+
+  for (const item of source.matchAll(MOOD_TAG)) {
+    match = item
+  }
+
+  if (!match) {
+    return null
+  }
+
+  const intensity = match[2] ? Number(match[2]) : 1
+
+  return { mood: match[1], intensity: Math.max(0, Math.min(2, intensity)) }
+}
+
 export class ChatController {
 
   constructor({
@@ -29,6 +58,12 @@ export class ChatController {
       null
 
     this.onBubbleChange =
+      null
+
+    this.onMood =
+      null
+
+    this.lastMoodMarker =
       null
 
     this.onError =
@@ -351,7 +386,39 @@ export class ChatController {
   }
 
 
+  detectMood() {
+
+    const assistant = [...this.messages]
+      .reverse()
+      .find((message) => message.role === 'assistant')
+
+    if (!assistant) {
+      return
+    }
+
+    const marker = readMood(assistant.content)
+
+    if (!marker) {
+      return
+    }
+
+    const key = `${marker.mood}:${marker.intensity}`
+
+    if (key === this.lastMoodMarker) {
+      return
+    }
+
+    this.lastMoodMarker = key
+
+    if (typeof this.onMood === 'function') {
+      this.onMood(marker.mood, marker.intensity)
+    }
+  }
+
+
   emitMessages() {
+
+    this.detectMood()
 
     if (
       typeof this.onMessageChange ===
@@ -359,7 +426,12 @@ export class ChatController {
     ) {
 
       this.onMessageChange(
-        [...this.messages]
+        this.messages.map(
+          (message) => ({
+            ...message,
+            content: stripMood(message.content),
+          }),
+        ),
       )
     }
   }

@@ -96,17 +96,57 @@ export class PetEmotionEngine {
   }
 
 
-  pickLine(emotion = this.current) {
+  resolveLines(group) {
 
-    const lines = this.getLines(emotion)
+    if (Array.isArray(group)) {
+      return group
+    }
 
-    if (lines.length === 0) {
+    if (!group || typeof group !== 'object') {
+      return []
+    }
+
+    return group[this.mode] ?? group.daily ?? []
+  }
+
+
+  pickFrom(lines) {
+
+    if (!lines || lines.length === 0) {
       return null
     }
 
-    return lines[
-      Math.floor(Math.random() * lines.length)
-    ]
+    if (lines.length === 1) {
+      return lines[0]
+    }
+
+    // 强度越高，越偏向“更重”的台词（数组后半段）
+    const half = Math.ceil(lines.length / 2)
+    const pool =
+      this.intensity >= 2
+        ? lines.slice(lines.length - half)
+        : lines
+
+    return pool[Math.floor(Math.random() * pool.length)]
+  }
+
+
+  pickLine(emotion = this.current, kind = null) {
+
+    if (kind) {
+
+      const eventLines =
+        this.character?.eventLines?.[kind]
+
+      const resolved =
+        this.resolveLines(eventLines)
+
+      if (resolved.length > 0) {
+        return this.pickFrom(resolved)
+      }
+    }
+
+    return this.pickFrom(this.getLines(emotion))
   }
 
 
@@ -126,6 +166,8 @@ export class PetEmotionEngine {
    *       / chatStart / chatEnd / toolError / offline
    */
   note(kind, detail = {}) {
+
+    this.lastKind = kind
 
     const emotion = this.resolveEmotion(kind)
 
@@ -158,6 +200,24 @@ export class PetEmotionEngine {
 
 
   /* 连点检测：默认 1.6 秒内 3 次 → rapidClick */
+  applyAgentMood(name, intensity = 1) {
+
+    if (!name) {
+      return
+    }
+
+    if (!this.character?.emotions?.[name]) {
+      return
+    }
+
+    this.lastKind = null
+
+    this.setEmotion(name, {
+      intensity: Number(intensity) || 1,
+    })
+  }
+
+
   registerClick() {
 
     const at = this.now()
@@ -178,7 +238,10 @@ export class PetEmotionEngine {
   }
 
 
-  setEmotion(emotion, { silent = false } = {}) {
+  setEmotion(
+    emotion,
+    { silent = false, intensity = null } = {},
+  ) {
 
     if (!emotion) {
       return
@@ -188,7 +251,11 @@ export class PetEmotionEngine {
     const decayMs = config?.decayMs ?? 0
 
     this.current = emotion
-    this.intensity = Math.min(3, this.intensity + 1)
+
+    this.intensity =
+      typeof intensity === 'number' && Number.isFinite(intensity)
+        ? Math.max(0, Math.min(2, intensity))
+        : Math.min(3, this.intensity + 1)
     this.expiresAt = this.now() + decayMs
 
     if (this.timer) {
@@ -213,7 +280,7 @@ export class PetEmotionEngine {
       this.onChange({
         emotion: this.current,
         tags: this.getTags(),
-        line: this.pickLine(),
+        line: this.pickLine(this.current, this.lastKind),
         mode: this.mode,
       })
     }

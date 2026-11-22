@@ -88,6 +88,14 @@ export class PetInteractionController {
       false
 
 
+    this.longPressTimer =
+      null
+
+
+    this.longPressed =
+      false
+
+
     this.startClientX =
       0
 
@@ -520,34 +528,49 @@ export class PetInteractionController {
 
 
     /*
-     * 鼠标按下命中角色后，
-     * 立即进入预起飞悬空动画。
+     * 只有「长按」或「拖拽超过阈值」才进入悬空动画。
+     * 普通点击不播拖拽动作，交给 pointerup 的 INTERACT。
      */
-    this.stateMachine
-      .setState(
-        PetStates.DRAGGING,
-        {
-          force:
-            true,
+    this.clearLongPressTimer()
 
-          startFrame:
-            this.dragAnimationStartFrame,
+    this.longPressed =
+      false
 
-          endFrame:
-            this.dragAnimationEndFrame,
+    this.longPressTimer =
+      setTimeout(() => {
 
-          reason:
-            'pointer-down-pre-drag',
+        this.longPressTimer =
+          null
+
+        if (
+          !this.pointerDown ||
+          this.dragging
+        ) {
+          return
         }
-      )
-      .catch(
-        (error) => {
-          console.error(
-            '[PetInteraction] Failed to enter pre-drag:',
-            error
+
+        this.longPressed =
+          true
+
+        void this.stateMachine
+          .setState(
+            PetStates.DRAGGING,
+            {
+              force: true,
+              startFrame: this.dragAnimationStartFrame,
+              endFrame: this.dragAnimationEndFrame,
+              reason: 'pointer-long-press',
+            }
           )
-        }
-      )
+          .catch(
+            (error) => {
+              console.error(
+                '[PetInteraction] Failed to enter pre-drag:',
+                error
+              )
+            }
+          )
+      }, 260)
   }
 
 
@@ -626,6 +649,27 @@ export class PetInteractionController {
       this.emitInteraction(
         'drag-start'
       )
+
+
+      this.clearLongPressTimer()
+
+      if (!this.longPressed) {
+
+        this.longPressed =
+          true
+
+        void this.stateMachine
+          .setState(
+            PetStates.DRAGGING,
+            {
+              force: true,
+              startFrame: this.dragAnimationStartFrame,
+              endFrame: this.dragAnimationEndFrame,
+              reason: 'drag-threshold',
+            }
+          )
+          .catch(() => undefined)
+      }
     }
 
 
@@ -906,7 +950,33 @@ export class PetInteractionController {
         )
       }
 
+    } else if (this.longPressed) {
+
+      this.clearLongPressTimer()
+
+      this.cancelDragFrame()
+
+      try {
+
+        await this.stateMachine
+          .setState(
+            PetStates.IDLE,
+            {
+              force: true,
+              reason: 'pointer-long-press-end',
+            }
+          )
+
+      } catch (error) {
+
+        console.error(
+          '[PetInteraction] Failed to leave pre-drag:',
+          error
+        )
+      }
     } else {
+
+      this.clearLongPressTimer()
 
       this.cancelDragFrame()
 
@@ -1453,7 +1523,24 @@ export class PetInteractionController {
    * ==========================================
    */
 
+  clearLongPressTimer() {
+
+    if (this.longPressTimer !== null) {
+
+      clearTimeout(this.longPressTimer)
+
+      this.longPressTimer =
+        null
+    }
+
+    this.longPressed =
+      false
+  }
+
+
   resetPointer() {
+
+    this.clearLongPressTimer()
 
     this.cancelDragFrame()
 

@@ -314,6 +314,278 @@
                                                "fps":  12
                                            },
                            "facing":  "left"
+                       },
+                       {
+                           "id":  "点击回应-傲娇生气",
+                           "name":  "点击回应-傲娇生气",
+                           "category":  "点击回应",
+                           "sources":  {
+                                           "webp":  "spritesheet/点击回应-傲娇生气.webp"
+                                       },
+                           "spritesheet":  {
+                                               "frameWidth":  640,
+                                               "frameHeight":  360,
+                                               "columns":  8,
+                                               "rows":  15,
+                                               "frameCount":  120,
+                                               "fps":  12
+                                           },
+                           "facing":  "left"
+                       },
+                       {
+                           "id":  "点击回应-害羞惊讶",
+                           "name":  "点击回应-害羞惊讶",
+                           "category":  "点击回应",
+                           "sources":  {
+                                           "webp":  "spritesheet/点击回应-害羞惊讶.webp"
+                                       },
+                           "spritesheet":  {
+                                               "frameWidth":  640,
+                                               "frameHeight":  360,
+                                               "columns":  8,
+                                               "rows":  15,
+                                               "frameCount":  120,
+                                               "fps":  12
+                                           },
+                           "facing":  "left"
+                       },
+                       {
+                           "id":  "点击回应-开心跃动",
+                           "name":  "点击回应-开心跃动",
+                           "category":  "点击回应",
+                           "sources":  {
+                                           "webp":  "spritesheet/点击回应-开心跃动.webp"
+                                       },
+                           "spritesheet":  {
+                                               "frameWidth":  640,
+                                               "frameHeight":  360,
+                                               "columns":  8,
+                                               "rows":  15,
+                                               "frameCount":  120,
+                                               "fps":  12
+                                           },
+                           "facing":  "left"
+                       },
+                       {
+                           "id":  "点击回应-挠痒咯咯笑",
+                           "name":  "点击回应-挠痒咯咯笑",
+                           "category":  "点击回应",
+                           "sources":  {
+                                           "webp":  "spritesheet/点击回应-挠痒咯咯笑.webp"
+                                       },
+                           "spritesheet":  {
+                                               "frameWidth":  640,
+                                               "frameHeight":  360,
+                                               "columns":  8,
+                                               "rows":  15,
+                                               "frameCount":  120,
+                                               "fps":  12
+                                           },
+                           "facing":  "left"
+                       },
+                       {
+                           "id":  "凭空生花",
+                           "name":  "凭空生花",
+                           "category":  "玩耍",
+                           "sources":  {
+                                           "webp":  "spritesheet/凭空生花.webp"
+                                       },
+                           "spritesheet":  {
+                                               "frameWidth":  640,
+                                               "frameHeight":  360,
+                                               "columns":  8,
+                                               "rows":  15,
+                                               "frameCount":  120,
+                                               "fps":  12
+                                           },
+                           "facing":  "left"
+                       },
+                       {
+                           "id":  "轻快摇摆舞",
+                           "name":  "轻快摇摆舞",
+                           "category":  "玩耍",
+                           "sources":  {
+                                           "webp":  "spritesheet/轻快摇摆舞.webp"
+                                       },
+                           "spritesheet":  {
+                                               "frameWidth":  640,
+                                               "frameHeight":  360,
+                                               "columns":  8,
+                                               "rows":  15,
+                                               "frameCount":  120,
+                                               "fps":  12
+                                           },
+                           "facing":  "left"
+                       },
+                       {
+                           "id":  "优雅女仆舞",
+                           "name":  "优雅女仆舞",
+                           "category":  "玩耍",
+                           "sources":  {
+                                           "webp":  "spritesheet/优雅女仆舞.webp"
+                                       },
+                           "spritesheet":  {
+                                               "frameWidth":  640,
+                                               "frameHeight":  360,
+                                               "columns":  8,
+                                               "rows":  15,
+                                               "frameCount":  120,
+                                               "fps":  12
+                                           },
+                           "facing":  "left"
+                       },
+                       {
+                           "id":  "可爱宅舞",
+                           "name":  "可爱宅舞",
+                           "category":  "玩耍",
+                           "sources":  {
+                                           "webp":  "spritesheet/可爱宅舞.webp"
+                                       },
+                           "spritesheet":  {
+                                               "frameWidth":  640,
+                                               "frameHeight":  360,
+                                               "columns":  8,
+                                               "rows":  15,
+                                               "frameCount":  120,
+                                               "fps":  12
+                                           },
+                           "facing":  "left"
+                       },
+                       {
+                           "id":  "悠闲哼歌",
+                           "name":  "悠闲哼歌",
+                           "category":  "小动作",
+                           "sources":  {
+                                           "webp":  "spritesheet/悠闲哼歌.webp"
+                                       },
+                           "spritesheet":  {
+                                               "frameWidth":  640,
+                                               "frameHeight":  360,
+                                               "columns":  8,
+                                               "rows":  15,
+                                               "frameCount":  120,
+                                               "fps":  12
+                                           },
+                           "facing":  "left"
+                       },
+                       {
+                           "id":  "照镜子",
+                           "name":  "照镜子",
+                           "category":  "小动作",
+                           "sources":  {
+                                           "webp":  "spritesheet/照镜子.webp"
+                                       },
+                           "spritesheet":  {
+                                               "frameWidth":  640,
+                                               "frameHeight":  360,
+                                               "columns":  8,
+                                               "rows":  15,
+                                               "frameCount":  120,
+                                               "fps":  12
+                                           },
+                           "facing":  "left"
+                       },
+                       {
+                           "id":  "荡秋千",
+                           "name":  "荡秋千",
+                           "category":  "玩耍",
+                           "sources":  {
+                                           "webp":  "spritesheet/荡秋千.webp"
+                                       },
+                           "spritesheet":  {
+                                               "frameWidth":  640,
+                                               "frameHeight":  360,
+                                               "columns":  8,
+                                               "rows":  15,
+                                               "frameCount":  120,
+                                               "fps":  12
+                                           },
+                           "facing":  "left"
+                       },
+                       {
+                           "id":  "原地蹲下玩玩具汽车",
+                           "name":  "原地蹲下玩玩具汽车",
+                           "category":  "玩耍",
+                           "sources":  {
+                                           "webp":  "spritesheet/原地蹲下玩玩具汽车.webp"
+                                       },
+                           "spritesheet":  {
+                                               "frameWidth":  640,
+                                               "frameHeight":  360,
+                                               "columns":  8,
+                                               "rows":  15,
+                                               "frameCount":  120,
+                                               "fps":  12
+                                           },
+                           "facing":  "left"
+                       },
+                       {
+                           "id":  "打瞌睡被惊醒",
+                           "name":  "打瞌睡被惊醒",
+                           "category":  "小动作",
+                           "sources":  {
+                                           "webp":  "spritesheet/打瞌睡被惊醒.webp"
+                                       },
+                           "spritesheet":  {
+                                               "frameWidth":  640,
+                                               "frameHeight":  360,
+                                               "columns":  8,
+                                               "rows":  15,
+                                               "frameCount":  120,
+                                               "fps":  12
+                                           },
+                           "facing":  "left"
+                       },
+                       {
+                           "id":  "被吓一跳",
+                           "name":  "被吓一跳",
+                           "category":  "小动作",
+                           "sources":  {
+                                           "webp":  "spritesheet/被吓一跳.webp"
+                                       },
+                           "spritesheet":  {
+                                               "frameWidth":  640,
+                                               "frameHeight":  360,
+                                               "columns":  8,
+                                               "rows":  15,
+                                               "frameCount":  120,
+                                               "fps":  12
+                                           },
+                           "facing":  "left"
+                       },
+                       {
+                           "id":  "玩游戏气急败坏",
+                           "name":  "玩游戏气急败坏",
+                           "category":  "玩耍",
+                           "sources":  {
+                                           "webp":  "spritesheet/玩游戏气急败坏.webp"
+                                       },
+                           "spritesheet":  {
+                                               "frameWidth":  640,
+                                               "frameHeight":  360,
+                                               "columns":  8,
+                                               "rows":  15,
+                                               "frameCount":  120,
+                                               "fps":  12
+                                           },
+                           "facing":  "left"
+                       },
+                       {
+                           "id":  "轻快记录",
+                           "name":  "轻快记录",
+                           "category":  "小动作",
+                           "sources":  {
+                                           "webp":  "spritesheet/轻快记录.webp"
+                                       },
+                           "spritesheet":  {
+                                               "frameWidth":  640,
+                                               "frameHeight":  360,
+                                               "columns":  8,
+                                               "rows":  15,
+                                               "frameCount":  120,
+                                               "fps":  12
+                                           },
+                           "facing":  "left"
                        }
                    ]
 }
