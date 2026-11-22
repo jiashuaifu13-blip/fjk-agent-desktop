@@ -1,0 +1,120 @@
+use std::net::{SocketAddr, TcpStream};
+use std::path::PathBuf;
+use std::process::Command;
+use std::time::Duration;
+
+use serde::Serialize;
+
+#[derive(Serialize)]
+pub struct OpenClawStatus {
+    pub installed: bool,
+    pub cli_path: Option<String>,
+    pub version: Option<String>,
+    pub gateway_running: bool,
+    pub config_found: bool,
+}
+
+fn candidate_paths() -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+
+    if let Ok(appdata) = std::env::var("APPDATA") {
+        paths.push(
+            PathBuf::from(&appdata)
+                .join("npm")
+                .join("openclaw.cmd"),
+        );
+    }
+
+    if let Ok(profile) = std::env::var("USERPROFILE") {
+        paths.push(
+            PathBuf::from(&profile)
+                .join("AppData")
+                .join("Roaming")
+                .join("npm")
+                .join("openclaw.cmd"),
+        );
+    }
+
+    paths
+}
+
+fn find_cli() -> Option<PathBuf> {
+    for path in candidate_paths() {
+        if path.exists() {
+            return Some(path);
+        }
+    }
+
+    let output = Command::new("where")
+        .arg("openclaw")
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let text = String::from_utf8_lossy(&output.stdout);
+    let first = text.lines().next()?.trim();
+
+    if first.is_empty() {
+        None
+    } else {
+        Some(PathBuf::from(first))
+    }
+}
+
+fn read_version(cli: &PathBuf) -> Option<String> {
+    let output = Command::new("cmd")
+        .args(["/C"])
+        .arg(cli)
+        .arg("--version")
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+    if text.is_empty() {
+        None
+    } else {
+        Some(text)
+    }
+}
+
+fn gateway_running() -> bool {
+    let addr: SocketAddr = match "127.0.0.1:18789".parse() {
+        Ok(value) => value,
+        Err(_) => return false,
+    };
+
+    TcpStream::connect_timeout(&addr, Duration::from_millis(300)).is_ok()
+}
+
+fn config_found() -> bool {
+    if let Ok(profile) = std::env::var("USERPROFILE") {
+        return PathBuf::from(profile)
+            .join(".openclaw")
+            .join("openclaw.json")
+            .exists();
+    }
+
+    false
+}
+
+#[tauri::command]
+pub fn openclaw_status() -> OpenClawStatus {
+    let cli = find_cli();
+    let version = cli.as_ref().and_then(read_version);
+
+    OpenClawStatus {
+        installed: cli.is_some(),
+        cli_path: cli.map(|path| path.to_string_lossy().to_string()),
+        version,
+        gateway_running: gateway_running(),
+        config_found: config_found(),
+    }
+}

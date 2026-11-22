@@ -13,6 +13,14 @@ import {
   usePetRuntimeContext,
 } from '../runtime/PetRuntimeContext'
 
+import {
+  readOpenClawStatus,
+} from '../system/openclawStatus'
+
+import type {
+  OpenClawStatus,
+} from '../system/openclawStatus'
+
 import type {
   ChatMessage,
 } from '../runtime/PetRuntimeContext'
@@ -145,6 +153,44 @@ export function DesktopTerminal() {
     setSessionSwitchError,
   ] =
     useState<string | null>(null)
+
+  const [openclawStatus, setOpenclawStatus] =
+    useState<OpenClawStatus | null>(null)
+
+  const [openclawCheckNote, setOpenclawCheckNote] =
+    useState<string | null>(null)
+
+  const refreshOpenclawStatus = () => {
+    setOpenclawCheckNote(null)
+
+    void readOpenClawStatus()
+      .then((status) => {
+        setOpenclawStatus(status)
+
+        if (!status) {
+          setOpenclawCheckNote(null)
+          return
+        }
+
+        setOpenclawCheckNote(
+          status.installed
+            ? `已安装 OpenClaw ${status.version ?? '（版本未知）'}`
+            : '未检测到 OpenClaw',
+        )
+      })
+      .catch(() => {
+        setOpenclawStatus(null)
+        setOpenclawCheckNote('检测失败')
+      })
+  }
+
+  useEffect(() => {
+    if (!settingsPanelOpen) {
+      return
+    }
+
+    refreshOpenclawStatus()
+  }, [settingsPanelOpen])
 
   useEffect(() => {
     if (!sessionPanelOpen) {
@@ -510,9 +556,31 @@ export function DesktopTerminal() {
               </div>
             </div>
 
-            <span className="connection-state-badge connection-state-badge-neutral">
-              模型可写
-            </span>
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                alignItems: 'center',
+              }}
+            >
+              <button
+                type="button"
+                className="connection-state-trigger"
+                onClick={refreshOpenclawStatus}
+              >
+                重新检测
+              </button>
+
+              {openclawCheckNote && (
+                <span className="connection-state-copy">
+                  {openclawCheckNote}
+                </span>
+              )}
+
+              <span className="connection-state-badge connection-state-badge-neutral">
+                模型可写
+              </span>
+            </div>
           </div>
 
           <div className="connection-state-grid">
@@ -580,6 +648,109 @@ export function DesktopTerminal() {
                   '未提供'}
               </span>
             </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                OpenClaw
+              </span>
+              <span className="connection-state-value">
+                {openclawStatus === null
+                  ? '未检测'
+                  : openclawStatus.installed
+                    ? '已安装'
+                    : '未安装'}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                OpenClaw 版本
+              </span>
+              <span className="connection-state-value">
+                {openclawStatus?.version ?? '未提供'}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                网关状态
+              </span>
+              <span className="connection-state-value">
+                {openclawStatus === null
+                  ? '未检测'
+                  : openclawStatus.gatewayRunning
+                    ? '运行中'
+                    : '未运行'}
+              </span>
+            </div>
+
+            {openclawStatus?.installed && (
+              <div className="connection-state-section">
+                <div className="connection-state-section-title">
+                  OpenClaw 已检测到
+                </div>
+
+                <div className="connection-state-copy">
+                  已安装 OpenClaw {openclawStatus.version ?? '（版本未知）'}；网关
+                  {openclawStatus.gatewayRunning ? '正在运行' : '未运行'}。
+                </div>
+
+                {openclawStatus.cliPath && (
+                  <div className="connection-state-copy">
+                    CLI：<code>{openclawStatus.cliPath}</code>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {openclawStatus && !openclawStatus.installed && (
+              <div className="connection-state-section">
+                <div className="connection-state-section-title">
+                  还没安装 OpenClaw
+                </div>
+
+                <div className="connection-state-copy">
+                  在 PowerShell 里执行：
+                </div>
+
+                <div className="connection-state-copy">
+                  <code>npm i -g openclaw</code>
+                </div>
+
+                <div className="connection-state-copy">
+                  装好后执行 <code>openclaw onboard</code> 配置模型与 API Key，再点「重新检测」。
+                </div>
+              </div>
+            )}
+
+            {openclawStatus &&
+              openclawStatus.installed &&
+              !openclawStatus.configFound && (
+                <div className="connection-state-section">
+                  <div className="connection-state-section-title">
+                    OpenClaw 已安装，还没配置
+                  </div>
+
+                  <div className="connection-state-copy">
+                    执行 <code>openclaw onboard</code> 完成模型与 API Key 配置；完成后点「重新检测」。
+                  </div>
+                </div>
+              )}
+
+            {openclawStatus &&
+              openclawStatus.installed &&
+              openclawStatus.configFound &&
+              !openclawStatus.gatewayRunning && (
+                <div className="connection-state-section">
+                  <div className="connection-state-section-title">
+                    网关没有运行
+                  </div>
+
+                  <div className="connection-state-copy">
+                    执行 <code>openclaw daemon start</code>（或前台 <code>openclaw gateway --port 18789</code>），再点「重新检测」。
+                  </div>
+                </div>
+              )}
 
             <div className="connection-state-row">
               <span className="connection-state-key">

@@ -1,4 +1,5 @@
 mod gateway;
+mod onboarding;
 mod pet_memory;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -13,6 +14,7 @@ pub fn run() {
             pet_memory::pet_memory_load,
             pet_memory::pet_memory_save,
             pet_memory::pet_memory_clear,
+            onboarding::openclaw_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
