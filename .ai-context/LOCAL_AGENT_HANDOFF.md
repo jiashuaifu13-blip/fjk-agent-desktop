@@ -68,19 +68,21 @@
    同样地，**写 `apps\desktop\src` 下的源文件**也会 `Access to the path ... is denied`（apply-patch 也一样），
    需要完全权限；`.ai-context` 下的文档写入不受影响。
 
-## 七、当前状态（2026-11-22 10:50）
+## 七、当前状态（2026-11-22 16:40）
 
-- `HEAD = origin/main = ad6ea1d`（仅文档；最近代码提交 `7b201c9`）；`STATE_ID = 20261122-1050`。
-- 已完成：P1-001~P1-013（Approval、Connection State、Log Viewer、Settings 只读+模型回滚、
-  Session 列表与切换、UI 布局、**自动重连**）。
-- 自动重连实测：attempt 1..3 连接拒绝 → 4 空列表 → 5 恢复成功；header 与面板一致。
-- **本轮（STEP-0 已复核）**：下一项 = 新建/删除会话（写操作，删除需二次确认）。
-  基线：`tsc` 0 错误、reducer 单测通过、网关 `18789` LISTENING 且有连接、Vite `5173` 在、代理 `7897` 开启。
-- 本轮已知缺口：`SessionListItem` 只有 `key/isMain/updatedAt`，缺 `sessionId`；
-  归档/删除都要 `expectedSessionId`，所以要先补数据再写 UI。
-- 未验证：快速失败瞬时事件；新建/删除会话本身。
+- `HEAD = origin/main = 35701ac`；`STATE_ID = 20261122-1640`（仍以 `STATE.md` 为唯一实时源）。
+- 已完成：P1-001~P1-018（Approval、Connection State、Log Viewer、Settings 只读+模型回滚+三字段、
+  Session 列表/切换/新建/删除/切换加载历史、UI 布局、自动重连、面板错误自清）。
+- 2026-11-22 当天进度：新建会话 → 删除会话（archived→delete）→ 切换加载历史 → 面板错误自清
+  → Settings 三项只读 → 清空测试会话（16→1）→ 恢复卡加「命令索引 / 摘要块 / 补丁锚点」三节。
+- **进行中（P1-019 聊天历史分页）**：`usePetRuntime.ts` 有 2 行**未提交**的悬空声明
+  （`prependMessages` / `loadOlderHistory`），`ChatController.js` 尚未实现；
+  创建处是 `as ChatControllerLike` 强转，`tsc` 不报错，但调用会 `TypeError`。
+  已备好 `prependMessages` 补丁：DryRun `hits=1 firstLine=309`，等指令实跑。
+- 未验证：快速失败瞬时事件（开代理表现为挂起，非秒失败）。
 - 已知小隐患：重连内层 1s 等待未接 `cancelled`（卸载后最多多跑 4s）。
-- 环境提示：`Start-Process` 起的网关不常驻；用 `openclaw daemon start` 或前台 `openclaw gateway --port 18789`。
+- 环境：网关 `18789` 运行中；代理 `7897` 开着但 TLS 偶发失败，push 用
+  `git -c http.proxy="" -c https.proxy=""` 直连可成；`build` 需完全权限（esbuild spawn EPERM）。
 
 ## 八、交接约定
 

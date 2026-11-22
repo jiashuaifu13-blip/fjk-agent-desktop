@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261122-1618
-HEAD_AT_SYNC: fb58c81
-UPDATED: 2026-11-22T16:18+08:00
-TASK: Settings 只读新增三行（工具 Profile / 工具开关 / 执行模式）已完成并实测通过；下一步聊天历史分页或 Phase 6 收尾
+STATE_ID: 20261122-1640
+HEAD_AT_SYNC: 35701ac
+UPDATED: 2026-11-22T16:40+08:00
+TASK: P1-019 聊天历史分页进行中 —— `usePetRuntime.ts` 有 2 行悬空接口未实现，`prependMessages` 补丁已 DryRun 通过，等指令实跑
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -39,9 +39,11 @@ UNVERIFIED:
 - 内层 1s 重试等待未接 cancelled（组件卸载后最多多跑 4s，小隐患）
 
 NEXT:
-1. 收尾：dashboard 测试会话已清空（现仅 1 条 `agent:main:main`），确认无需保留。
-2. Settings 更多项（工具开关/执行模式展示）。
-3. （可选）快速失败的确定性复现；内层等待的取消保护；`chat.history` 分页（当前 limit=100）与滚动加载。
+1. P1-019 聊天历史分页：先补 `ChatController.prependMessages`（DryRun 已通过：`hits=1 firstLine=309`），
+   再实现 `loadOlderHistory()`（`chat.history` 带 cursor/offset）与消息区向上滚动的触发。
+2. 若暂缓实现，则回退 `usePetRuntime.ts` 那 2 行悬空声明（避免运行期 TypeError）。
+3. （可选）快速失败的确定性复现；内层等待的取消保护。
+4. Phase 3 桌宠补完 / Phase 6 产品化收尾（见 PROJECT_STATUS.md）。
 
 ROUND_P1-014:
 - STEP 0（基线）：HEAD=ad6ea1d clean；tsc 0；reducer 单测通过；网关 18789 有连接；代理 7897 开。
@@ -114,6 +116,16 @@ STEP0_BASELINE_20261122:
 - `tsc --noEmit -p apps/desktop` = 0 错误；`node packages/agent-state/AgentStateReducer.test.mjs` 通过（exit 0）。
 - 网关 `127.0.0.1:18789` 处于 LISTENING，且已有 1 条 ESTABLISHED 连接；Vite `5173` 在 LISTENING。
 - 系统代理 `127.0.0.1:7897` 处于开启（推 GitHub 可用；实测对话前需关）。
+
+ROUND_P1-019（进行中）:
+- 目标：消息区向上滚动加载更早历史（当前 `chat.history` 固定 `limit: 100`，无 cursor/offset）。
+- 已落地（**未提交**）：`usePetRuntime.ts` 仅加 2 行接口声明 — `prependMessages(messages)`、`loadOlderHistory(): Promise<number>`。
+- 悬空风险：`ChatController.js` 无 `prependMessages`（探测 HITS=0）；`tsc` 因 `as ChatControllerLike` 强转不报错，
+  运行期调用会 `TypeError`。必须先实现或回退。
+- 探测结论（P1-019.1）：ChatController 390 行 / `replaceMessages` L286、`addMessage` L309；
+  usePetRuntime `chat.history` 仅 L1627（switchSession 内）。
+- 已备补丁（P1-019.2）：在 `addMessage(` 前插入 `prependMessages`，DryRun `hits=1 firstLine=309`、`PATCH_DRYRUN`，
+  文件未变；等指令实跑。
 
 FACTS:
 - caps 必须在 connect 顶层，放 client 会 invalid-handshake
