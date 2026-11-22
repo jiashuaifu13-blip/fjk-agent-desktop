@@ -216,3 +216,27 @@ ROUND_CHAT-LATENCY-1（2026-11-22 深夜，对话延迟批次 1）:
 - 等待可感知：发送后若还没有 assistant 内容，显示「等待模型响应… Ns」并计时；首 token 到达后切回流式光标。
 - 埋点：`ChatController.onTiming({ttftMs,totalMs})` → runtime 写 Log Viewer「Chat latency ttft=…ms; total=…ms」。
 - tsc 0、build PASS。批次 2 待做：reasoning 单独展示、打字机平滑、长对话虚拟化。
+
+ROUND_PROVIDER-LATENCY（2026-11-22 深夜，API 与对话体验）:
+- 首启引导：Rust `openclaw_status`（安装/版本/网关/config）+ 设置面板「重新检测」+ 三种状态引导；写密钥优先走 Gateway RPC
+  `models.authSetApiKey`（不停网关），冲突时 `models.authLogout` 清 `<provider>:manual` 后重试。
+- 多 provider：内置 15 家 `/models` 校验端点；自定义 OpenAI 兼容 provider（New API / one-api）走
+  `openclaw config set models.providers.<id> '{baseUrl, api:"openai-completions", apiKey:"<id>:manual", models:[…]}'`。
+  关键坑：**自定义 provider 必须声明 `api: openai-completions`**，否则 models.json 加载失败、模型无法解析。
+- 模型作用域：`sessions.patch` 只改**当前会话**；全局默认是 `agents.defaults.model.primary`。设置面板新增
+  「设为全局默认」按钮（Rust `openclaw_set_default_model`）；模型行显示 provider。
+- Agent 自检：`~/.openclaw/workspace/AGENTS.md` 增规则——问模型时读会话级 `model/modelProvider`，不要用默认值；
+  注意**新会话才会重新加载**该文件（旧会话会继续答旧值）。
+- 对话延迟：`ChatController` 40ms 合并流式渲染 + 稳定消息对象 + `MessageRow` memo；等待期显示阶段
+  （已发送/模型处理中/生成中/等待你审批）；`Chat latency ttft/total` 埋点；首字 90s 未到自动 stop。
+- 会话可观测：会话面板显示「· 运行中」+「强制停止」（`sessions.abort {key, clearQueued:true}`），面板打开时 8s 轮询；
+  启动恢复上次会话（localStorage `fjk-last-session-v1`）。
+- 实测数据：deepseek-flash ttft 0.9–10.8s；newapi/grok-4.7 ttft 3.4s（reasoning 模型）；HF Space 冷启动约 15s。
+- 已知遗留：卡死多为 agent 工具调用（`tool_execution_wait`）；`newapi` 的 `models` 空数组靠上游默认接受；
+  自动停止阈值 90s 是否偏长待评估。
+
+NEXT（明天）:
+1. 观察一晚上稳定性：卡死频率、自动停止误伤率、grok 中转限流情况。
+2. 若频繁 `tool_execution_wait`：在 UI 显示 run 卡在哪个工具，并提供「停止该工具」。
+3. 可选：模型快捷切换（快模型/深思考）、思考链展示、打字机平滑。
+4. 收尾：把本轮 API/对话改动同步进 PROJECT_STATUS 与 WEB_AI_SESSION。
