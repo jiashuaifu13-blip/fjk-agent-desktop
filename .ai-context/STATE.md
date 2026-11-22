@@ -38,6 +38,17 @@ UNVERIFIED:
   "Agent main has not completed startup inspection and preparation"（网关预热未完成，属预期）
 - 内层 1s 重试等待未接 cancelled（组件卸载后最多多跑 4s，小隐患）
 
+ROUND_PET-2（2026-11-22 傍晚）:
+- 动作包 18 → **34 个**（73 文件 / 33.7MB）：补 angry/surprised/shy/sleepy 等情绪动作与更多待机动作。
+- 角色卡 v3：10 情绪（neutral/happy/joy/excited/proud/shy/surprised/angry/sad/wronged），
+  每种含 daily/work 两套台词；新增 10 个**事件专属台词池**（click/rapidClick/doubleClick/dragStart/dragEnd/chatStart/chatEnd/approval/reunion/idleChat）。
+- 情绪引擎：台词优先级「事件台词 > 情绪台词」，强度≥2 时偏向更重的台词；气泡时长按字数 3.5–9s 自适应。
+- `[[mood:xxx]]` 解析：`ChatController` 检测/剥离标记（含半截标记），`onMood` 回调驱动情绪；人格侧已写入
+  `~/.openclaw/workspace/SOUL.md`（备份 `SOUL.md.bak-20261122-1840`），标记规范：最后一行、10 选 1、可带 `:0..2` 强度。
+- 交互修复：Blog 版在 `pointerdown` 立刻进入 DRAGGING（点击也会闪悬空）；改为 **长按 260ms 或移动超 6px** 才进入，
+  纯点击走 INTERACT，长按松手回 IDLE。
+- 单测（本地脚本）：标记剥离/去重/半截标记均通过；`tsc` 0、`build` PASS。
+
 NEXT:
 1. 桌宠 GUI 终验：IDLE 轮播 / thinking-work / 审批挥手+气泡 / 完成庆祝 / 拖拽 / 断线。
 2. 动作包扩充（**已预留**：Blog `dsh` 有 101 动作、95.8MB；当前只入库 18 个 / 18.5MB），
