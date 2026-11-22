@@ -78,6 +78,7 @@ export interface ExecApproval {
 
 export interface SettingsOverview {
   model: string | null
+  provider: string | null
   toolCount: number | null
   toolProfile: string | null
   toolsEnabled: boolean | null
@@ -158,6 +159,7 @@ type GatewaySessionSummary = {
   updatedAt?: number
   model?: string
   modelName?: string
+  modelProvider?: string
   toolCount?: number
   tools?: unknown[]
   toolProfile?: string
@@ -263,12 +265,19 @@ function readSettingsOverview(
     main?.metadata?.executionMode ??
     null
 
+  const provider =
+    typeof main?.modelProvider === 'string' &&
+    main.modelProvider.trim().length > 0
+      ? main.modelProvider
+      : null
+
   return {
     model:
       typeof model === 'string' &&
       model.trim().length > 0
         ? model
         : null,
+    provider,
 
     toolCount,
 
@@ -345,9 +354,16 @@ function readOverviewForActiveSession(
     row.metadata?.modelName ??
     null
 
+  const provider =
+    typeof row.modelProvider === 'string' &&
+    row.modelProvider.trim().length > 0
+      ? row.modelProvider
+      : null
+
   return {
     ...overview,
     sessionKey: row.key ?? activeKey,
+    provider,
     model:
       typeof model === 'string' &&
       model.trim().length > 0
@@ -557,6 +573,7 @@ export function usePetRuntime(
     setSettingsOverview,
   ] = useState<SettingsOverview>({
     model: null,
+    provider: null,
     toolCount: null,
     sessionKey: null,
     sessionCount: null,

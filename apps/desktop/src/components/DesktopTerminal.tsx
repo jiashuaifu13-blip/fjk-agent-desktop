@@ -658,7 +658,12 @@ export function DesktopTerminal() {
               </span>
 
               <div className="connection-state-value">
-                <div>{settingsOverview.model ?? '未提供'}</div>
+                <div>
+                  {settingsOverview.model ?? '未提供'}
+                  {settingsOverview.provider
+                    ? `（${settingsOverview.provider}）`
+                    : ''}
+                </div>
                 <input value={modelDraft} placeholder="输入不同的已允许模型" onChange={(e) => setModelDraft(e.target.value)} />
                 <button type="button" disabled={!settingsOverview.model || !modelDraft.trim()} onClick={async () => {
                   setModelWriteStatus(`原值：${settingsOverview.model ?? '未提供'}`)
