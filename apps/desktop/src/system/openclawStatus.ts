@@ -208,6 +208,28 @@ export interface ConfigureResult {
   error: string | null
 }
 
+export interface SetDefaultModelResult {
+  ok: boolean
+  error: string | null
+}
+
+export async function setDefaultModel(
+  model: string,
+): Promise<SetDefaultModelResult> {
+  if (!hasTauri()) {
+    return { ok: false, error: '非 Tauri 环境' }
+  }
+
+  const raw = (await invoke('openclaw_set_default_model', {
+    model,
+  })) as { ok?: boolean; stdout?: string; stderr?: string }
+
+  return {
+    ok: raw.ok === true,
+    error: raw.ok === true ? null : (raw.stderr || raw.stdout || '未知错误'),
+  }
+}
+
 export async function configureCustomProvider(
   id: string,
   baseUrl: string,

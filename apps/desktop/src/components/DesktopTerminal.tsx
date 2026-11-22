@@ -21,6 +21,7 @@ import {
   readOpenClawStatus,
   saveApiKey,
   setApiKeyViaGateway,
+  setDefaultModel,
 } from '../system/openclawStatus'
 
 import type {
@@ -686,6 +687,37 @@ export function DesktopTerminal() {
                   try { await updateSessionModel(modelDraft); setModelDraft(''); setModelWriteStatus('模型修改成功；已记录原值，可回滚') }
                   catch (err) { setModelWriteStatus(`修改失败：${err instanceof Error ? err.message : String(err)}`) }
                 }}>保存模型</button>
+                <button
+                  type="button"
+                  disabled={!settingsOverview.model}
+                  onClick={async () => {
+                    const model = settingsOverview.model
+
+                    if (!model) {
+                      return
+                    }
+
+                    const qualified = model.includes('/')
+                      ? model
+                      : `${settingsOverview.provider ?? ''}/${model}`
+
+                    try {
+                      const result = await setDefaultModel(qualified)
+
+                      setModelWriteStatus(
+                        result.ok
+                          ? `已设为全局默认：${qualified}（新会话都会用它）`
+                          : `设置默认模型失败：${(result.error ?? '').slice(0, 160)}`,
+                      )
+                    } catch (error) {
+                      setModelWriteStatus(
+                        `设置默认模型异常：${error instanceof Error ? error.message : String(error)}`,
+                      )
+                    }
+                  }}
+                >
+                  设为全局默认
+                </button>
                 <button type="button" disabled={!previousModel} onClick={async () => {
                   try { await rollbackSessionModel(); setModelWriteStatus('已回滚到原模型') }
                   catch (err) { setModelWriteStatus(`回滚失败：${err instanceof Error ? err.message : String(err)}`) }
