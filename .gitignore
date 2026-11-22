@@ -1,4 +1,4 @@
-﻿
+
 # Node / frontend
 node_modules/
 dist/
@@ -39,6 +39,7 @@ tmp/
 temp/
 .cache/
 *.tmp
+.ai-context/.tmp/
 
 # Package caches
 .npm/
