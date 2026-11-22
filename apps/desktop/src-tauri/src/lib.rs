@@ -1,6 +1,8 @@
 mod gateway;
 mod onboarding;
+mod openclaw_auth;
 mod pet_memory;
+mod provider_models;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -15,6 +17,9 @@ pub fn run() {
             pet_memory::pet_memory_save,
             pet_memory::pet_memory_clear,
             onboarding::openclaw_status,
+            openclaw_auth::openclaw_auth_list,
+            openclaw_auth::openclaw_save_api_key,
+            provider_models::provider_list_models,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

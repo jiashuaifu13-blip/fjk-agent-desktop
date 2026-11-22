@@ -14,7 +14,10 @@ import {
 } from '../runtime/PetRuntimeContext'
 
 import {
+  listProviderModels,
   readOpenClawStatus,
+  saveApiKey,
+  setApiKeyViaGateway,
 } from '../system/openclawStatus'
 
 import type {
@@ -158,6 +161,13 @@ export function DesktopTerminal() {
     useState<OpenClawStatus | null>(null)
 
   const [openclawCheckNote, setOpenclawCheckNote] =
+    useState<string | null>(null)
+
+  const [apiKeyProvider, setApiKeyProvider] =
+    useState('deepseek')
+  const [apiKeyDraft, setApiKeyDraft] =
+    useState('')
+  const [apiKeyStatus, setApiKeyStatus] =
     useState<string | null>(null)
 
   const refreshOpenclawStatus = () => {
@@ -751,6 +761,141 @@ export function DesktopTerminal() {
                   </div>
                 </div>
               )}
+
+            <div className="connection-state-section">
+              <div className="connection-state-section-title">
+                模型与密钥
+              </div>
+
+              <div className="connection-state-copy">
+                API Key 只写入本机 OpenClaw 凭据，不会存到应用配置里。
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  alignItems: 'center',
+                  marginTop: 8,
+                }}
+              >
+                <input
+                  value={apiKeyProvider}
+                  list="provider-options"
+                  placeholder="provider（如 deepseek / anthropic / xai）"
+                  onChange={(event) => setApiKeyProvider(event.target.value)}
+                  style={{ width: 170 }}
+                />
+
+                <datalist id="provider-options">
+                  <option value="deepseek" />
+                  <option value="anthropic" />
+                  <option value="openai" />
+                  <option value="xai" />
+                  <option value="google" />
+                  <option value="openrouter" />
+                  <option value="groq" />
+                  <option value="moonshot" />
+                  <option value="zhipu" />
+                  <option value="alibaba" />
+                  <option value="mistral" />
+                  <option value="together" />
+                  <option value="deepinfra" />
+                  <option value="cerebras" />
+                  <option value="cohere" />
+                </datalist>
+
+                <input
+                  type="password"
+                  value={apiKeyDraft}
+                  placeholder="粘贴 API Key"
+                  autoComplete="off"
+                  onChange={(event) => setApiKeyDraft(event.target.value)}
+                />
+
+                <button
+                  type="button"
+                  className="connection-state-trigger"
+                  disabled={!apiKeyDraft.trim()}
+                  onClick={() => {
+                    setApiKeyStatus('正在写入…')
+
+                    const pendingKey = apiKeyDraft.trim()
+                    const provider = apiKeyProvider
+
+                    void (async () => {
+                      let written = await setApiKeyViaGateway(provider, pendingKey)
+
+                      if (!written.ok) {
+                        const cli = await saveApiKey(provider, pendingKey)
+
+                        written = {
+                          ok: cli?.ok === true,
+                          error: cli?.ok === true
+                            ? null
+                            : `RPC: ${written.error ?? '失败'}；CLI: ${(cli?.stderr || cli?.stdout || '无输出').slice(0, 100)}`,
+                          cleanedUp: written.cleanedUp,
+                        }
+                      }
+
+                      setApiKeyDraft('')
+
+                      if (!written.ok) {
+                        setApiKeyStatus(`写入失败：${(written.error ?? '未知').slice(0, 180)}`)
+                        return
+                      }
+
+                      const cleanedNote = written.cleanedUp
+                        ? `（已移除旧的 ${written.cleanedUp} 凭据）`
+                        : ''
+
+                      setApiKeyStatus(`已写入 OpenClaw 凭据${cleanedNote}，正在检查可用模型…`)
+
+                      try {
+                        const checked = await listProviderModels(provider, pendingKey)
+
+                        if (!checked) {
+                          setApiKeyStatus('已写入 OpenClaw 凭据（当前环境无法校验模型）')
+                        } else if (checked.supported === false) {
+                          setApiKeyStatus('已写入 OpenClaw 凭据（该 provider 未内置校验，请在对话里验证）')
+                        } else if (checked.ok && checked.models.length > 0) {
+                          setApiKeyStatus(`已写入；可用模型：${checked.models.slice(0, 6).join(', ')}`)
+                        } else if (checked.ok) {
+                          setApiKeyStatus('已写入；但 provider 没有返回模型列表')
+                        } else {
+                          setApiKeyStatus(
+                            `已写入，但校验失败（HTTP ${checked.status ?? '?'}）：${(checked.error ?? '未知').slice(0, 140)}`,
+                          )
+                        }
+                      } catch (error) {
+                        setApiKeyStatus(
+                          `已写入；校验异常：${error instanceof Error ? error.message : String(error)}`,
+                        )
+                      }
+
+                      refreshOpenclawStatus()
+                    })().catch((error) => {
+                      setApiKeyStatus(
+                        `写入异常：${error instanceof Error ? error.message : String(error)}`,
+                      )
+                    })
+                  }}
+                >
+                  保存密钥
+                </button>
+              </div>
+
+              {apiKeyStatus && (
+                <div className="connection-state-copy">
+                  {apiKeyStatus}
+                </div>
+              )}
+
+              <div className="connection-state-copy">
+                若写入失败，可在终端执行 <code>openclaw models auth paste-api-key --provider {apiKeyProvider}</code> 手动粘贴。
+              </div>
+            </div>
 
             <div className="connection-state-row">
               <span className="connection-state-key">

@@ -188,3 +188,15 @@ FACTS:
   - `sessions.delete`：docs 说明「先 archive 再 delete 同一代」；权限上**仅 archived-only 请求可 `operator.write`**，
     其余需 `operator.admin`（本地客户端 connect 顶层已申请 operator.admin）。
   - 受保护目标：agent main 会话（含 `global`）不能归档/删除，UI 需按 `isMain` 禁用按钮。
+
+ROUND_ONBOARD（2026-11-22 晚）:
+- P-A1 检测：Rust `openclaw_status`（安装/版本/网关端口/config 是否存在），设置面板 3 行只读。
+- P-A2 引导：重新检测按钮 + 未安装/未配置/网关未运行三种提示 + 版本提示语。
+- P-A3 密钥：优先 Gateway RPC `models.authSetApiKey`（不停网关），失败退回 CLI `models auth paste-api-key`；
+  校验走 `provider_list_models`（系统 curl，key 经 stdin，不进命令行）。
+- 多 provider：端点表覆盖 deepseek/openai/anthropic/xai/groq/openrouter/google/moonshot/zhipu/alibaba/mistral/together/deepinfra/cerebras/cohere；
+  未知 provider 返回 supported=false（界面提示手动验证）；provider id 改为格式校验，兼容任意已注册 provider。
+- 凭据冲突：`models.authSetApiKey` 不接收 profileId，会解析 `<provider>:manual`；若该档案是别的登录方式会报
+  “belongs to another sign-in”。已实现：捕获后调 `models.authLogout {provider, profileIds:[<provider>:manual]}` 再重试，
+  界面提示「已移除旧的 X 凭据」。
+- 排查副作用：探测 RPC 时误建 `zzz-not-real:manual`，已用 authLogout 清理。
