@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261122-1145
-HEAD_AT_SYNC: 6d3bbcd
-UPDATED: 2026-11-22T11:45+08:00
-TASK: P1-014 新建会话可用、切换按钮布局回归已修复（用户实测通过）；代码未提交，下一步删除会话
+STATE_ID: 20261122-1200
+HEAD_AT_SYNC: df5b8f8
+UPDATED: 2026-11-22T12:00+08:00
+TASK: P1-014 新建/删除会话已完成并实测通过（会话 16→7，main 保留）；代码待提交本轮删除改动，进入收尾/下一项
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -39,11 +39,9 @@ UNVERIFIED:
 - 内层 1s 重试等待未接 cancelled（组件卸载后最多多跑 4s，小隐患）
 
 NEXT:
-1. 提交 P1-014 代码（3 文件 / 107 插入：sessionId 显示、新建会话、切换按钮布局），等提交口径。
-2. 删除会话（`sessions.patch {archived:true, expectedSessionId}` → `sessions.delete`）：双确认，禁止删 main；
-   正好可清理这 9 条 `agent:main:dashboard:*` 测试会话。
-3. Settings 更多项（工具开关/执行模式展示）。
-4. （可选）快速失败的确定性复现；内层等待的取消保护。
+1. 删除收尾：确认是否清掉剩余 6 条 `agent:main:dashboard:*`（当前 7 条 = main + 6 dashboard）。
+2. Settings 更多项（工具开关/执行模式展示）。
+3. （可选）快速失败的确定性复现；内层等待的取消保护；删除后清空 `sessionSwitchError` 之类的 UX 细节。
 
 ROUND_P1-014:
 - STEP 0（基线）：HEAD=ad6ea1d clean；tsc 0；reducer 单测通过；网关 18789 有连接；代理 7897 开。
@@ -66,6 +64,19 @@ ROUND_P1-014-STEP2:
   最终由本地助手用精确字节补丁 `C2b.fix2` 修正（`hits=1`，`PATCH_OK`）；`tsc` 0、`build` PASS。
 - 用户实测：重建后非当前行「切换」按钮均可见，无异常（口头确认）。
 - 遗留：代码改动（3 文件 / 107 插入）**未提交**。
+
+ROUND_P1-014-STEP3:
+- 删除链路：`deleteSession(key, expectedSessionId)` →
+  校验（非 main / 非当前 / sessionId 与列表一致）→ `sessions.patch {archived:true, expectedSessionId}`
+  → `sessions.delete {key, expectedSessionId}` → `sessions.list` 刷新 → 运行时日志 `Session deleted`。
+- UI：仅当 `!isMain && key !== 当前 && session.sessionId` 时显示「删除」按钮；
+  `window.confirm` 文案含真实 key 与 sessionId（先归档、再永久删除、不可撤销）。
+- 插曲：C3.7 build 因 `TS2345`（onClick 回调内 sessionId 仍是 `string | null`）失败；
+  本地修复为 `const sid = session.sessionId; if (!sid) return;` 后传 `sid`。
+  期间一条本地补丁因 base64 错误写入 `0x1A` 控制字符、JSX 撕裂，已本地修复（tsc 0 / build PASS）。
+- 实测（用户）：删除按预期工作；会话从 16 降到 **7**（main + 6 条 dashboard），
+  cron 与 3 条 explicit 测试会话也被清掉；main 保留、当前会话未被删。
+- 遗留：本轮删除改动（2 文件）未提交。
 
 STEP0_BASELINE_20261122:
 - `HEAD = origin/main = ad6ea1d`，工作区 clean。
