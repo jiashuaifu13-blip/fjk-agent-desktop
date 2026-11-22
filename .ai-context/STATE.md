@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261122-1120
-HEAD_AT_SYNC: d9a5143
-UPDATED: 2026-11-22T11:20+08:00
-TASK: P1-014 新建/删除会话 —— STEP 1b 已通过（用户截图确认 5 条会话均显示真实 sessionId）；代码改动未提交，等 STEP 2
+STATE_ID: 20261122-1145
+HEAD_AT_SYNC: 6d3bbcd
+UPDATED: 2026-11-22T11:45+08:00
+TASK: P1-014 新建会话可用、切换按钮布局回归已修复（用户实测通过）；代码未提交，下一步删除会话
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -39,11 +39,11 @@ UNVERIFIED:
 - 内层 1s 重试等待未接 cancelled（组件卸载后最多多跑 4s，小隐患）
 
 NEXT:
-1. 提交 STEP 1 + 1b 的代码改动（`usePetRuntime.ts` 补 `sessionId`、`DesktopTerminal.tsx` 显示），等网页 AI 给提交口径。
-2. 新建会话（`sessions.create`）最小可用：只创建 + 刷新列表，不自动发首条消息。
-3. 删除会话（归档 `sessions.patch {archived, expectedSessionId}` → `sessions.delete`）：双确认，禁止删 main。
-4. Settings 更多项（工具开关/执行模式展示）。
-5. （可选）快速失败的确定性复现；内层等待的取消保护。
+1. 提交 P1-014 代码（3 文件 / 107 插入：sessionId 显示、新建会话、切换按钮布局），等提交口径。
+2. 删除会话（`sessions.patch {archived:true, expectedSessionId}` → `sessions.delete`）：双确认，禁止删 main；
+   正好可清理这 9 条 `agent:main:dashboard:*` 测试会话。
+3. Settings 更多项（工具开关/执行模式展示）。
+4. （可选）快速失败的确定性复现；内层等待的取消保护。
 
 ROUND_P1-014:
 - STEP 0（基线）：HEAD=ad6ea1d clean；tsc 0；reducer 单测通过；网关 18789 有连接；代理 7897 开。
@@ -54,6 +54,18 @@ ROUND_P1-014:
 - 面板实测（用户截图）：5 条会话均显示真实 sessionId（main=`46aa601f-…`），当前使用标记正常。
 - 遗留：代码改动（2 文件 / 10 行）**未提交**；「当前使用」标在 phase0-test 行（用户切过会话则正常）。
 - 已落地流程：`.ai-context/.tmp/stepN.ps1|log` 留痕 + `WEB_AI_SESSION.md` 第九节命令索引规范。
+
+ROUND_P1-014-STEP2:
+- 新建会话：`createSession()` → `sessions.create {}`（不发首条消息、不自动切换）→ `sessions.list` 刷新 list 与 sessionCount → 运行时日志 `Session created`。
+- GUI 实测：点击新建后会话 5→**14**（新增 9 条 `agent:main:dashboard:<uuid>`，均带真实 sessionId）；当前使用仍是 `agent:main:explicit:fjk-phase0-test`（未切换）。
+- 回归：STEP 1 把 `· sessionId: …` 放进 `.connection-state-value`（`overflow:hidden + nowrap + ellipsis`）后，
+  span 内的「切换」按钮被裁掉不可见。
+- 修复：新增 CSS `.session-list-row`（flex）/`.session-list-value`（flex:1;min-width:0）/`.session-list-row > .connection-state-trigger`（flex:none）；
+  JSX 把按钮移出 value span（`DesktopTerminal.tsx` L638 补 `</span>`），按钮成为 row 的 flex 兄弟节点。
+- 补丁插曲：C2b.3/C2b.4 与 C2b.fix1 三次因锚点不唯一/不匹配失败（`PATCH_FAIL 2/3`），
+  最终由本地助手用精确字节补丁 `C2b.fix2` 修正（`hits=1`，`PATCH_OK`）；`tsc` 0、`build` PASS。
+- 用户实测：重建后非当前行「切换」按钮均可见，无异常（口头确认）。
+- 遗留：代码改动（3 文件 / 107 插入）**未提交**。
 
 STEP0_BASELINE_20261122:
 - `HEAD = origin/main = ad6ea1d`，工作区 clean。

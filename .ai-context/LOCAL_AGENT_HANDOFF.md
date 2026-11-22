@@ -65,6 +65,8 @@
 7. **DSH 沙箱写 `.git` 被拒**：workspace-write 模式下 `git add/commit/push` 会报
    `Unable to create '.git/index.lock': Permission denied`（.git 受保护，属预期限制）。
    处理：用一次「完全权限」重试同一条 git 命令（说明理由即可），不要改 ACL。
+   同样地，**写 `apps\desktop\src` 下的源文件**也会 `Access to the path ... is denied`（apply-patch 也一样），
+   需要完全权限；`.ai-context` 下的文档写入不受影响。
 
 ## 七、当前状态（2026-11-22 10:50）
 
