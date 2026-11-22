@@ -63,6 +63,15 @@ export class ChatController {
     this.onMood =
       null
 
+    this.onTiming =
+      null
+
+    this.flushTimer =
+      null
+
+    this.timings =
+      null
+
     this.lastMoodMarker =
       null
 
@@ -103,6 +112,13 @@ export class ChatController {
       'user',
       message
     )
+
+
+    this.timings = {
+      sentAt: Date.now(),
+      firstTokenAt: null,
+      doneAt: null,
+    }
 
 
     const assistantMessage = {
@@ -171,6 +187,13 @@ export class ChatController {
         onToken:
           (token) => {
 
+            if (
+              this.timings &&
+              this.timings.firstTokenAt === null
+            ) {
+              this.timings.firstTokenAt = Date.now()
+            }
+
             assistantMessage.content +=
               token
 
@@ -180,7 +203,7 @@ export class ChatController {
             )
 
 
-            this.emitMessages()
+            this.scheduleEmit()
           },
       })
 
@@ -188,6 +211,8 @@ export class ChatController {
       assistantMessage.status =
         'done'
 
+      this.cancelScheduledEmit()
+      this.reportTiming()
 
       this.emitMessages()
 
@@ -213,6 +238,9 @@ export class ChatController {
 
         assistantMessage.status =
           'aborted'
+
+        this.cancelScheduledEmit()
+        this.reportTiming()
 
 
         if (
@@ -241,6 +269,9 @@ export class ChatController {
 
       assistantMessage.status =
         'error'
+
+      this.cancelScheduledEmit()
+      this.reportTiming()
 
       assistantMessage.content =
         typeof error?.displayMessage === 'string' &&
@@ -416,6 +447,53 @@ export class ChatController {
   }
 
 
+  reportTiming() {
+
+    const timings =
+      this.timings
+
+    this.timings =
+      null
+
+    if (!timings) {
+      return
+    }
+
+    const doneAt = Date.now()
+
+    if (typeof this.onTiming === 'function') {
+      this.onTiming({
+        ttftMs: timings.firstTokenAt
+          ? timings.firstTokenAt - timings.sentAt
+          : null,
+        totalMs: doneAt - timings.sentAt,
+      })
+    }
+  }
+
+
+  scheduleEmit() {
+
+    if (this.flushTimer !== null) {
+      return
+    }
+
+    this.flushTimer = setTimeout(() => {
+      this.flushTimer = null
+      this.emitMessages()
+    }, 40)
+  }
+
+
+  cancelScheduledEmit() {
+
+    if (this.flushTimer !== null) {
+      clearTimeout(this.flushTimer)
+      this.flushTimer = null
+    }
+  }
+
+
   emitMessages() {
 
     this.detectMood()
@@ -425,14 +503,44 @@ export class ChatController {
       'function'
     ) {
 
-      this.onMessageChange(
-        this.messages.map(
-          (message) => ({
+      /*
+       * 复用未变化的消息对象，配合 React.memo 让历史消息不重渲染。
+       */
+      if (!this.displayCache) {
+        this.displayCache = new Map()
+      }
+
+      const nextMessages =
+        this.messages.map((message) => {
+          const content =
+            stripMood(message.content)
+
+          const cached =
+            this.displayCache.get(message.id)
+
+          if (
+            cached &&
+            cached.content === content &&
+            cached.status === message.status
+          ) {
+            return cached.object
+          }
+
+          const object = {
             ...message,
-            content: stripMood(message.content),
-          }),
-        ),
-      )
+            content,
+          }
+
+          this.displayCache.set(message.id, {
+            content,
+            status: message.status,
+            object,
+          })
+
+          return object
+        })
+
+      this.onMessageChange(nextMessages)
     }
   }
 

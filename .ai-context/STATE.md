@@ -209,3 +209,10 @@ ROUND_ONBOARD-2（2026-11-22 晚，自定义 provider）:
 - UI：设置 → 模型与密钥 增加「自定义 OpenAI 兼容」一行（provider id / Base URL / 模型 id / 保存自定义）。
 - 用途：支持 New API / one-api 等中转（如 `https://qwarweww-newspace.hf.space`），官方 provider 的 `/models` 校验不适用时走这条。
 - 备注：新 API 的默认模型需另行设置（`agents.defaults.model = "<id>/<model>"`），后续补按钮。
+
+ROUND_CHAT-LATENCY-1（2026-11-22 深夜，对话延迟批次 1）:
+- 流式批处理：`ChatController` 新增 `scheduleEmit()`（40ms 合并）+ `cancelScheduledEmit()`，token 不再逐条触发 React 渲染。
+- 对象稳定：`emitMessages()` 用 displayCache 复用未变化的消息对象，配合 `React.memo` 的 `MessageRow`，历史消息不再重渲染。
+- 等待可感知：发送后若还没有 assistant 内容，显示「等待模型响应… Ns」并计时；首 token 到达后切回流式光标。
+- 埋点：`ChatController.onTiming({ttftMs,totalMs})` → runtime 写 Log Viewer「Chat latency ttft=…ms; total=…ms」。
+- tsc 0、build PASS。批次 2 待做：reasoning 单独展示、打字机平滑、长对话虚拟化。

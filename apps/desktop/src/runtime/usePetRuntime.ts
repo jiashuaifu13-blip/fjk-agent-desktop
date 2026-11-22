@@ -1455,6 +1455,17 @@ export function usePetRuntime(
               store.dispatch(action),
         }) as ChatControllerLike
 
+      ;(controller as any).onTiming = (
+        timing: { ttftMs: number | null; totalMs: number },
+      ) => {
+        appendRuntimeLog(
+          'info',
+          'chat',
+          'Chat latency',
+          `ttft=${timing.ttftMs === null ? 'n/a' : timing.ttftMs + 'ms'}; total=${timing.totalMs}ms`,
+        )
+      }
+
       ;(controller as any).onMood = (
         mood: string,
         intensity: number,

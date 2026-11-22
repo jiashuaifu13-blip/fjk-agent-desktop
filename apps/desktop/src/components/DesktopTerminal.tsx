@@ -1,4 +1,5 @@
 import {
+  memo,
   useEffect,
   useRef,
   useState,
@@ -41,6 +42,27 @@ import type {
 import {
   RuntimeLogViewer,
 } from './RuntimeLogViewer'
+
+const MessageRow = memo(function MessageRow({
+  message,
+}: {
+  message: ChatMessage
+}) {
+  return (
+    <div
+      className={`msg msg-${message.role}`}
+    >
+      <div className="msg-role">
+        {message.role === 'user' ? 'You' : 'Agent'}
+      </div>
+
+      <div className="msg-content">
+        {message.content || '…'}
+      </div>
+    </div>
+  )
+})
+
 
 export function DesktopTerminal() {
   const {
@@ -162,6 +184,9 @@ export function DesktopTerminal() {
   const [openclawStatus, setOpenclawStatus] =
     useState<OpenClawStatus | null>(null)
 
+  const [waitingSeconds, setWaitingSeconds] =
+    useState(0)
+
   const [openclawCheckNote, setOpenclawCheckNote] =
     useState<string | null>(null)
 
@@ -179,6 +204,29 @@ export function DesktopTerminal() {
     useState('')
   const [apiKeyStatus, setApiKeyStatus] =
     useState<string | null>(null)
+
+  const waitingForFirstToken =
+    sending &&
+    (messages.length === 0 ||
+      messages[messages.length - 1]?.role === 'user' ||
+      (messages[messages.length - 1]?.role === 'assistant' &&
+        !messages[messages.length - 1]?.content))
+
+  useEffect(() => {
+    if (!waitingForFirstToken) {
+      setWaitingSeconds(0)
+      return
+    }
+
+    const startedAt = Date.now()
+    const timer = setInterval(() => {
+      setWaitingSeconds(
+        Math.max(1, Math.round((Date.now() - startedAt) / 1000)),
+      )
+    }, 500)
+
+    return () => clearInterval(timer)
+  }, [waitingForFirstToken])
 
   const refreshOpenclawStatus = () => {
     setOpenclawCheckNote(null)
@@ -1482,31 +1530,16 @@ export function DesktopTerminal() {
           </div>
         )}
 
-        {messages.map(
-          (m) => (
-            <div
-              key={m.id}
-              className={`msg msg-${m.role}`}
-            >
-              <div className="msg-role">
-                {m.role ===
-                'user'
-                  ? 'You'
-                  : 'Agent'}
-              </div>
-
-              <div className="msg-content">
-                {m.content ||
-                  '…'}
-              </div>
-            </div>
-          ),
-        )}
+        {messages.map((m) => (
+          <MessageRow key={m.id} message={m} />
+        ))}
 
         {sending && (
           <div className="msg msg-assistant">
             <div className="msg-content msg-streaming">
-              ▍
+              {waitingForFirstToken
+                ? `等待模型响应… ${waitingSeconds}s`
+                : '▍'}
             </div>
           </div>
         )}
