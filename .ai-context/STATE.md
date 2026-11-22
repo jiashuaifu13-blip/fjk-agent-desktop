@@ -49,6 +49,14 @@ ROUND_PET-2（2026-11-22 傍晚）:
   纯点击走 INTERACT，长按松手回 IDLE。
 - 单测（本地脚本）：标记剥离/去重/半截标记均通过；`tsc` 0、`build` PASS。
 
+ROUND_PET-3（2026-11-22 晚）:
+- 桌宠关系记忆**落盘**：新增 Rust 命令 `pet_memory_load/save/clear`（`src-tauri/src/pet_memory.rs`），
+  文件位于 `%APPDATA%\com.fjk.agent\pet-memory.json`；写入用「临时文件 + rename」防半写损坏。
+- `PetMemoryStore` 增 `backend` + `async hydrate()`：启动时文件优先恢复（回退 localStorage），
+  每次 `save()` 同时写 localStorage 与 AppData 文件；`clear()` 双清。
+- 新增 `TauriPetMemoryBackend.js`（官方 `@tauri-apps/api/core` 的 `invoke`）。
+- 验证：`tsc` 0、`vite build` PASS、`cargo check` 通过；用户已自行 `npm run tauri build` 运行无异常（口头确认）。
+
 NEXT:
 1. 桌宠 GUI 终验：IDLE 轮播 / thinking-work / 审批挥手+气泡 / 完成庆祝 / 拖拽 / 断线。
 2. 动作包扩充（**已预留**：Blog `dsh` 有 101 动作、95.8MB；当前只入库 18 个 / 18.5MB），
