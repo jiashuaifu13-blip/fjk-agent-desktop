@@ -24,28 +24,32 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 - 分支：`main`
 - 环境：Windows 11、Windows PowerShell 5.1、Node 18+、Rust stable、本地 OpenClaw Gateway（`ws://127.0.0.1:18789`）
 
-## 三、当前状态（2026-11-21 22:40 更新）
+## 三、当前状态（2026-11-22 16:35 更新）
 
-- 实时状态以 `STATE.md` 为准（含 `STATE_ID` / `HEAD_AT_SYNC` / 任务 / 未验证项）；
-- 未提交改动：无
-- 当前任务：**P1-014 新建/删除会话**（STEP 1b 已通过本地验收，代码改动待提交；状态以 `STATE.md` 为准）
+- 实时状态以 `STATE.md` 为准（`STATE_ID` / `HEAD_AT_SYNC` / 任务 / 未验证项）；
+- `HEAD = origin/main = 1b30d91`；工作区 1 个文件有 **未提交** 改动（见下方悬空状态）；
+- 当前任务：**P1-019 聊天历史分页**（上一条 STEP 因锚点问题中断，需按第十一节重做）。
 
-  已完成且实测：
+**⚠ 悬空状态（必须先处理）**：`apps/desktop/src/runtime/usePetRuntime.ts` 已声明
+`prependMessages(messages: ChatMessage[]): void` 与 `loadOlderHistory(): Promise<number>`，
+但 `apps/desktop/src/chat/ChatController.js` **没有实现**。由于创建处用 `as ChatControllerLike` 强转，
+`tsc` 不报错，但一旦调用 `loadOlderHistory` 就会 `TypeError: prependMessages is not a function`。
+→ 要么补齐 `ChatController.prependMessages`，要么先回退这 2 行。
 
-  | 功能 | 状态 |
-  |---|---|
-  | Approval（allow/deny） | 已验证：allow 执行 whoami；deny user-denied、命令未执行 |
-  | Connection State | 已验证：徽标/字段/最近错误/重连说明 |
-  | Log Viewer | 已验证：最近 200 条、展开/关闭/清空、订阅 approvals=true |
-  | Settings 只读概览 | 已验证：模型/工具数量/当前 Session/总数，缺失显示「未提供」 |
-  | Settings 模型修改 + 单次回滚 | 已验证：`sessions.patch {key, model}`，deepseek-flash→deepseek-chat→回滚 |
-  | Session 只读列表 | 已验证：MAIN/SESSION、key、时间、当前使用 |
-  | Session 切换 | 已验证：先订阅新 key 再退订旧 key，adapter 换 key |
-  | UI 布局 | 已验证：聊天区内部滚动、输入框固定、四面板互斥悬浮 |
+已完成且实测（2026-11-22 新增，历史明细见 `TASKS.md` / `STATE.md`）：
 
-  未验证：快速失败瞬时事件（开代理表现为挂起，非秒失败）。
+| 功能 | 状态 |
+|---|---|
+| Session 新建 | 已验证：`sessions.create {}`，不发首条消息、不自动切换 |
+| Session 删除 | 已验证：`sessions.patch{archived}` → `sessions.delete`，需 `expectedSessionId`；main/当前会话无删除入口 |
+| 切换加载历史 | 已验证：`chat.history {sessionKey, limit:100}` → `replaceMessages`；事件按 `sessionKey` 过滤 |
+| Settings 三项只读 | 已验证：工具 Profile / 工具开关 / 执行模式均显示「未提供」，不用 toolCount 推断 |
+| 面板错误自清 | 已验证：关闭 Session 面板后重开不残留「会话操作失败」 |
+| 自动重连 | 已验证：1/2/4/8/15s 退避 ×5，恢复 Session/审批订阅/adapter key |
 
-- 下一步：从上面的候选里选一个，不要再重复验证已完成项。
+未验证：快速失败瞬时事件（开代理表现为挂起，非秒失败）。
+
+- 下一步：按 `PROJECT_STATUS.md`「下一步」顺序推进，不要再重复验证已完成项。
 
 ## 四、已完成（P1-001 ~ P1-005）
 
@@ -59,10 +63,11 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 
 ## 五、未完成与已知问题
 
-- Approval UI：桌面端尚无审批卡片；客户端 caps 已加，待验证事件是否到达。
-- 无自动重连：断线后需重开桌面端。
-- MSI 安装包、代码签名、自动更新未做。
-- 已知缺陷（已记录、**暂不修**）：`GatewayChatAdapter` 先 `chat.send` 后订阅事件，run 秒失败会漏 `lifecycle error`，UI 可能卡 `thinking`。
+- **P1-019 聊天历史分页**：`chat.history` 目前固定 `limit: 100`，无向上加载；且存在上方的悬空接口。
+- MSI 安装包、代码签名、自动更新未做（NSIS 已完成安装/运行/卸载回归）。
+- 未实测：快速失败瞬时事件（`GatewayChatAdapter` 已改为先订阅、再发送并缓冲早到事件，普通对话正常）。
+- 技术债：`Deepseek-pet` 为 gitlink 但无 `.gitmodules`；`packages/gateway-client/client.js` 已不被桌面端使用；
+  `tauri.conf.json` 历史权限需复核。
 
 ## 六、硬规则（踩过坑，别重复）
 
