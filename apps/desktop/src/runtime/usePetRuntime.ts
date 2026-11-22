@@ -638,11 +638,39 @@ export function usePetRuntime(
             try {
               await gateway.connect()
 
-              const list =
+              let list: unknown = null
+              let availableSessions: SessionListItem[] = []
+
+              for (
+                let sessionAttempt = 0;
+                sessionAttempt < 5;
+                sessionAttempt += 1
+              ) {
+                list =
                 await gateway.send(
                   'sessions.list',
                   {},
                 )
+
+                availableSessions =
+                  readSessionList(list)
+
+                if (availableSessions.length > 0) {
+                  break
+                }
+
+                if (sessionAttempt < 4) {
+                  await new Promise<void>((resolve) => {
+                    setTimeout(resolve, 1000)
+                  })
+                }
+              }
+
+              if (availableSessions.length === 0) {
+                throw new Error(
+                  'No session available after reconnect after 5 retries',
+                )
+              }
 
               const sessions =
                 readSessionList(list)
