@@ -1,75 +1,88 @@
-﻿import {
+import {
   AgentStates,
 } from './AgentStates.js'
 
-
-/**
- * Maps normalized FJK Agent states into the existing
- * Deepseek-pet PetStateMachine states.
+/*
+ * ============================================================
+ * FJK AgentState → PetState 映射
+ * ============================================================
  *
- * Important:
+ * 每项返回 { state, tags }：
+ * - state：桌宠状态机状态名（语义层，不绑定具体动画）
+ * - tags ：交给 PetActionSelector 的动作标签，用于在同类动作里挑选
  *
- * This adapter intentionally returns semantic pet-state names
- * instead of animation filenames.
- *
- * Agent state must never directly control spritesheet assets.
+ * 说明：
+ * - WORKING 不再借用 SPEAKING，改为 THINKING + work 标签（敲键盘类动作）。
+ * - WAITING_APPROVAL 用一次 INTERACT 挥手，让用户能注意到“有事要确认”。
+ * - COMPLETED 用 INTERACT + celebrate 标签（瞬态，播完回 IDLE）。
  */
-export const AgentToPetState = Object.freeze({
 
-  [AgentStates.OFFLINE]:
-    'ERROR',
+export const AgentToPetAction = Object.freeze({
 
-  [AgentStates.IDLE]:
-    'IDLE',
+  [AgentStates.OFFLINE]: {
+    state: 'ERROR',
+    tags: ['error'],
+  },
 
-  [AgentStates.THINKING]:
-    'THINKING',
+  [AgentStates.IDLE]: {
+    state: 'IDLE',
+    tags: [],
+  },
 
-  /*
-   * Deepseek-pet currently does not yet define a dedicated
-   * WORKING state.
-   *
-   * SPEAKING is used only as a temporary semantic fallback.
-   * A dedicated pet state may be added later when appropriate
-   * animation resources exist.
-   */
-  [AgentStates.WORKING]:
-    'SPEAKING',
+  [AgentStates.THINKING]: {
+    state: 'THINKING',
+    tags: ['thinking'],
+  },
 
-  /*
-   * No dedicated approval animation exists yet.
-   * Keep the character visible and stable using IDLE.
-   */
-  [AgentStates.WAITING_APPROVAL]:
-    'IDLE',
+  [AgentStates.WORKING]: {
+    state: 'THINKING',
+    tags: ['work', 'busy'],
+  },
 
-  /*
-   * No dedicated completed/success state exists yet.
-   * INTERACT is transient and automatically returns to IDLE,
-   * so it is currently the closest suitable temporary mapping.
-   */
-  [AgentStates.COMPLETED]:
-    'INTERACT',
+  [AgentStates.WAITING_APPROVAL]: {
+    state: 'INTERACT',
+    tags: ['greeting'],
+  },
 
-  [AgentStates.FAILED]:
-    'ERROR',
+  [AgentStates.COMPLETED]: {
+    state: 'INTERACT',
+    tags: ['celebrate'],
+  },
+
+  [AgentStates.FAILED]: {
+    state: 'ERROR',
+    tags: ['error'],
+  },
 })
 
 
-export function mapAgentStateToPetState(
+export function mapAgentStateToPetAction(
   agentState
 ) {
 
-  const petState =
-    AgentToPetState[
+  const action =
+    AgentToPetAction[
       agentState
     ]
 
-  if (!petState) {
+  if (!action) {
     throw new Error(
       `Unknown FJK Agent state: ${agentState}`
     )
   }
 
-  return petState
+  return action
+}
+
+
+/*
+ * 兼容旧调用：只取状态名。
+ */
+export function mapAgentStateToPetState(
+  agentState
+) {
+
+  return mapAgentStateToPetAction(
+    agentState
+  ).state
 }

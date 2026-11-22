@@ -8,12 +8,15 @@ import { PetAnimator } from '../pet/PetAnimator.js'
 import { PetAudioManager } from '../pet/PetAudioManager.js'
 import { PetStates } from '../pet/PetStates.js'
 import { PetStateMachine } from '../pet/PetStateMachine.js'
+import { PetActionSelector } from '../pet/PetActionSelector.js'
+import { PetMemoryStore } from '../pet/PetMemoryStore.js'
+import { PetEmotionEngine } from '../pet/PetEmotionEngine.js'
 import { PetHitTest } from '../pet/PetHitTest.js'
 import { PetInteractionController } from '../pet/PetInteractionController.js'
 import { ChatController } from '../chat/ChatController.js'
 import { MockChatClient } from '../chat/MockChatClient.js'
 import { AgentStates } from '@fjk/agent-state/AgentStates.js'
-import { mapAgentStateToPetState } from '@fjk/agent-state/AgentToPetState.js'
+import { mapAgentStateToPetAction } from '@fjk/agent-state/AgentToPetState.js'
 import { createAgentStateReducer } from '@fjk/agent-state/AgentStateReducer.js'
 import { GatewayChatAdapter } from '../gateway/GatewayChatAdapter'
 import { TauriGatewayClient } from '../gateway/TauriGatewayClient'
@@ -61,7 +64,7 @@ export interface RuntimeLogEntry {
   id: number
   timestamp: number
   level: RuntimeLogLevel
-  source: 'runtime' | 'gateway' | 'chat'
+  source: 'runtime' | 'gateway' | 'chat' | 'pet'
   message: string
   detail?: string
 }
@@ -117,6 +120,14 @@ export interface PetRuntime {
   updateSessionModel(model: string): Promise<void>
   rollbackSessionModel(): Promise<void>
   sessionList: SessionListItem[]
+  petRelation: {
+    affinity: number
+    days: number
+    clicks: number
+    chats: number
+  }
+  petSpeech: string | null
+  petEmotion: string
   createSession(): Promise<string>
   deleteSession(
     sessionKey: string,
@@ -426,6 +437,31 @@ export function usePetRuntime(
   const activeSessionKeyRef =
     useRef<string | null>(null)
 
+  const emotionRef = useRef<PetEmotionEngine | null>(null)
+
+  const workStatesRef = useRef<string[]>([
+    'thinking',
+    'working',
+    'waiting_approval',
+  ])
+
+  const [petRelation, setPetRelation] = useState({
+    affinity: 0,
+    days: 0,
+    clicks: 0,
+    chats: 0,
+  })
+
+  const [petSpeech, setPetSpeech] =
+    useState<string | null>(null)
+
+  const [petEmotion, setPetEmotion] =
+    useState<string>('neutral')
+
+  const speechTimerRef =
+    useRef<ReturnType<typeof setTimeout> | null>(null)
+  const wasSendingRef = useRef(false)
+
   const historySessionKeyRef =
     useRef<string | null>(null)
 
@@ -491,6 +527,57 @@ export function usePetRuntime(
   const [previousModel, setPreviousModel] =
     useState<string | null>(null)
 
+  useEffect(() => {
+    const engine = emotionRef.current
+
+    if (!engine) {
+      return
+    }
+
+    engine.setMode(
+      workStatesRef.current.includes(agentState)
+        ? 'work'
+        : 'daily',
+    )
+  }, [agentState])
+
+  useEffect(() => {
+    const engine = emotionRef.current
+
+    if (!engine) {
+      return
+    }
+
+    if (sending && !wasSendingRef.current) {
+      engine.note('chatStart')
+    }
+
+    if (!sending && wasSendingRef.current) {
+      engine.note('chatEnd')
+    }
+
+    wasSendingRef.current = sending
+  }, [sending])
+
+  // 审批出现时：桌宠提示 + 惊讶情绪（气泡保留更久）
+  useEffect(() => {
+    if (!approval) {
+      return
+    }
+
+    setPetSpeech('有事要你确认！')
+    setPetEmotion('surprised')
+
+    if (speechTimerRef.current) {
+      clearTimeout(speechTimerRef.current)
+    }
+
+    speechTimerRef.current = setTimeout(() => {
+      setPetSpeech(null)
+      speechTimerRef.current = null
+    }, 8000)
+  }, [approval])
+
   const [sessionList, setSessionList] =
     useState<SessionListItem[]>([])
 
@@ -537,8 +624,10 @@ export function usePetRuntime(
 
     let interaction: {
       mount(): void
-      destroy(): void
+      unmount(): void
     } | null = null
+
+    let detachPetEmotion: (() => void) | null = null
 
     let gatewayClient:
       | TauriGatewayClient
@@ -583,12 +672,28 @@ export function usePetRuntime(
       const { actions } =
         await loader.load()
 
+      let character: unknown = null
+
+      try {
+        character = await loader.loadJson(
+          'character.json',
+        )
+      } catch (characterError) {
+        console.warn(
+          '[FJK] character card unavailable:',
+          characterError,
+        )
+      }
+
       if (cancelled) {
         return
       }
 
       const library =
         new AnimationLibrary(actions)
+
+      const actionSelector =
+        new PetActionSelector({ library })
 
       const cache =
         new AnimationCache()
@@ -612,7 +717,106 @@ export function usePetRuntime(
       const stateMachine =
         new PetStateMachine({
           animator,
+          actionSelector,
         })
+
+      const petMemory = new PetMemoryStore({
+        character,
+      } as any)
+
+      workStatesRef.current =
+        ((character as any)?.mode?.workStates as string[] | undefined) ??
+        workStatesRef.current
+
+      const emotion = new PetEmotionEngine({
+        character: (character ?? {}) as Record<string, unknown>,
+        memory: petMemory,
+        onChange: ({
+          emotion: emotionName,
+          tags,
+          line,
+        }: {
+          emotion: string
+          tags: string[]
+          line?: string | null
+        }) => {
+          if (!Array.isArray(tags) || tags.length === 0) {
+            return
+          }
+
+          appendRuntimeLog(
+            'info',
+            'pet',
+            `Pet emotion: ${emotionName}`,
+            `tags=${tags.join(',')}`,
+          )
+
+          setPetEmotion(emotionName)
+
+          if (typeof line === 'string' && line.length > 0) {
+            setPetSpeech(line)
+
+            if (speechTimerRef.current) {
+              clearTimeout(speechTimerRef.current)
+            }
+
+            speechTimerRef.current = setTimeout(() => {
+              setPetSpeech(null)
+              speechTimerRef.current = null
+            }, 5000)
+          }
+
+          setPetRelation({
+            affinity:
+              (petMemory as any).data?.affinity ?? 0,
+            days: Math.max(
+              1,
+              Math.ceil(
+                (Date.now() -
+                  ((petMemory as any).data?.firstMetAt ??
+                    Date.now())) /
+                  86400000,
+              ),
+            ),
+            clicks:
+              (petMemory as any).data?.counters?.clicks ?? 0,
+            chats:
+              (petMemory as any).data?.counters?.chats ?? 0,
+          })
+
+          // Agent 状态优先：只有 IDLE / ERROR 时情绪才能接管动画
+          if (
+            (stateMachine.currentState as string) !== PetStates.IDLE &&
+            (stateMachine.currentState as string) !== PetStates.ERROR
+          ) {
+            return
+          }
+
+          void stateMachine
+            .setState(PetStates.EMOTION, {
+              tags,
+              force: true,
+              reason: `emotion:${emotionName}`,
+            } as any)
+            .catch(() => undefined)
+        },
+      } as any)
+
+      emotionRef.current = emotion
+
+      if (
+        typeof (petMemory as any).isReunion === 'function' &&
+        (petMemory as any).isReunion()
+      ) {
+        emotion.setEmotion('happy')
+
+        appendRuntimeLog(
+          'info',
+          'pet',
+          'Pet reunion greeting',
+          `affinity=${(petMemory as any).data?.affinity ?? 0}`,
+        )
+      }
 
       stateMachine.onStateChange = ({
         to,
@@ -653,10 +857,13 @@ export function usePetRuntime(
                 : snapshot.state,
             )
 
-            const nextPetState =
-              mapAgentStateToPetState(
+            const nextPetAction =
+              mapAgentStateToPetAction(
                 snapshot.state,
               )
+
+            const nextPetState =
+              nextPetAction.state
 
             if (
               nextPetState ===
@@ -669,9 +876,10 @@ export function usePetRuntime(
               await stateMachine.setState(
                 nextPetState,
                 {
+                  tags: nextPetAction.tags,
                   reason:
                     `agent:${snapshot.state}`,
-                },
+                } as any,
               )
             } catch (err) {
               console.error(
@@ -1284,6 +1492,64 @@ export function usePetRuntime(
 
       interaction.mount()
 
+      let pointerDownAt = 0
+      let pointerDownX = 0
+      let pointerDownY = 0
+      let pointerDragged = false
+
+      const handlePetClick = () => {
+        emotion.registerClick()
+      }
+
+      const handlePetDoubleClick = () => {
+        emotion.note('doubleClick')
+      }
+
+      const handlePetPointerDown = (event: PointerEvent) => {
+        pointerDownAt = Date.now()
+        pointerDownX = event.clientX
+        pointerDownY = event.clientY
+        pointerDragged = false
+      }
+
+      const handlePetPointerMove = (event: PointerEvent) => {
+        if (!pointerDownAt || pointerDragged) {
+          return
+        }
+
+        const dx = event.clientX - pointerDownX
+        const dy = event.clientY - pointerDownY
+
+        if (dx * dx + dy * dy > 64) {
+          pointerDragged = true
+          emotion.note('dragStart')
+        }
+      }
+
+      const handlePetPointerUp = () => {
+        if (pointerDragged) {
+          emotion.note('dragEnd')
+        }
+
+        pointerDownAt = 0
+        pointerDragged = false
+      }
+
+      root.addEventListener('click', handlePetClick)
+      root.addEventListener('dblclick', handlePetDoubleClick)
+      root.addEventListener('pointerdown', handlePetPointerDown)
+      root.addEventListener('pointermove', handlePetPointerMove)
+      root.addEventListener('pointerup', handlePetPointerUp)
+
+      detachPetEmotion = () => {
+        root.removeEventListener('click', handlePetClick)
+        root.removeEventListener('dblclick', handlePetDoubleClick)
+        root.removeEventListener('pointerdown', handlePetPointerDown)
+        root.removeEventListener('pointermove', handlePetPointerMove)
+        root.removeEventListener('pointerup', handlePetPointerUp)
+        emotion.dispose()
+      }
+
       await stateMachine.setState(
         PetStates.IDLE,
         {
@@ -1396,7 +1662,8 @@ export function usePetRuntime(
       unsubscribeAgentStore?.()
 
       agentStore?.dispose()
-      interaction?.destroy()
+      detachPetEmotion?.()
+      interaction?.unmount()
 
       void animator?.stop()
 
@@ -1866,5 +2133,8 @@ export function usePetRuntime(
     deleteSession,
     switchSession,
     loadOlderHistory,
+    petRelation,
+    petSpeech,
+    petEmotion,
   }
 }

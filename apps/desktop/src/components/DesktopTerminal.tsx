@@ -47,6 +47,7 @@ export function DesktopTerminal() {
     deleteSession,
     switchSession,
     loadOlderHistory,
+    petRelation,
   } =
     usePetRuntimeContext()
 
@@ -577,6 +578,33 @@ export function DesktopTerminal() {
               <span className="connection-state-value">
                 {settingsOverview.executionMode ??
                   '未提供'}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                桌宠亲密度
+              </span>
+              <span className="connection-state-value">
+                {petRelation.affinity}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                认识天数
+              </span>
+              <span className="connection-state-value">
+                {petRelation.days}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                互动次数
+              </span>
+              <span className="connection-state-value">
+                {petRelation.clicks + petRelation.chats}
               </span>
             </div>
 

@@ -10,8 +10,36 @@ export class PetInteractionController {
     canvas,
     stateMachine,
     hitTest,
+
     dragThreshold = 6,
+
+    dragAnimationStartFrame = 12,
+
+    dragAnimationEndFrame = 32,
+
+    viewportPadding = 4,
+
+    storageKey =
+      'fjk-blog-pet-position-v1',
   }) {
+
+    if (
+      !(root instanceof HTMLElement)
+    ) {
+      throw new Error(
+        'PetInteractionController requires a valid root element'
+      )
+    }
+
+
+    if (
+      !(canvas instanceof HTMLCanvasElement)
+    ) {
+      throw new Error(
+        'PetInteractionController requires a valid canvas'
+      )
+    }
+
 
     this.root =
       root
@@ -25,12 +53,33 @@ export class PetInteractionController {
     this.hitTest =
       hitTest
 
+
     this.dragThreshold =
       dragThreshold
+
+    this.dragAnimationStartFrame =
+      dragAnimationStartFrame
+
+    this.dragAnimationEndFrame =
+      dragAnimationEndFrame
+
+    this.viewportPadding =
+      viewportPadding
+
+    this.storageKey =
+      storageKey
+
+
+    this.mounted =
+      false
 
 
     this.pointerId =
       null
+
+    this.pointerType =
+      null
+
 
     this.pointerDown =
       false
@@ -39,123 +88,367 @@ export class PetInteractionController {
       false
 
 
-    this.startPointerX =
+    this.startClientX =
       0
 
-    this.startPointerY =
+    this.startClientY =
       0
 
-    this.startRootLeft =
+
+    this.startLeft =
       0
 
-    this.startRootTop =
+    this.startTop =
       0
+
+
+    /*
+     * ==========================================
+     * Drag render scheduling
+     * ==========================================
+     *
+     * pointermove 可能远高于屏幕刷新率。
+     *
+     * 我们不在每一次 pointermove 中
+     * 直接修改 DOM。
+     *
+     * 而是：
+     *
+     * pointermove
+     * → 保存最新目标位置
+     * → requestAnimationFrame
+     * → 每帧最多更新一次 DOM
+     */
+
+    this.pendingLeft =
+      null
+
+    this.pendingTop =
+      null
+
+    this.dragFrameId =
+      null
+
+
+    /*
+     * 用于防止点击桌宠时，
+     * 事件穿透到下面的网页元素。
+     */
+    this.suppressNextClick =
+      false
 
 
     this.onInteraction =
       null
 
 
+    /*
+     * ==========================================
+     * Bind handlers
+     * ==========================================
+     */
+
     this.handlePointerDown =
-      this.handlePointerDown.bind(this)
+      this.handlePointerDown.bind(
+        this
+      )
 
     this.handlePointerMove =
-      this.handlePointerMove.bind(this)
+      this.handlePointerMove.bind(
+        this
+      )
 
     this.handlePointerUp =
-      this.handlePointerUp.bind(this)
+      this.handlePointerUp.bind(
+        this
+      )
 
     this.handlePointerCancel =
-      this.handlePointerCancel.bind(this)
+      this.handlePointerCancel.bind(
+        this
+      )
+
+    this.handleClick =
+      this.handleClick.bind(
+        this
+      )
 
     this.handleResize =
-      this.handleResize.bind(this)
+      this.handleResize.bind(
+        this
+      )
+
+    this.handleVisibilityChange =
+      this.handleVisibilityChange.bind(
+        this
+      )
+
+    this.flushDragPosition =
+      this.flushDragPosition.bind(
+        this
+      )
   }
 
 
+  /*
+   * ==========================================
+   * Lifecycle
+   * ==========================================
+   */
+
   mount() {
 
-    this.canvas.addEventListener(
+    if (
+      this.mounted
+    ) {
+      return
+    }
+
+
+    this.mounted =
+      true
+
+
+    document.addEventListener(
       'pointerdown',
-      this.handlePointerDown
+      this.handlePointerDown,
+      {
+        capture:
+          true,
+
+        passive:
+          false,
+      }
     )
 
-    this.canvas.addEventListener(
+
+    document.addEventListener(
       'pointermove',
-      this.handlePointerMove
+      this.handlePointerMove,
+      {
+        capture:
+          true,
+
+        passive:
+          false,
+      }
     )
 
-    this.canvas.addEventListener(
+
+    document.addEventListener(
       'pointerup',
-      this.handlePointerUp
+      this.handlePointerUp,
+      {
+        capture:
+          true,
+
+        passive:
+          false,
+      }
     )
 
-    this.canvas.addEventListener(
+
+    document.addEventListener(
       'pointercancel',
-      this.handlePointerCancel
+      this.handlePointerCancel,
+      {
+        capture:
+          true,
+
+        passive:
+          false,
+      }
     )
+
+
+    document.addEventListener(
+      'click',
+      this.handleClick,
+      true
+    )
+
 
     window.addEventListener(
       'resize',
       this.handleResize
     )
+
+
+    window.addEventListener(
+      'orientationchange',
+      this.handleResize
+    )
+
+
+    document.addEventListener(
+      'visibilitychange',
+      this.handleVisibilityChange
+    )
+
+
+    requestAnimationFrame(
+      () => {
+
+        requestAnimationFrame(
+          () => {
+
+            const restored =
+              this.restorePosition()
+
+
+            if (
+              !restored
+            ) {
+
+              this.clampToViewport()
+            }
+          }
+        )
+      }
+    )
   }
 
 
-  destroy() {
+  unmount() {
 
-    this.canvas.removeEventListener(
+    if (
+      !this.mounted
+    ) {
+      return
+    }
+
+
+    this.mounted =
+      false
+
+
+    document.removeEventListener(
       'pointerdown',
-      this.handlePointerDown
+      this.handlePointerDown,
+      true
     )
 
-    this.canvas.removeEventListener(
+
+    document.removeEventListener(
       'pointermove',
-      this.handlePointerMove
+      this.handlePointerMove,
+      true
     )
 
-    this.canvas.removeEventListener(
+
+    document.removeEventListener(
       'pointerup',
-      this.handlePointerUp
+      this.handlePointerUp,
+      true
     )
 
-    this.canvas.removeEventListener(
+
+    document.removeEventListener(
       'pointercancel',
-      this.handlePointerCancel
+      this.handlePointerCancel,
+      true
     )
+
+
+    document.removeEventListener(
+      'click',
+      this.handleClick,
+      true
+    )
+
 
     window.removeEventListener(
       'resize',
       this.handleResize
     )
+
+
+    window.removeEventListener(
+      'orientationchange',
+      this.handleResize
+    )
+
+
+    document.removeEventListener(
+      'visibilitychange',
+      this.handleVisibilityChange
+    )
+
+
+    this.cancelDragFrame()
+
+
+    this.resetPointer()
   }
 
 
-  async handlePointerDown(
+  /*
+   * ==========================================
+   * Interaction events
+   * ==========================================
+   */
+
+  emitInteraction(
+    type,
+    extra = {}
+  ) {
+
+    if (
+      typeof this.onInteraction !==
+      'function'
+    ) {
+      return
+    }
+
+
+    this.onInteraction({
+      type,
+
+      pointerType:
+        this.pointerType,
+
+      ...extra,
+    })
+  }
+
+
+  /*
+   * ==========================================
+   * Pointer Down
+   * ==========================================
+   */
+
+  handlePointerDown(
     event
   ) {
 
-    /*
-     * 关键：
-     * 先判断是不是角色实体像素。
-     */
+    if (
+      this.pointerDown
+    ) {
+      return
+    }
+
+
+    if (
+      event.pointerType ===
+        'mouse' &&
+      event.button !==
+        0
+    ) {
+      return
+    }
+
+
     const hit =
       this.hitTest.hit(
         event.clientX,
         event.clientY
       )
 
-    if (!hit) {
 
-      if (
-        typeof this.onInteraction ===
-        'function'
-      ) {
-        this.onInteraction({
-          type:
-            'transparent-pointerdown',
-        })
-      }
+    if (
+      !hit
+    ) {
 
       return
     }
@@ -163,175 +456,385 @@ export class PetInteractionController {
 
     event.preventDefault()
 
+    event.stopPropagation()
+
+    event.stopImmediatePropagation()
+
+
     this.pointerDown =
       true
 
-    this.dragging =
-      false
 
     this.pointerId =
       event.pointerId
 
 
-    this.startPointerX =
+    this.pointerType =
+      event.pointerType
+
+
+    this.startClientX =
       event.clientX
 
-    this.startPointerY =
+    this.startClientY =
       event.clientY
 
 
-    /*
-     * 把 right / bottom 布局
-     * 转换成明确的 left / top，
-     * 后续拖动更简单。
-     */
     const rect =
-      this.root.getBoundingClientRect()
+      this.root
+        .getBoundingClientRect()
 
-    this.startRootLeft =
+
+    this.startLeft =
       rect.left
 
-    this.startRootTop =
+    this.startTop =
       rect.top
 
-    this.root.style.left =
-      `${rect.left}px`
 
-    this.root.style.top =
-      `${rect.top}px`
-
-    this.root.style.right =
-      'auto'
-
-    this.root.style.bottom =
-      'auto'
+    this.dragging =
+      false
 
 
-    this.canvas.setPointerCapture(
-      event.pointerId
+    this.pendingLeft =
+      null
+
+    this.pendingTop =
+      null
+
+
+    this.suppressNextClick =
+      true
+
+
+    this.emitInteraction(
+      'pointer-down',
+      {
+        clientX:
+          event.clientX,
+
+        clientY:
+          event.clientY,
+      }
     )
 
 
-    if (
-      typeof this.onInteraction ===
-      'function'
-    ) {
-      this.onInteraction({
-        type:
-          'pointerdown',
-      })
-    }
+    /*
+     * 鼠标按下命中角色后，
+     * 立即进入预起飞悬空动画。
+     */
+    this.stateMachine
+      .setState(
+        PetStates.DRAGGING,
+        {
+          force:
+            true,
+
+          startFrame:
+            this.dragAnimationStartFrame,
+
+          endFrame:
+            this.dragAnimationEndFrame,
+
+          reason:
+            'pointer-down-pre-drag',
+        }
+      )
+      .catch(
+        (error) => {
+          console.error(
+            '[PetInteraction] Failed to enter pre-drag:',
+            error
+          )
+        }
+      )
   }
 
 
-  async handlePointerMove(
+  /*
+   * ==========================================
+   * Pointer Move
+   * ==========================================
+   */
+
+  handlePointerMove(
     event
   ) {
 
     if (
       !this.pointerDown ||
       event.pointerId !==
-      this.pointerId
+        this.pointerId
     ) {
-      return
-    }
-
-
-    const deltaX =
-      event.clientX -
-      this.startPointerX
-
-    const deltaY =
-      event.clientY -
-      this.startPointerY
-
-
-    const distance =
-      Math.hypot(
-        deltaX,
-        deltaY
-      )
-
-
-    /*
-     * 移动距离超过阈值后，
-     * 才正式认为用户是在拖动。
-     *
-     * 这样普通点击不会误判成拖动。
-     */
-    if (
-      !this.dragging &&
-      distance >=
-      this.dragThreshold
-    ) {
-
-      this.dragging =
-        true
-
-      try {
-        await this.stateMachine
-          .setState(
-            PetStates.DRAGGING,
-            {
-              reason:
-                'pointer-drag-start',
-            }
-          )
-      } catch (error) {
-        console.error(
-          'Enter DRAGGING failed:',
-          error
-        )
-      }
-    }
-
-
-    if (!this.dragging) {
       return
     }
 
 
     event.preventDefault()
 
+    event.stopPropagation()
 
-    const proposedLeft =
-      this.startRootLeft +
-      deltaX
+    event.stopImmediatePropagation()
 
-    const proposedTop =
-      this.startRootTop +
-      deltaY
 
+    const deltaX =
+      event.clientX -
+      this.startClientX
+
+
+    const deltaY =
+      event.clientY -
+      this.startClientY
+
+
+    /*
+     * 第一次超过阈值：
+     *
+     * 才正式进入位置拖拽。
+     *
+     * 动画已经在 pointerdown 时启动，
+     * 这里不重复调用 setState，
+     * 避免动画跳回起始帧。
+     */
+    if (
+      !this.dragging
+    ) {
+
+      const distance =
+        Math.hypot(
+          deltaX,
+          deltaY
+        )
+
+
+      if (
+        distance <
+        this.dragThreshold
+      ) {
+        return
+      }
+
+
+      this.dragging =
+        true
+
+
+      this.root.dataset.dragging =
+        'true'
+
+
+      this.emitInteraction(
+        'drag-start'
+      )
+    }
+
+
+    /*
+     * 只计算目标坐标。
+     *
+     * 不在这里直接写 DOM。
+     */
 
     const position =
       this.clampPosition(
-        proposedLeft,
-        proposedTop
+        this.startLeft +
+          deltaX,
+
+        this.startTop +
+          deltaY
       )
 
 
-    this.root.style.left =
-      `${position.left}px`
+    this.pendingLeft =
+      position.left
 
-    this.root.style.top =
-      `${position.top}px`
+    this.pendingTop =
+      position.top
+
+
+    /*
+     * 同一个浏览器绘制周期内，
+     * 最多安排一个更新任务。
+     */
+
+    this.scheduleDragFrame()
+  }
+
+
+  /*
+   * ==========================================
+   * Drag RAF
+   * ==========================================
+   */
+
+  scheduleDragFrame() {
+
+    if (
+      this.dragFrameId !==
+      null
+    ) {
+      return
+    }
+
+
+    this.dragFrameId =
+      requestAnimationFrame(
+        this.flushDragPosition
+      )
+  }
+
+
+  flushDragPosition() {
+
+    this.dragFrameId =
+      null
 
 
     if (
-      typeof this.onInteraction ===
-      'function'
+      !this.dragging
     ) {
-      this.onInteraction({
-        type:
-          'drag',
-        left:
-          position.left,
-        top:
-          position.top,
-      })
+      return
     }
+
+
+    if (
+      this.pendingLeft ===
+        null ||
+      this.pendingTop ===
+        null
+    ) {
+      return
+    }
+
+
+    const left =
+      this.pendingLeft
+
+    const top =
+      this.pendingTop
+
+
+    this.pendingLeft =
+      null
+
+    this.pendingTop =
+      null
+
+
+    this.applyPosition(
+      left,
+      top
+    )
+
+
+    this.emitInteraction(
+      'drag-move',
+      {
+        left,
+        top,
+      }
+    )
   }
 
+
+  cancelDragFrame() {
+
+    if (
+      this.dragFrameId !==
+      null
+    ) {
+
+      cancelAnimationFrame(
+        this.dragFrameId
+      )
+
+
+      this.dragFrameId =
+        null
+    }
+
+
+    this.pendingLeft =
+      null
+
+    this.pendingTop =
+      null
+  }
+
+
+  /*
+   * ==========================================
+   * Flush final drag position
+   * ==========================================
+   *
+   * 松手时可能刚好还有一帧尚未提交。
+   *
+   * 这里强制把最后坐标落到 DOM，
+   * 避免松手瞬间少掉最后几像素。
+   */
+
+  flushFinalDragPosition() {
+
+    if (
+      this.dragFrameId !==
+      null
+    ) {
+
+      cancelAnimationFrame(
+        this.dragFrameId
+      )
+
+
+      this.dragFrameId =
+        null
+    }
+
+
+    if (
+      this.pendingLeft ===
+        null ||
+      this.pendingTop ===
+        null
+    ) {
+      return
+    }
+
+
+    const left =
+      this.pendingLeft
+
+    const top =
+      this.pendingTop
+
+
+    this.pendingLeft =
+      null
+
+    this.pendingTop =
+      null
+
+
+    this.applyPosition(
+      left,
+      top
+    )
+
+
+    this.emitInteraction(
+      'drag-move',
+      {
+        left,
+        top,
+      }
+    )
+  }
+
+
+  /*
+   * ==========================================
+   * Pointer Up
+   * ==========================================
+   */
 
   async handlePointerUp(
     event
@@ -340,7 +843,121 @@ export class PetInteractionController {
     if (
       !this.pointerDown ||
       event.pointerId !==
-      this.pointerId
+        this.pointerId
+    ) {
+      return
+    }
+
+
+    event.preventDefault()
+
+    event.stopPropagation()
+
+    event.stopImmediatePropagation()
+
+
+    const wasDragging =
+      this.dragging
+
+
+    if (
+      wasDragging
+    ) {
+
+      /*
+       * 先确保最后一个 pointermove
+       * 对应的位置已经提交。
+       */
+      this.flushFinalDragPosition()
+
+
+      delete this.root
+        .dataset
+        .dragging
+
+
+      this.savePosition()
+
+
+      this.emitInteraction(
+        'drag-end'
+      )
+
+
+      try {
+
+        await this.stateMachine
+          .setState(
+            PetStates.IDLE,
+            {
+              force:
+                true,
+
+              reason:
+                'pointer-drag-end',
+            }
+          )
+
+      } catch (error) {
+
+        console.error(
+          '[PetInteraction] Failed to return to IDLE:',
+          error
+        )
+      }
+
+    } else {
+
+      this.cancelDragFrame()
+
+
+      this.emitInteraction(
+        'click'
+      )
+
+
+      try {
+
+        await this.stateMachine
+          .setState(
+            PetStates.INTERACT,
+            {
+              force:
+                true,
+
+              reason:
+                'pointer-click',
+            }
+          )
+
+      } catch (error) {
+
+        console.error(
+          '[PetInteraction] Failed to enter INTERACT:',
+          error
+        )
+      }
+    }
+
+
+    this.resetPointer()
+  }
+
+
+  /*
+   * ==========================================
+   * Pointer Cancel
+   * ==========================================
+   */
+
+  async handlePointerCancel(
+    event
+  ) {
+
+    if (
+      !this.pointerDown ||
+      event.pointerId !==
+        this.pointerId
     ) {
       return
     }
@@ -349,137 +966,96 @@ export class PetInteractionController {
     event.preventDefault()
 
 
-    try {
-      if (
-        this.canvas.hasPointerCapture(
-          event.pointerId
-        )
-      ) {
-        this.canvas.releasePointerCapture(
-          event.pointerId
-        )
-      }
-    } catch {
-      /*
-       * 某些情况下 pointer capture
-       * 已经由浏览器自动释放。
-       */
-    }
-
-
     const wasDragging =
       this.dragging
 
 
-    this.resetPointer()
+    if (
+      wasDragging
+    ) {
+
+      this.flushFinalDragPosition()
 
 
-    try {
+      delete this.root
+        .dataset
+        .dragging
 
-      if (wasDragging) {
 
-        /*
-         * 拖动结束后回到待机。
-         */
-        await this.stateMachine.idle(
-          'pointer-drag-end'
+      this.savePosition()
+
+
+      try {
+
+        await this.stateMachine
+          .setState(
+            PetStates.IDLE,
+            {
+              force:
+                true,
+
+              reason:
+                'pointer-drag-cancel',
+            }
+          )
+
+      } catch (error) {
+
+        console.error(
+          '[PetInteraction] Failed to cancel drag:',
+          error
         )
-
-
-        if (
-          typeof this.onInteraction ===
-          'function'
-        ) {
-          this.onInteraction({
-            type:
-              'drag-end',
-          })
-        }
-
-        return
       }
 
+    } else {
 
-      /*
-       * 没有产生拖动：
-       * 这是一次真正点击。
-       */
-      await this.stateMachine
-        .setState(
-          PetStates.INTERACT,
-          {
-            force: true,
-            reason:
-              'pointer-click',
-          }
-        )
-
-
-      if (
-        typeof this.onInteraction ===
-        'function'
-      ) {
-        this.onInteraction({
-          type:
-            'click',
-        })
-      }
-
-    } catch (error) {
-
-      console.error(
-        'Pointer interaction failed:',
-        error
-      )
+      this.cancelDragFrame()
     }
+
+
+    this.emitInteraction(
+      'pointer-cancel'
+    )
+
+
+    this.resetPointer()
   }
 
 
-  async handlePointerCancel(
+  /*
+   * ==========================================
+   * Prevent underlying click
+   * ==========================================
+   */
+
+  handleClick(
     event
   ) {
 
     if (
-      event.pointerId !==
-      this.pointerId
+      !this.suppressNextClick
     ) {
       return
     }
 
 
-    const wasDragging =
-      this.dragging
+    this.suppressNextClick =
+      false
 
 
-    this.resetPointer()
+    event.preventDefault()
 
+    event.stopPropagation()
 
-    if (wasDragging) {
-      try {
-        await this.stateMachine.idle(
-          'pointer-cancel'
-        )
-      } catch (error) {
-        console.error(
-          error
-        )
-      }
-    }
+    event.stopImmediatePropagation()
   }
 
 
-  resetPointer() {
-
-    this.pointerDown =
-      false
-
-    this.dragging =
-      false
-
-    this.pointerId =
-      null
-  }
-
+  /*
+   * ==========================================
+   * Position
+   * ==========================================
+   */
 
   clampPosition(
     left,
@@ -487,38 +1063,65 @@ export class PetInteractionController {
   ) {
 
     const rect =
-      this.root.getBoundingClientRect()
+      this.root
+        .getBoundingClientRect()
+
+
+    const width =
+      rect.width
+
+    const height =
+      rect.height
+
+
+    const padding =
+      this.viewportPadding
+
+
+    const minLeft =
+      padding
+
+    const minTop =
+      padding
+
 
     const maxLeft =
       Math.max(
-        0,
+        padding,
+
         window.innerWidth -
-        rect.width
+        width -
+        padding
       )
+
 
     const maxTop =
       Math.max(
-        0,
+        padding,
+
         window.innerHeight -
-        rect.height
+        height -
+        padding
       )
 
 
     return {
+
       left:
         Math.min(
           Math.max(
-            0,
-            left
+            left,
+            minLeft
           ),
           maxLeft
         ),
 
+
       top:
         Math.min(
           Math.max(
-            0,
-            top
+            top,
+            minTop
           ),
           maxTop
         ),
@@ -526,10 +1129,32 @@ export class PetInteractionController {
   }
 
 
-  handleResize() {
+  applyPosition(
+    left,
+    top
+  ) {
+
+    this.root.style.left =
+      `${left}px`
+
+    this.root.style.top =
+      `${top}px`
+
+
+    this.root.style.right =
+      'auto'
+
+    this.root.style.bottom =
+      'auto'
+  }
+
+
+  clampToViewport() {
 
     const rect =
-      this.root.getBoundingClientRect()
+      this.root
+        .getBoundingClientRect()
+
 
     const position =
       this.clampPosition(
@@ -537,16 +1162,318 @@ export class PetInteractionController {
         rect.top
       )
 
-    this.root.style.left =
-      `${position.left}px`
 
-    this.root.style.top =
-      `${position.top}px`
+    this.applyPosition(
+      position.left,
+      position.top
+    )
 
-    this.root.style.right =
-      'auto'
 
-    this.root.style.bottom =
-      'auto'
+    return position
+  }
+
+
+  /*
+   * ==========================================
+   * Position persistence
+   * ==========================================
+   */
+
+  savePosition() {
+
+    const rect =
+      this.root
+        .getBoundingClientRect()
+
+
+    const maxX =
+      Math.max(
+        1,
+
+        window.innerWidth -
+        rect.width
+      )
+
+
+    const maxY =
+      Math.max(
+        1,
+
+        window.innerHeight -
+        rect.height
+      )
+
+
+    const data = {
+
+      xRatio:
+        rect.left /
+        maxX,
+
+      yRatio:
+        rect.top /
+        maxY,
+
+      savedAt:
+        Date.now(),
+    }
+
+
+    try {
+
+      localStorage.setItem(
+        this.storageKey,
+        JSON.stringify(
+          data
+        )
+      )
+
+    } catch {
+      /*
+       * localStorage 不可用时
+       * 不影响桌宠。
+       */
+    }
+  }
+
+
+  restorePosition() {
+
+    let data
+
+
+    try {
+
+      const raw =
+        localStorage.getItem(
+          this.storageKey
+        )
+
+
+      if (
+        !raw
+      ) {
+        return false
+      }
+
+
+      data =
+        JSON.parse(
+          raw
+        )
+
+    } catch {
+
+      return false
+    }
+
+
+    if (
+      !Number.isFinite(
+        data?.xRatio
+      ) ||
+      !Number.isFinite(
+        data?.yRatio
+      )
+    ) {
+      return false
+    }
+
+
+    const rect =
+      this.root
+        .getBoundingClientRect()
+
+
+    const maxX =
+      Math.max(
+        0,
+
+        window.innerWidth -
+        rect.width
+      )
+
+
+    const maxY =
+      Math.max(
+        0,
+
+        window.innerHeight -
+        rect.height
+      )
+
+
+    const left =
+      maxX *
+      Math.min(
+        Math.max(
+          data.xRatio,
+          0
+        ),
+        1
+      )
+
+
+    const top =
+      maxY *
+      Math.min(
+        Math.max(
+          data.yRatio,
+          0
+        ),
+        1
+      )
+
+
+    const position =
+      this.clampPosition(
+        left,
+        top
+      )
+
+
+    this.applyPosition(
+      position.left,
+      position.top
+    )
+
+
+    return true
+  }
+
+
+  clearSavedPosition() {
+
+    try {
+
+      localStorage.removeItem(
+        this.storageKey
+      )
+
+    } catch {
+      // ignore
+    }
+  }
+
+
+  /*
+   * ==========================================
+   * Resize / Orientation
+   * ==========================================
+   */
+
+  handleResize() {
+
+    requestAnimationFrame(
+      () => {
+
+        const position =
+          this.clampToViewport()
+
+
+        this.savePosition()
+
+
+        this.emitInteraction(
+          'viewport-resize',
+          position
+        )
+      }
+    )
+  }
+
+
+  /*
+   * ==========================================
+   * Visibility
+   * ==========================================
+   */
+
+  async handleVisibilityChange() {
+
+    if (
+      document.visibilityState !==
+        'hidden' ||
+      !this.pointerDown
+    ) {
+      return
+    }
+
+
+    if (
+      this.dragging
+    ) {
+
+      this.flushFinalDragPosition()
+
+
+      delete this.root
+        .dataset
+        .dragging
+
+
+      this.savePosition()
+
+
+      try {
+
+        await this.stateMachine
+          .setState(
+            PetStates.IDLE,
+            {
+              force:
+                true,
+
+              reason:
+                'visibility-hidden',
+            }
+          )
+
+      } catch (error) {
+
+        console.error(
+          '[PetInteraction] Failed to restore IDLE:',
+          error
+        )
+      }
+
+    } else {
+
+      this.cancelDragFrame()
+    }
+
+
+    this.resetPointer()
+  }
+
+
+  /*
+   * ==========================================
+   * Reset
+   * ==========================================
+   */
+
+  resetPointer() {
+
+    this.cancelDragFrame()
+
+
+    this.pointerDown =
+      false
+
+    this.dragging =
+      false
+
+
+    this.pointerId =
+      null
+
+    this.pointerType =
+      null
+
+
+    delete this.root
+      .dataset
+      .dragging
   }
 }

@@ -4,31 +4,60 @@ export class PetHitTest {
     canvas,
     alphaThreshold = 25,
   }) {
-    this.canvas = canvas
+
+    if (
+      !(canvas instanceof
+        HTMLCanvasElement)
+    ) {
+      throw new Error(
+        'PetHitTest requires a valid canvas'
+      )
+    }
+
+
+    this.canvas =
+      canvas
+
+
+    this.alphaThreshold =
+      alphaThreshold
+
 
     this.ctx =
       canvas.getContext(
         '2d',
         {
-          willReadFrequently: true,
+          willReadFrequently:
+            true,
         }
       )
 
-    this.alphaThreshold =
-      alphaThreshold
+
+    if (!this.ctx) {
+      throw new Error(
+        'Failed to create Canvas 2D context for hit testing'
+      )
+    }
   }
 
 
   /*
-   * 把浏览器 CSS 坐标
-   * 转成 Canvas 实际像素坐标。
+   * ==========================================
+   * Browser coordinate
+   * →
+   * Canvas pixel coordinate
+   * ==========================================
    */
+
   clientToCanvas(
     clientX,
     clientY
   ) {
+
     const rect =
-      this.canvas.getBoundingClientRect()
+      this.canvas
+        .getBoundingClientRect()
+
 
     if (
       rect.width <= 0 ||
@@ -37,80 +66,122 @@ export class PetHitTest {
       return null
     }
 
+
+    const localX =
+      clientX -
+      rect.left
+
+
+    const localY =
+      clientY -
+      rect.top
+
+
+    /*
+     * Pointer 不在 Canvas
+     * 显示矩形范围内。
+     */
+    if (
+      localX < 0 ||
+      localY < 0 ||
+      localX >= rect.width ||
+      localY >= rect.height
+    ) {
+      return null
+    }
+
+
+    /*
+     * CSS 可能已经缩放 Canvas。
+     *
+     * 所以浏览器显示坐标必须
+     * 映射回 Canvas 内部像素。
+     */
+    const scaleX =
+      this.canvas.width /
+      rect.width
+
+
+    const scaleY =
+      this.canvas.height /
+      rect.height
+
+
     const x =
-      (
-        (clientX - rect.left) /
-        rect.width
-      ) *
-      this.canvas.width
+      Math.floor(
+        localX *
+        scaleX
+      )
+
 
     const y =
-      (
-        (clientY - rect.top) /
-        rect.height
-      ) *
-      this.canvas.height
+      Math.floor(
+        localY *
+        scaleY
+      )
+
+
+    if (
+      x < 0 ||
+      y < 0 ||
+      x >= this.canvas.width ||
+      y >= this.canvas.height
+    ) {
+      return null
+    }
+
 
     return {
-      x: Math.floor(x),
-      y: Math.floor(y),
+      x,
+      y,
     }
   }
 
 
-  isInsideCanvas(
-    x,
-    y
-  ) {
-    return (
-      x >= 0 &&
-      y >= 0 &&
-      x < this.canvas.width &&
-      y < this.canvas.height
-    )
-  }
-
-
   /*
-   * 检查当前 Canvas 已经绘制出来的这一帧。
+   * ==========================================
+   * 正式命中接口
+   * ==========================================
    *
-   * alpha > threshold
-   * 才认为真正点中了角色。
+   * PetInteractionController
+   * 当前调用：
+   *
+   * this.hitTest.hit(...)
+   *
+   * 所以 hit() 是这里的主接口。
    */
+
   hit(
     clientX,
     clientY
   ) {
+
     const point =
       this.clientToCanvas(
         clientX,
         clientY
       )
 
+
     if (!point) {
       return false
     }
 
-    if (
-      !this.isInsideCanvas(
-        point.x,
-        point.y
-      )
-    ) {
-      return false
-    }
 
     try {
+
       const pixel =
         this.ctx.getImageData(
           point.x,
           point.y,
           1,
           1
-        ).data
+        )
+
 
       const alpha =
-        pixel[3]
+        pixel.data[3]
+
 
       return (
         alpha >
@@ -118,12 +189,66 @@ export class PetHitTest {
       )
 
     } catch (error) {
-      console.error(
-        'PetHitTest failed:',
+
+      /*
+       * 如果未来使用了跨域图片，
+       * Canvas 可能被 taint。
+       *
+       * 当前 dsh1 是同源资源，
+       * 正常不会进入这里。
+       */
+      console.warn(
+        '[PetHitTest] Failed to read canvas pixel:',
         error
       )
 
+
       return false
     }
+  }
+
+
+  /*
+   * ==========================================
+   * Compatibility aliases
+   * ==========================================
+   *
+   * 保留这些方法，
+   * 防止以后其他代码使用了不同命名。
+   */
+
+  hitTest(
+    clientX,
+    clientY
+  ) {
+
+    return this.hit(
+      clientX,
+      clientY
+    )
+  }
+
+
+  isHit(
+    clientX,
+    clientY
+  ) {
+
+    return this.hit(
+      clientX,
+      clientY
+    )
+  }
+
+
+  contains(
+    clientX,
+    clientY
+  ) {
+
+    return this.hit(
+      clientX,
+      clientY
+    )
   }
 }

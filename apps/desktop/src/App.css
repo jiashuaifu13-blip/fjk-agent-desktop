@@ -346,6 +346,144 @@ body {
   user-select: none;
 }
 
+/* 二次元萌系气泡：配色随情绪切换 + 弹入 + 上下浮动 */
+.pet-speech {
+  --bubble-bg: #ffeaf4;
+  --bubble-bg-top: #fffafd;
+  --bubble-border: #ffc2dd;
+  --bubble-text: #6b4a5e;
+  --bubble-shadow: #ffd6e7;
+
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%) rotate(-1.2deg);
+  transform-origin: 50% 100%;
+  margin-bottom: 12px;
+  width: max-content;
+  max-width: 240px;
+  min-width: 64px;
+  padding: 9px 14px;
+  border: 2px solid var(--bubble-border);
+  border-radius: 18px;
+  background: linear-gradient(
+    180deg,
+    var(--bubble-bg-top) 0%,
+    var(--bubble-bg) 100%
+  );
+  color: var(--bubble-text);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.2px;
+  text-align: center;
+  white-space: pre-wrap;
+  word-break: break-word;
+  pointer-events: none;
+  box-shadow:
+    0 3px 0 var(--bubble-shadow),
+    0 12px 24px rgba(0, 0, 0, 0.3);
+  animation:
+    pet-speech-pop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+    pet-speech-bob 3.4s ease-in-out 0.3s infinite;
+}
+
+/* 情绪配色 */
+.pet-speech-joy {
+  --bubble-bg: #ffe1b0;
+  --bubble-bg-top: #fff6de;
+  --bubble-border: #ffcf8a;
+  --bubble-text: #7a5a20;
+  --bubble-shadow: #ffe4b8;
+}
+
+.pet-speech-angry {
+  --bubble-bg: #ffe0cf;
+  --bubble-bg-top: #fff2ea;
+  --bubble-border: #ffb08a;
+  --bubble-text: #8a4b32;
+  --bubble-shadow: #ffcbb0;
+}
+
+.pet-speech-sad {
+  --bubble-bg: #e2ecff;
+  --bubble-bg-top: #f4f8ff;
+  --bubble-border: #b9cff5;
+  --bubble-text: #465f85;
+  --bubble-shadow: #cfdffa;
+}
+
+.pet-speech-surprised {
+  --bubble-bg: #fff3c4;
+  --bubble-bg-top: #fffcee;
+  --bubble-border: #ffdf8a;
+  --bubble-text: #7a6420;
+  --bubble-shadow: #ffeaa8;
+}
+
+.pet-speech-shy {
+  --bubble-bg: #efe0ff;
+  --bubble-bg-top: #f9f4ff;
+  --bubble-border: #d9c2ff;
+  --bubble-text: #5f4a80;
+  --bubble-shadow: #e6d4ff;
+}
+
+.pet-speech[hidden] {
+  display: none;
+}
+
+/* 尾巴：旋转小方块 + 同款描边，指向桌宠头顶正中 */
+.pet-speech::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 3px;
+  background: var(--bubble-bg);
+  border-right: 2px solid var(--bubble-border);
+  border-bottom: 2px solid var(--bubble-border);
+  transform: rotate(45deg);
+  box-shadow: 2px 2px 0 var(--bubble-shadow);
+}
+
+/* 左上角一点点高光，做出“贴纸”感 */
+.pet-speech::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 8px;
+  width: 10px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  transform: rotate(-18deg);
+}
+
+@keyframes pet-speech-pop {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) rotate(-1.2deg) scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) rotate(-1.2deg) scale(1);
+  }
+}
+
+@keyframes pet-speech-bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -4px;
+  }
+}
+
 .pet-badge {
   position: absolute;
   left: 20px;
