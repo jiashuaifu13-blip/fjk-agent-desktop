@@ -112,6 +112,7 @@ export interface PetRuntime {
   updateSessionModel(model: string): Promise<void>
   rollbackSessionModel(): Promise<void>
   sessionList: SessionListItem[]
+  createSession(): Promise<string>
   switchSession(sessionKey: string): Promise<void>
 }
 
@@ -1275,6 +1276,65 @@ export function usePetRuntime(
     setPreviousModel(null)
   }
 
+  const createSession = async (): Promise<string> => {
+    const gateway =
+      gatewayClientRef.current
+
+    if (!gateway) {
+      throw new Error('Gateway unavailable')
+    }
+
+    const result =
+      await gateway.send(
+        'sessions.create',
+        {},
+      )
+
+    const key =
+      (
+        result as {
+          key?: string
+        } | null
+      )?.key
+
+    if (!key) {
+      throw new Error(
+        'sessions.create returned no key',
+      )
+    }
+
+    const list =
+      await gateway.send(
+        'sessions.list',
+        {},
+      )
+
+    const refreshedSessions =
+      readSessionList(list)
+    const refreshedOverview =
+      readSettingsOverview(list)
+
+    setSessionList(
+      refreshedSessions,
+    )
+    setSettingsOverview(
+      (current) => ({
+        ...current,
+        sessionCount:
+          refreshedOverview.sessionCount,
+      }),
+    )
+
+    appendRuntimeLog(
+      'info',
+      'gateway',
+      'Session created',
+      `session=${key}`,
+    )
+
+    return key
+  }
+
   const switchSession = async (
     sessionKey: string,
   ) => {
@@ -1399,6 +1459,7 @@ export function usePetRuntime(
     updateSessionModel,
     rollbackSessionModel,
     sessionList,
+    createSession,
     switchSession,
   }
 }

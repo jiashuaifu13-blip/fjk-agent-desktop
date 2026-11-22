@@ -43,6 +43,7 @@ export function DesktopTerminal() {
     updateSessionModel,
     rollbackSessionModel,
     sessionList,
+    createSession,
     switchSession,
   } =
     usePetRuntimeContext()
@@ -580,9 +581,28 @@ export function DesktopTerminal() {
               </div>
             </div>
 
-            <span className="connection-state-badge connection-state-badge-neutral">
-              只读
-            </span>
+            <button
+              type="button"
+              className="connection-state-trigger"
+              disabled={
+                sending ||
+                mode !== 'gateway' ||
+                gatewayStatus.state !==
+                  'connected'
+              }
+              onClick={() => {
+                setLastError(null)
+                void createSession().catch(
+                  (err) => {
+                    setLastError(
+                      toGatewayIssue(err),
+                    )
+                  },
+                )
+              }}
+            >
+              新建会话
+            </button>
           </div>
 
           <div className="connection-state-grid">
@@ -594,14 +614,14 @@ export function DesktopTerminal() {
 
             {sessionList.map((session) => (
               <div
-                className="connection-state-row"
+                className="connection-state-row session-list-row"
                 key={session.key}
               >
                 <span className="connection-state-key">
                   {session.isMain ? 'MAIN' : 'SESSION'}
                 </span>
 
-                <span className="connection-state-value">
+                <span className="connection-state-value session-list-value">
                   {session.key}
                   {' · sessionId: '}
                   {session.sessionId ?? '未提供'}
@@ -615,6 +635,7 @@ export function DesktopTerminal() {
                     : new Date(
                         session.updatedAt,
                       ).toLocaleString()}
+                </span>
 
                   {session.key !==
                     settingsOverview.sessionKey && (
@@ -640,7 +661,6 @@ export function DesktopTerminal() {
                       切换
                     </button>
                   )}
-                </span>
               </div>
             ))}
           </div>
