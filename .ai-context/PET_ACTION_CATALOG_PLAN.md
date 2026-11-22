@@ -13,7 +13,7 @@ FJK Agent 桌面端的桌宠当前是「8 状态 + 固定 actionId」：
   DRAGGING/ERROR=`站着晃神打瞌睡`）。
 - `packages/agent-state/AgentToPetState.js`：WORKING→SPEAKING、**WAITING_APPROVAL→IDLE**、
   COMPLETED→INTERACT、FAILED→ERROR —— 都是临时回退。
-- 资源只有 `public/pets/dsh1` 的 **5 个动作**（18 文件 / 22.9 MB）。
+- 资源只有 `public/pets/dsh1` 的 **5 个动作**（9 文件 / 11.5 MB）。
 
 结果：桌宠能反映 Agent 状态，但表现力弱、待机不动、审批/完成没有可辨识反馈。
 
@@ -89,3 +89,16 @@ FJK Agent 桌面端的桌宠当前是「8 状态 + 固定 actionId」：
 Blog 的 `PetActionCatalog + PetActionSelector + rotateOnEnd` 是可直接复用的成熟设计，
 能把我们的桌宠从“5 个动作的占位状态机”提升到“可扩展的动作池”。
 建议按 **A→B→C→D** 推进，先只搬 12–15 个动作，把体积控制在可接受范围。
+
+## 八、实施进度（2026-11-22 下午，已提交）
+
+- **阶段 A/B 已完成**：`PetActionCatalog`（101 条全量目录）+ `PetActionSelector` 已入库并接入 `PetStateMachine`；
+  同时移植了 Blog 的 `PetStates(11 状态) / PetStateMachine(selector + rotateOnEnd) / PetAnimator / PetRenderer / PetHitTest / PetInteractionController`。
+- **动作包**：当前入库 **18 个动作**（webp + sidecar json + 裁剪后的 `actions.json`/`manifest.json`），
+  `public/pets/dsh1` 约 **18.5 MB**；旧 5 个动作备份在 `.tmp/pets-old-backup/`（未提交）。
+- **动作包预留**：Blog `dsh` 全量 **101 动作 / 95.8 MB** 暂不入库；后续补包时按 `character.json` 的 tags 挑选，
+  并同步裁剪 `actions.json`/`manifest.json`（`AnimationLibrary.has()` 只认 JSON 登记，不认文件存在）。
+- **角色层已完成**：`character.json` v2（双模式 persona / 行为清单 / 限流 / 7 情绪台词）、
+  `PetEmotionEngine`（情绪+衰减+连点检测）、`PetMemoryStore`（localStorage 关系记忆）、气泡（跟随桌宠、情绪配色、打字机、浮动）。
+- **映射 v2**：`AgentToPetState` 返回 `{state,tags}`，情绪仅在 `IDLE/ERROR` 接管动画（Agent 状态优先）。
+- **待办**：动作包扩充（12–15 → 101）、`[[mood:xxx]]` 标记解析、主动互动（久坐/深夜/整点）。
