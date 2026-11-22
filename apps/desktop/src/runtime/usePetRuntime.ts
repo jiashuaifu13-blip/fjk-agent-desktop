@@ -317,6 +317,46 @@ function readSessionList(
     .filter((item) => item.key.length > 0)
 }
 
+function readOverviewForActiveSession(
+  list: unknown,
+  activeKey: string | null,
+): SettingsOverview {
+
+  const overview =
+    readSettingsOverview(list)
+
+  if (!activeKey) {
+    return overview
+  }
+
+  const row =
+    getGatewaySessions(list).find(
+      (session) => session.key === activeKey,
+    )
+
+  if (!row) {
+    return overview
+  }
+
+  const model =
+    row.model ??
+    row.modelName ??
+    row.metadata?.model ??
+    row.metadata?.modelName ??
+    null
+
+  return {
+    ...overview,
+    sessionKey: row.key ?? activeKey,
+    model:
+      typeof model === 'string' &&
+      model.trim().length > 0
+        ? model
+        : null,
+  }
+}
+
+
 function readChatHistoryMessages(
   history: unknown,
 ): ChatMessage[] {
@@ -1113,7 +1153,7 @@ export function usePetRuntime(
                 targetKey
 
               const overview =
-                readSettingsOverview(list)
+                readOverviewForActiveSession(list, activeSessionKeyRef.current)
 
               setSettingsOverview({
                 ...overview,
@@ -1240,7 +1280,7 @@ export function usePetRuntime(
 
             if (!cancelled) {
               setSettingsOverview(
-                readSettingsOverview(list),
+                readOverviewForActiveSession(list, activeSessionKeyRef.current),
               )
               setSessionList(
                 readSessionList(list),
@@ -1723,7 +1763,7 @@ export function usePetRuntime(
       )
 
     setSettingsOverview(
-      readSettingsOverview(list),
+      readOverviewForActiveSession(list, activeSessionKeyRef.current),
     )
     setSessionList(
       readSessionList(list),
@@ -1807,7 +1847,7 @@ export function usePetRuntime(
     const refreshedSessions =
       readSessionList(list)
     const refreshedOverview =
-      readSettingsOverview(list)
+      readOverviewForActiveSession(list, activeSessionKeyRef.current)
 
     setSessionList(
       refreshedSessions,
@@ -1905,7 +1945,7 @@ export function usePetRuntime(
       readSessionList(list)
 
     const refreshedOverview =
-      readSettingsOverview(list)
+      readOverviewForActiveSession(list, activeSessionKeyRef.current)
 
     setSessionList(
       refreshedSessions,
