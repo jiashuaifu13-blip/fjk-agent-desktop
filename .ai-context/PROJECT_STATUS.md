@@ -91,6 +91,18 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 - **Settings 更多只读项**：工具 Profile / 工具开关 / 执行模式 三行；`null` 显示「未提供」，
   工具开关只按布尔值显示，不用 toolCount 推断。
 - **面板错误自清**：关闭 Session 面板时清除上一次「会话操作失败」，重开不残留。
+- **首启引导与 API Key 接入**（2026-11-22 晚）：
+  Rust `openclaw_status` 检测安装/版本/网关/config，设置面板提供「重新检测」与三种状态引导；
+  Key 写入优先走 Gateway RPC `models.authSetApiKey`（**无需停网关**），遇到凭据冲突自动
+  `models.authLogout {provider, profileIds:["<provider>:manual"]}` 后重试。
+- **多 provider 与自定义中转**：15 家 provider 的 `/models` 校验端点；支持 New API / one-api 等
+  OpenAI 兼容服务（写 `models.providers.<id>`，**必须声明 `api: "openai-completions"`**，否则 models.json 加载失败）。
+- **模型作用域**：`sessions.patch` 只改当前会话；全局默认走 `agents.defaults.model.primary`，
+  设置面板提供「设为全局默认」；模型行同时显示 provider（如 `claude-opus (newapi)`）。
+- **对话延迟优化**：流式 40ms 合并渲染、消息对象复用 + `MessageRow` memo、等待期阶段提示
+  （已发送/模型处理中/生成中/等待审批）、`Chat latency ttft/total` 埋点。
+- **卡死兜底与会话可观测**：首字 90 秒未到自动 stop；会话面板显示「· 运行中」并提供「强制停止」
+  （`sessions.abort {key, clearQueued:true}`，8s 轮询）；启动恢复上次会话（`fjk-last-session-v1`）。
 - `.ai-context/OPENCLAW_*` 系列文档 — Gateway 事件语义 / 认证契约 / 活动事件 / 状态映射 / Client 接口 / 技术选型报告。
 
 ## AgentState 验证
@@ -168,10 +180,11 @@ Phase 0（项目调查与基础验证）— **已全部完成（P0-001~023）**�
 
 ## 下一步
 
-Phase 2 已基本完成（剩余为增强项），后续按以下顺序推进：
+Phase 2 已基本完成（剩余为增强项），Phase 3 桌宠已大幅推进，后续按以下顺序：
 
-1. **P1-019 聊天历史分页**：`chat.history` 目前固定 `limit: 100`，需支持向上滚动加载更早消息。
-2. **Phase 3 桌宠补完**：3B/3C/3E（动作资源与扩展），当前仅 3A 审计 + AgentState→PetState 驱动接通。
+1. **稳定性观察（优先）**：观察 `tool_execution_wait` 卡死频率、90s 自动停止误伤率、`newapi` 中转限流；
+   若频繁，在 UI 显示「卡在哪个工具」并提供停止该工具。
+2. **Phase 3 桌宠补完**：动作包从 34 → 101（体积需压缩或懒加载）、`[[mood:x]]` 端到端稳定性、主动互动（久坐/深夜/整点）。
 3. **Phase 6 产品化收尾**：MSI 安装包、代码签名、自动更新（NSIS 已完成安装/运行/卸载回归）。
-4. （可选）快速失败场景的确定性复现（临时改错模型名），关闭最后一个未实测项。
+4. （可选）快速失败场景的确定性复现；模型快捷切换（快模型 / 深思考）。
 5. **Phase 4 Blog Adapter / Phase 5 本地项目·GitHub 集成 / Phase 7 动作扩展**：未开始。

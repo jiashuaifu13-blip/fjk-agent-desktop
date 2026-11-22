@@ -24,30 +24,27 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 - 分支：`main`
 - 环境：Windows 11、Windows PowerShell 5.1、Node 18+、Rust stable、本地 OpenClaw Gateway（`ws://127.0.0.1:18789`）
 
-## 三、当前状态（2026-11-22 16:35 更新）
+## 三、当前状态（2026-11-22 23:15 更新）
 
 - 实时状态以 `STATE.md` 为准（`STATE_ID` / `HEAD_AT_SYNC` / 任务 / 未验证项）；
-- `HEAD = origin/main = 1b30d91`；工作区 1 个文件有 **未提交** 改动（见下方悬空状态）；
-- 当前任务：**P1-019 聊天历史分页**（上一条 STEP 因锚点问题中断，需按第十一节重做）。
+- `HEAD = origin/main = 650681f`；工作区 **clean**；
+- 当前任务：**API 接入与对话体验收尾**（首启引导 / 多 provider / 模型作用域 / 延迟优化 / 会话可观测）。
 
-**⚠ 悬空状态（必须先处理）**：`apps/desktop/src/runtime/usePetRuntime.ts` 已声明
-`prependMessages(messages: ChatMessage[]): void` 与 `loadOlderHistory(): Promise<number>`，
-但 `apps/desktop/src/chat/ChatController.js` **没有实现**。由于创建处用 `as ChatControllerLike` 强转，
-`tsc` 不报错，但一旦调用 `loadOlderHistory` 就会 `TypeError: prependMessages is not a function`。
-→ 要么补齐 `ChatController.prependMessages`，要么先回退这 2 行。
-
-已完成且实测（2026-11-22 新增，历史明细见 `TASKS.md` / `STATE.md`）：
+已完成且实测（2026-11-22 晚新增，明细见 `STATE.md` 的 `ROUND_PROVIDER-LATENCY`）：
 
 | 功能 | 状态 |
 |---|---|
-| Session 新建 | 已验证：`sessions.create {}`，不发首条消息、不自动切换 |
-| Session 删除 | 已验证：`sessions.patch{archived}` → `sessions.delete`，需 `expectedSessionId`；main/当前会话无删除入口 |
-| 切换加载历史 | 已验证：`chat.history {sessionKey, limit:100}` → `replaceMessages`；事件按 `sessionKey` 过滤 |
-| Settings 三项只读 | 已验证：工具 Profile / 工具开关 / 执行模式均显示「未提供」，不用 toolCount 推断 |
-| 面板错误自清 | 已验证：关闭 Session 面板后重开不残留「会话操作失败」 |
-| 自动重连 | 已验证：1/2/4/8/15s 退避 ×5，恢复 Session/审批订阅/adapter key |
+| 首启检测 | 已验证：`openclaw_status` 返回安装/版本/网关/config；设置面板「重新检测」+ 三种状态引导 |
+| API Key 写入 | 已验证：优先 Gateway RPC `models.authSetApiKey`（**不用停网关**）；冲突时 `models.authLogout` 清 `<provider>:manual` 再重试 |
+| 多 provider 校验 | 已验证：15 家 `/models` 端点（deepseek/openai/anthropic/xai/groq/openrouter/google/moonshot/zhipu/alibaba/mistral/together/deepinfra/cerebras/cohere） |
+| 自定义 provider | 已验证：New API / one-api 走 `models.providers.<id>`；**必须带 `api: "openai-completions"`**，否则 models.json 加载失败 |
+| 模型作用域 | 已验证：`sessions.patch` 只改当前会话；全局默认走 `agents.defaults.model.primary`（设置里「设为全局默认」） |
+| Agent 自检规则 | 已在 `~/.openclaw/workspace/AGENTS.md` 落地：问模型时读会话级 `model/modelProvider`；**新会话才生效** |
+| 对话延迟 | 已验证：40ms 合并渲染 + 消息对象复用 + `MessageRow` memo；等待期显示阶段；`Chat latency ttft/total` 埋点 |
+| 卡死兜底 | 已验证：首字 90s 未到自动 stop；会话面板显示「· 运行中」+「强制停止」（`sessions.abort`） |
+| 会话恢复 | 已验证：启动恢复上次会话（`localStorage: fjk-last-session-v1`） |
 
-未验证：快速失败瞬时事件（开代理表现为挂起，非秒失败）。
+未验证：快速失败瞬时事件（开代理表现为挂起，非秒失败）；grok 中转长期稳定性。
 
 - 下一步：按 `PROJECT_STATUS.md`「下一步」顺序推进，不要再重复验证已完成项。
 
