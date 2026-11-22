@@ -62,6 +62,9 @@
 4. **5173 残留 Vite**：`netstat -ano | findstr :5173` → `taskkill /PID <pid> /F`。
 5. **受限沙箱**：`node --test`、`npm run build`、`cargo` 可能 spawn EPERM；需要时申请完全权限并说明理由。
 6. **`.tmp` 目录**是临时验收脚本，已被 `*.tmp` 规则忽略，不要提交。
+7. **DSH 沙箱写 `.git` 被拒**：workspace-write 模式下 `git add/commit/push` 会报
+   `Unable to create '.git/index.lock': Permission denied`（.git 受保护，属预期限制）。
+   处理：用一次「完全权限」重试同一条 git 命令（说明理由即可），不要改 ACL。
 
 ## 七、当前状态（2026-11-22 10:50）
 
