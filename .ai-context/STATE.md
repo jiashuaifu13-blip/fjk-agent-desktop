@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261122-1050
-HEAD_AT_SYNC: ad6ea1d
-UPDATED: 2026-11-22T10:50+08:00
-TASK: 新一轮 STEP-0：新建/删除会话（写操作，删除需二次确认）；基线已复核，等待网页 AI 给 STEP 1
+STATE_ID: 20261122-1120
+HEAD_AT_SYNC: d9a5143
+UPDATED: 2026-11-22T11:20+08:00
+TASK: P1-014 新建/删除会话 —— STEP 1b 已通过（用户截图确认 5 条会话均显示真实 sessionId）；代码改动未提交，等 STEP 2
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -39,11 +39,21 @@ UNVERIFIED:
 - 内层 1s 重试等待未接 cancelled（组件卸载后最多多跑 4s，小隐患）
 
 NEXT:
-1. 新建会话（`sessions.create`）最小可用：只创建 + 刷新列表，不自动发首条消息、不自动切换（切换已有能力）。
-2. 删除会话（`sessions.patch {archived:true, expectedSessionId}` 或 `sessions.delete`）：**删除前二次确认**；
-   需先把 `sessionId` 读进会话列表（当前 SessionListItem 只有 key/isMain/updatedAt）。
-3. Settings 更多项（工具开关/执行模式展示）。
-4. （可选）快速失败的确定性复现；内层等待的取消保护。
+1. 提交 STEP 1 + 1b 的代码改动（`usePetRuntime.ts` 补 `sessionId`、`DesktopTerminal.tsx` 显示），等网页 AI 给提交口径。
+2. 新建会话（`sessions.create`）最小可用：只创建 + 刷新列表，不自动发首条消息。
+3. 删除会话（归档 `sessions.patch {archived, expectedSessionId}` → `sessions.delete`）：双确认，禁止删 main。
+4. Settings 更多项（工具开关/执行模式展示）。
+5. （可选）快速失败的确定性复现；内层等待的取消保护。
+
+ROUND_P1-014:
+- STEP 0（基线）：HEAD=ad6ea1d clean；tsc 0；reducer 单测通过；网关 18789 有连接；代理 7897 开。
+- STEP 1（数据/显示）：`GatewaySessionSummary.sessionId?` + `readSessionList` 映射 + 面板 `· sessionId: {…?? '未提供'}`；
+  首轮因 `SessionListItem` 缺字段 TS2339 阻塞（`DesktopTerminal.tsx:607`）。
+- STEP 1b（补类型）：两处重复声明各加 `sessionId: string | null`（L82/L89）；首条补丁 `hits=2` 非唯一被拒，
+  改用 `-AllowMulti` 一次补两处；`tsc` 0、`npm run build` PASS（build 需完全权限，esbuild spawn EPERM）。
+- 面板实测（用户截图）：5 条会话均显示真实 sessionId（main=`46aa601f-…`），当前使用标记正常。
+- 遗留：代码改动（2 文件 / 10 行）**未提交**；「当前使用」标在 phase0-test 行（用户切过会话则正常）。
+- 已落地流程：`.ai-context/.tmp/stepN.ps1|log` 留痕 + `WEB_AI_SESSION.md` 第九节命令索引规范。
 
 STEP0_BASELINE_20261122:
 - `HEAD = origin/main = ad6ea1d`，工作区 clean。

@@ -28,7 +28,7 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 
 - 实时状态以 `STATE.md` 为准（含 `STATE_ID` / `HEAD_AT_SYNC` / 任务 / 未验证项）；
 - 未提交改动：无
-- 当前任务：**等待下一轮**（候选：新建/删除会话、自动重连、Settings 更多项）
+- 当前任务：**P1-014 新建/删除会话**（STEP 1b 已通过本地验收，代码改动待提交；状态以 `STATE.md` 为准）
 
   已完成且实测：
 
@@ -86,7 +86,31 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 
 ## 八、下一步
 
-1. 新建 / 删除会话（写操作，风险较高；删除前必须二次确认）。
-2. 自动重连（断线后自动恢复，不要求重启桌面端）。
+1. 新建 / 删除会话（写操作，风险较高；删除前必须二次确认）——**进行中**：STEP 1b 已通过本地验收，待提交与 STEP 2。
+2. ~~自动重连~~ —— 已完成（P1-013，已实测）。
 3. Settings 更多项（工具开关、执行模式展示）。
 4. （可选）快速失败的确定性复现；MSI / 签名 / 自动更新。
+
+## 九、命令索引规范（本地验收依赖，2026-11-22 起）
+
+> 目的：让本地验证助手用**一条 grep 或一行日志**就能核验每条命令，减少往返与 token。
+
+1. **判定行**：每条命令最后必须输出唯一判定行 `TAG=PATCH_OK` / `TAG=PATCH_FAIL <code>`，并附退出码。
+2. **自证行**：每条命令输出 1 行 `KEY=VALUE`（例：`SESSION_ID_FIELD_COUNT=2`、`hits=2`），作为可机读证据。
+3. **字面量预期**：预期写成具体值（`hits=2`、`sessionId: 46aa601f`），不写「应显示真实值」这类需推断的描述。
+4. **一命令一目标**：禁止用 `;` / `&&` 串联多步；失败时必须能归因到单条命令。
+5. **同号约定**：`-Tag` = STEP 号 = 日志文件名（`step1b` ↔ `tag=C1b` ↔ `C1b_PATCH_OK`）。
+6. **归因标签**：环境类失败标 `ENV_BLOCK`（`spawn EPERM`、代理 7897 开启），与代码 FAIL 分开。
+7. **影响面声明**：注明改哪些文件、是否写 git、是否联网、是否 `NEED=FULL_ACCESS`、是否 `GUI=USER`。
+8. **GUI 项**：必须同时给数据层证据（Gateway 行数/字段数），否则回传只能写「数据满足，界面待确认」。
+
+**回传模板（网页 AI 按此索取）**：
+
+```text
+【本地检查 · STEP N】
+结论：通过 / 有条件通过 / 阻塞
+C<step>.1=<判定行>  C<step>.2=<判定行>
+build=PASS / FAIL
+<KEY>=<VALUE>
+```
+
