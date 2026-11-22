@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261122-1600
-HEAD_AT_SYNC: af97ed6
-UPDATED: 2026-11-22T16:00+08:00
-TASK: 面板关闭自动清除会话错误已完成并实测通过；下一步 Settings 更多项或聊天历史分页
+STATE_ID: 20261122-1607
+HEAD_AT_SYNC: 9771dd2
+UPDATED: 2026-11-22T16:07+08:00
+TASK: 测试会话清理完成（5→1，仅 main）；代码与 Git 均 clean，等待下一项（Settings 更多项 / 历史分页）
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -95,6 +95,11 @@ ROUND_P1-016（小 UX）:
   位于 `DesktopTerminal.tsx`；不触 runtime、不发 RPC。
 - 实测（用户）：停网关 → 点「新建会话」出现「会话操作失败」→ 关闭再打开面板 → 错误消失；当前会话/历史/数量不变。
 - 测后网关已恢复（`18789` LISTENING）；当前会话数 **5**（main + 4 条 dashboard，测试中新建产生）。
+
+ROUND_P1-017（数据清理，无代码改动）:
+- 用已验收的删除链路逐条清掉 4 条 `agent:main:dashboard:*`：5 → **1**（仅 `agent:main:main`）。
+- 残留检查：`sessions.list { archived: "all" }` → `total=1`、`archived=0`，没有「已归档未删除」的残留。
+- 源码 / Git / 产品配置零改动（`git status` clean，HEAD=9771dd2）。
 
 STEP0_BASELINE_20261122:
 - `HEAD = origin/main = ad6ea1d`，工作区 clean。
