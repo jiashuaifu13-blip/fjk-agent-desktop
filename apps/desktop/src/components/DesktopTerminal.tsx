@@ -14,6 +14,8 @@ import {
 } from '../runtime/PetRuntimeContext'
 
 import {
+  configureCustomProvider,
+  customListModels,
   listProviderModels,
   readOpenClawStatus,
   saveApiKey,
@@ -165,6 +167,14 @@ export function DesktopTerminal() {
 
   const [apiKeyProvider, setApiKeyProvider] =
     useState('deepseek')
+  const [customId, setCustomId] =
+    useState('newapi')
+  const [customBaseUrl, setCustomBaseUrl] =
+    useState('')
+  const [customModels, setCustomModels] =
+    useState('')
+  const [customStatus, setCustomStatus] =
+    useState<string | null>(null)
   const [apiKeyDraft, setApiKeyDraft] =
     useState('')
   const [apiKeyStatus, setApiKeyStatus] =
@@ -889,6 +899,107 @@ export function DesktopTerminal() {
               {apiKeyStatus && (
                 <div className="connection-state-copy">
                   {apiKeyStatus}
+                </div>
+              )}
+
+              <div className="connection-state-copy" style={{ marginTop: 12 }}>
+                自定义 OpenAI 兼容服务（如 New API / one-api 中转）：
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  alignItems: 'center',
+                }}
+              >
+                <input
+                  value={customId}
+                  placeholder="provider id"
+                  onChange={(event) => setCustomId(event.target.value)}
+                  style={{ width: 110 }}
+                />
+                <input
+                  value={customBaseUrl}
+                  placeholder="Base URL（如 https://xxx.hf.space）"
+                  onChange={(event) => setCustomBaseUrl(event.target.value)}
+                  style={{ width: 240 }}
+                />
+                <input
+                  value={customModels}
+                  placeholder="模型 id，逗号分隔"
+                  onChange={(event) => setCustomModels(event.target.value)}
+                  style={{ width: 220 }}
+                />
+                <button
+                  type="button"
+                  className="connection-state-trigger"
+                  disabled={!customId.trim() || !customBaseUrl.trim() || !apiKeyDraft.trim()}
+                  onClick={() => {
+                    setCustomStatus('正在校验…')
+
+                    const provider = customId.trim().toLowerCase()
+                    const baseUrl = customBaseUrl.trim()
+                    const key = apiKeyDraft.trim()
+
+                    void (async () => {
+                      const checked = await customListModels(baseUrl, key)
+
+                      if (!checked) {
+                        setCustomStatus('当前环境无法校验')
+                        return
+                      }
+
+                      if (!checked.ok) {
+                        setCustomStatus(
+                          `校验失败（HTTP ${checked.status ?? '0'}）：${(checked.error ?? '未知').slice(0, 160)}`,
+                        )
+                        return
+                      }
+
+                      const typed = customModels
+                        .split(',')
+                        .map((item) => item.trim())
+                        .filter(Boolean)
+
+                      const ids = typed.length > 0 ? typed : checked.models.slice(0, 20)
+
+                      setCustomStatus(`校验通过，可用模型 ${checked.models.length} 个；正在写入…`)
+
+                      const keyWritten = await setApiKeyViaGateway(provider, key)
+
+                      if (!keyWritten.ok) {
+                        setCustomStatus(
+                          `写入凭据失败：${(keyWritten.error ?? '未知').slice(0, 160)}`,
+                        )
+                        return
+                      }
+
+                      const configured = await configureCustomProvider(provider, baseUrl, ids)
+
+                      setCustomStatus(
+                        configured.ok
+                          ? `已写入自定义 provider「${provider}」，模型：${ids.slice(0, 6).join(', ')}`
+                          : `写入 provider 配置失败：${(configured.error ?? '未知').slice(0, 160)}`,
+                      )
+
+                      setApiKeyDraft('')
+                      refreshOpenclawStatus()
+                    })().catch((error) => {
+                      setCustomStatus(
+                        `异常：${error instanceof Error ? error.message : String(error)}`,
+                      )
+                    })
+                  }}
+                >
+                  保存自定义
+                </button>
+              </div>
+
+              {customStatus && (
+                <div className="connection-state-copy">
+                  {customStatus}
                 </div>
               )}
 

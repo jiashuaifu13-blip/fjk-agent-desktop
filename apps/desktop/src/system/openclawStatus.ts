@@ -170,6 +170,69 @@ export async function listProviderModels(
   }
 }
 
+export interface CustomModelsResult {
+  ok: boolean
+  status: number | null
+  models: string[]
+  error: string | null
+}
+
+export async function customListModels(
+  baseUrl: string,
+  key: string,
+): Promise<CustomModelsResult | null> {
+  if (!hasTauri()) {
+    return null
+  }
+
+  const raw = (await invoke('custom_list_models', {
+    baseUrl,
+    key,
+  })) as {
+    ok?: boolean
+    status?: number | null
+    models?: string[]
+    error?: string | null
+  }
+
+  return {
+    ok: raw.ok === true,
+    status: raw.status ?? null,
+    models: Array.isArray(raw.models) ? raw.models : [],
+    error: raw.error ?? null,
+  }
+}
+
+export interface ConfigureResult {
+  ok: boolean
+  error: string | null
+}
+
+export async function configureCustomProvider(
+  id: string,
+  baseUrl: string,
+  modelIds: string[],
+): Promise<ConfigureResult> {
+  if (!hasTauri()) {
+    return { ok: false, error: '非 Tauri 环境' }
+  }
+
+  const raw = (await invoke('openclaw_configure_custom_provider', {
+    id,
+    baseUrl,
+    modelIds,
+  })) as {
+    ok?: boolean
+    stdout?: string
+    stderr?: string
+  }
+
+  return {
+    ok: raw.ok === true,
+    error: raw.ok === true ? null : (raw.stderr || raw.stdout || '未知错误'),
+  }
+}
+
 export async function readOpenClawStatus(): Promise<OpenClawStatus | null> {
   if (!hasTauri()) {
     return null

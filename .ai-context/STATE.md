@@ -200,3 +200,12 @@ ROUND_ONBOARD（2026-11-22 晚）:
   “belongs to another sign-in”。已实现：捕获后调 `models.authLogout {provider, profileIds:[<provider>:manual]}` 再重试，
   界面提示「已移除旧的 X 凭据」。
 - 排查副作用：探测 RPC 时误建 `zzz-not-real:manual`，已用 authLogout 清理。
+
+ROUND_ONBOARD-2（2026-11-22 晚，自定义 provider）:
+- 新增 Rust `custom_provider.rs`：
+  - `custom_list_models(baseUrl, key)`：请求 `<base>/v1/models`（自动补 `/v1` 或 `/models`），Bearer 鉴权，25s 超时；
+  - `openclaw_configure_custom_provider(id, baseUrl, modelIds)`：`openclaw config set models.providers.<id> '{baseUrl, apiKey:"<id>:manual", models:[...]}' --strict-json --merge`。
+- 顺序：先 `models.authSetApiKey` 建 `<id>:manual` 凭据（key 不进命令行），再写 provider 配置引用该凭据。
+- UI：设置 → 模型与密钥 增加「自定义 OpenAI 兼容」一行（provider id / Base URL / 模型 id / 保存自定义）。
+- 用途：支持 New API / one-api 等中转（如 `https://qwarweww-newspace.hf.space`），官方 provider 的 `/models` 校验不适用时走这条。
+- 备注：新 API 的默认模型需另行设置（`agents.defaults.model = "<id>/<model>"`），后续补按钮。
