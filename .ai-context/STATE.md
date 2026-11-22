@@ -48,3 +48,8 @@ FACTS:
 - 订阅：sessions.messages.subscribe { key, includeApprovals: true }；退订 unsubscribe { key }
 - resolve：exec.approval.resolve { id, decision }
 - 审批约 38 秒内必须处理，否则 run 中止、审批清理（APPROVAL_NOT_FOUND）
+- **DeepSeek API key 已于 2026-11-22 轮换**：旧 key 已撤销，新 key 只存在 OpenClaw 凭据存储；
+  仓库/文档/本卡均不含密钥（已扫描 `sk-` 为 0 命中）。配置在 `~/.openclaw/openclaw.json` 与
+  OpenClaw auth store（`deepseek:default` / `deepseek:manual`）。
+- 网络注意：系统代理开 → OpenClaw SSRF 阻断；系统代理关 → 直连 api.deepseek.com 可能 ECONNRESET。
+  可用 TUN 模式；不要为此改 OpenClaw 安全配置。
