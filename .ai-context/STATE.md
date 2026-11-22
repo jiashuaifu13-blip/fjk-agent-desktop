@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261122-1607
-HEAD_AT_SYNC: 9771dd2
-UPDATED: 2026-11-22T16:07+08:00
-TASK: 测试会话清理完成（5→1，仅 main）；代码与 Git 均 clean，等待下一项（Settings 更多项 / 历史分页）
+STATE_ID: 20261122-1618
+HEAD_AT_SYNC: fb58c81
+UPDATED: 2026-11-22T16:18+08:00
+TASK: Settings 只读新增三行（工具 Profile / 工具开关 / 执行模式）已完成并实测通过；下一步聊天历史分页或 Phase 6 收尾
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -100,6 +100,14 @@ ROUND_P1-017（数据清理，无代码改动）:
 - 用已验收的删除链路逐条清掉 4 条 `agent:main:dashboard:*`：5 → **1**（仅 `agent:main:main`）。
 - 残留检查：`sessions.list { archived: "all" }` → `total=1`、`archived=0`，没有「已归档未删除」的残留。
 - 源码 / Git / 产品配置零改动（`git status` clean，HEAD=9771dd2）。
+
+ROUND_P1-018（Settings 更多项 · 只读）:
+- `SettingsOverview` 增 3 字段：`toolProfile: string | null`、`toolsEnabled: boolean | null`、`executionMode: string | null`；
+  `readSettingsOverview` 从行/`metadata` 读取，缺失即 `null`。
+- UI 新增 3 行：`工具 Profile`、`工具开关`（仅按布尔值显示 启用/禁用，**不**用 toolCount 推断）、`执行模式`；
+  `null` 统一显示「未提供」；原「工具数量」行保留。
+- 插曲：补丁首次只改了接口/读取/UI，漏了 `useState<SettingsOverview>` 初始值 → `TS2345`；本地补 3 个 `null` 后 `tsc` 0、`build` PASS。
+- 实测（用户，Settings 面板）：`deepseek-flash`；工具数量/工具 Profile/工具开关/执行模式 均为「未提供」；当前 Session `agent:main:main`。
 
 STEP0_BASELINE_20261122:
 - `HEAD = origin/main = ad6ea1d`，工作区 clean。
