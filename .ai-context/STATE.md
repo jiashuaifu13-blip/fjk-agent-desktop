@@ -1,9 +1,9 @@
 # STATE（动态，状态变化时更新）
 
-STATE_ID: 20261122-1710
-HEAD_AT_SYNC: c25685c
-UPDATED: 2026-11-22T17:10+08:00
-TASK: P1-019 聊天历史分页已完成并实测通过；Phase 2 全部收尾，下一步 Phase 3（桌宠 3B/3C/3E）或 Phase 6（MSI/签名/更新）
+STATE_ID: 20261122-1830
+HEAD_AT_SYNC: 83d0b1b
+UPDATED: 2026-11-22T18:30+08:00
+TASK: 桌宠阶段已落地（Blog 实现移植 + 18 动作 + 角色卡/情绪/关系记忆/气泡 + 映射 v2）；等 GUI 终验与下一步（动作包扩充/主动互动）
 
 DONE:
 - P1-001 Gateway 通道（Rust）
@@ -39,10 +39,31 @@ UNVERIFIED:
 - 内层 1s 重试等待未接 cancelled（组件卸载后最多多跑 4s，小隐患）
 
 NEXT:
-1. Phase 3 桌宠补完（3B/3C/3E：动作资源、动作扩展、与 AgentState 的更多映射）。
-2. Phase 6 产品化收尾（MSI、代码签名、自动更新；NSIS 已有）。
-3. （可选）快速失败的确定性复现；重连成功后的历史/审批恢复一致性检查。
-4. 待定：首屏/分页 `limit` 已从 100 调为 50（为可实测），是否恢复 100 由产品决定。
+1. 桌宠 GUI 终验：IDLE 轮播 / thinking-work / 审批挥手+气泡 / 完成庆祝 / 拖拽 / 断线。
+2. 动作包扩充（**已预留**：Blog `dsh` 有 101 动作、95.8MB；当前只入库 18 个 / 18.5MB），
+   补素材时按 `character.json` 的 tags 映射挑选，并裁剪 `actions.json`/`manifest.json`。
+3. 情绪联动进阶：`[[mood:xxx]]` 标记解析（需 agent 侧提示词）、工具失败/审批事件映射。
+4. 主动互动：久坐提醒、深夜提醒、整点问候（可开关）。
+5. Phase 6 产品化（MSI/签名/自动更新）。
+
+ROUND_PET（2026-11-22 下午，阶段成果）:
+- 代码来源：`D:\Personal Blog`（同源 Deepseek-pet），原样搬入 `PetStates/PetStateMachine/PetAnimator/PetRenderer/PetHitTest/PetInteractionController/PetActionCatalog/PetActionSelector` 共 8 个文件；
+  适配点：`PetInteractionController.destroy()` → `unmount()`。
+- 素材：从 Blog `dsh` 复制 18 个动作（webp + sidecar json），并裁剪 `actions.json`(18 条)/`manifest.json`(3 条)；
+  旧 5 个动作移到 `.tmp/pets-old-backup/`（未提交）。
+- 角色卡 `public/pets/dsh1/character.json` v2：persona.daily/work 双模式、5 条行为清单、4 条限流、
+  7 种情绪（tags/decayMs/daily·work 台词）、互动→情绪映射、memory 配置。
+- `PetMemoryStore`（localStorage `fjk-pet-memory-v1`）：亲密度/互动计数/最近 50 条事件/久别判定；
+  **写入为主，读取**：`isReunion()` 已接（>24h 重逢→happy）。
+- `PetEmotionEngine`：事件→情绪→tags，强度+衰减、连点检测（1.6s×3→angry）、双模式台词。
+- 接线 `usePetRuntime`：selector 注入状态机；root 监听 click/dblclick/pointer 拖拽；`sending` 变化→chatStart/chatEnd；
+  `agentState` 变化→daily/work 模式；审批出现→气泡「有事要你确认！」+ surprised。
+- 映射 v2（`packages/agent-state/AgentToPetState.js`）：返回 `{state,tags}`；WORKING→THINKING+work、WAITING_APPROVAL→INTERACT+greeting、
+  COMPLETED→INTERACT+celebrate；保留 `mapAgentStateToPetState()`；单测同步通过。
+- 仲裁：情绪只在桌宠 `IDLE/ERROR` 时接管动画，Agent 状态优先，避免抢动画。
+- 气泡：气泡挂在桌宠容器内（跟随拖拽）、二次元萌系样式、情绪配色、打字机、上下浮动、尾巴居中。
+- Settings 新增只读：桌宠亲密度 / 认识天数 / 互动次数；Log Viewer 新增 `pet` 来源事件。
+- 体积：`public/pets/dsh1` = 40+ 文件 ≈ 18.5MB；build bundle 220.81 kB。
 
 ROUND_P1-014:
 - STEP 0（基线）：HEAD=ad6ea1d clean；tsc 0；reducer 单测通过；网关 18789 有连接；代理 7897 开。
