@@ -306,11 +306,34 @@ export class ChatController {
   }
 
 
+  prependMessages(
+    messages
+  ) {
+
+    if (
+      !Array.isArray(messages) ||
+      messages.length === 0
+    ) {
+      return
+    }
+
+    this.messages =
+      messages
+        .map(
+          (message) => ({
+            ...message,
+          })
+        )
+        .concat(this.messages)
+
+    this.emitMessages()
+  }
+
+
   addMessage(
     role,
     content
   ) {
-
     this.messages.push({
       id:
         this.createId(),

@@ -46,6 +46,7 @@ export function DesktopTerminal() {
     createSession,
     deleteSession,
     switchSession,
+    loadOlderHistory,
   } =
     usePetRuntimeContext()
 
@@ -155,6 +156,13 @@ export function DesktopTerminal() {
       null,
     )
 
+  const olderScrollRef =
+    useRef<{ height: number; top: number } | null>(
+      null,
+    )
+
+  const loadingOlderRef = useRef(false)
+
   useEffect(() => {
     if (!chatController) {
       return
@@ -180,10 +188,22 @@ export function DesktopTerminal() {
     const el =
       listRef.current
 
-    if (el) {
-      el.scrollTop =
-        el.scrollHeight
+    if (!el) {
+      return
     }
+
+    const pending =
+      olderScrollRef.current
+
+    if (pending) {
+      olderScrollRef.current = null
+      el.scrollTop =
+        el.scrollHeight - pending.height + pending.top
+      return
+    }
+
+    el.scrollTop =
+      el.scrollHeight
   }, [messages, sending])
 
   const unauthorized =
@@ -964,6 +984,36 @@ export function DesktopTerminal() {
       <div
         ref={listRef}
         className="terminal-messages"
+        onScroll={() => {
+          const el = listRef.current
+
+          if (
+            !el ||
+            el.scrollTop > 40 ||
+            loadingOlderRef.current
+          ) {
+            return
+          }
+
+          loadingOlderRef.current = true
+          olderScrollRef.current = {
+            height: el.scrollHeight,
+            top: el.scrollTop,
+          }
+
+          void loadOlderHistory()
+            .then((count) => {
+              if (!count) {
+                olderScrollRef.current = null
+              }
+            })
+            .catch(() => {
+              olderScrollRef.current = null
+            })
+            .finally(() => {
+              loadingOlderRef.current = false
+            })
+        }}
       >
         {messages.length ===
           0 && (

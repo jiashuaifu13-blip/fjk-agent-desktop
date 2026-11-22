@@ -31,6 +31,7 @@ export interface ChatControllerLike {
   stop(): boolean
   clear(): void
   replaceMessages(messages: ChatMessage[]): void
+  prependMessages(messages: ChatMessage[]): void
   isGenerating: boolean
   onMessageChange: ((messages: ChatMessage[]) => void) | null
   onGeneratingChange: ((generating: boolean) => void) | null
@@ -122,6 +123,7 @@ export interface PetRuntime {
     expectedSessionId: string,
   ): Promise<void>
   switchSession(sessionKey: string): Promise<void>
+  loadOlderHistory(): Promise<number>
 }
 
 function isTauriRuntime(): boolean {
@@ -400,6 +402,17 @@ function readChatHistoryMessages(
   )
 }
 
+function readHistoryOlderCursor(history: unknown): string | null {
+  const cursor =
+    (history as { olderCursor?: unknown } | null)?.olderCursor
+
+  return typeof cursor === 'string' && cursor.length > 0 ? cursor : null
+}
+
+function readHistoryHasMore(history: unknown): boolean {
+  return (history as { hasMore?: unknown } | null)?.hasMore === true
+}
+
 export function usePetRuntime(
   canvasRef: RefObject<HTMLCanvasElement>,
   rootRef: RefObject<HTMLDivElement>,
@@ -412,6 +425,18 @@ export function usePetRuntime(
 
   const activeSessionKeyRef =
     useRef<string | null>(null)
+
+  const historySessionKeyRef =
+    useRef<string | null>(null)
+
+  const historyOlderCursorRef =
+    useRef<string | null>(null)
+
+  const historyHasMoreRef =
+    useRef(false)
+
+  const historyLoadingOlderRef =
+    useRef(false)
 
   const reconnectEnabledRef = useRef(false)
   const reconnectRunningRef = useRef(false)
@@ -1272,6 +1297,37 @@ export function usePetRuntime(
           controller,
         )
 
+        const bootGateway = gatewayClientRef.current
+        const bootSessionKey = activeSessionKeyRef.current
+
+        if (bootGateway && bootSessionKey) {
+          try {
+            const initialHistory =
+              await bootGateway.send(
+                'chat.history',
+                {
+                  sessionKey: bootSessionKey,
+                  limit: 50,
+                },
+              )
+
+            controller.replaceMessages(
+              readChatHistoryMessages(initialHistory),
+            )
+
+            historySessionKeyRef.current = bootSessionKey
+            historyOlderCursorRef.current =
+              readHistoryOlderCursor(initialHistory)
+            historyHasMoreRef.current =
+              readHistoryHasMore(initialHistory)
+          } catch (initialHistoryError) {
+            console.warn(
+              '[FJK] initial history load failed:',
+              initialHistoryError,
+            )
+          }
+        }
+
         setReady(true)
 
         appendRuntimeLog(
@@ -1577,10 +1633,79 @@ export function usePetRuntime(
     )
   }
 
+  const loadOlderHistory = async (): Promise<number> => {
+    const gateway = gatewayClientRef.current
+    const sessionKey = settingsOverview.sessionKey
+
+    if (!gateway || !sessionKey) {
+      return 0
+    }
+
+    if (historySessionKeyRef.current !== sessionKey) {
+      historySessionKeyRef.current = sessionKey
+      historyOlderCursorRef.current = null
+      historyHasMoreRef.current = false
+    }
+
+    if (
+      !historyHasMoreRef.current ||
+      !historyOlderCursorRef.current ||
+      historyLoadingOlderRef.current
+    ) {
+      return 0
+    }
+
+    historyLoadingOlderRef.current = true
+
+    try {
+      const cursor = historyOlderCursorRef.current
+
+      const history = await gateway.send(
+        'chat.history',
+        {
+          sessionKey,
+          cursor,
+          limit: 50,
+        },
+      )
+
+      // 请求返回期间如果已切走，不污染新会话
+      if (activeSessionKeyRef.current !== sessionKey) {
+        return 0
+      }
+
+      const olderMessages =
+        readChatHistoryMessages(history)
+
+      const page = history as {
+        olderCursor?: unknown
+        hasMore?: unknown
+      }
+
+      historySessionKeyRef.current = sessionKey
+      historyOlderCursorRef.current =
+        page.hasMore === true &&
+        typeof page.olderCursor === 'string' &&
+        page.olderCursor.length > 0
+          ? page.olderCursor
+          : null
+      historyHasMoreRef.current =
+        page.hasMore === true &&
+        historyOlderCursorRef.current !== null
+
+      chatController?.prependMessages(
+        olderMessages,
+      )
+
+      return olderMessages.length
+    } finally {
+      historyLoadingOlderRef.current = false
+    }
+  }
+
   const switchSession = async (
     sessionKey: string,
-  ) => {
-    const targetKey = sessionKey.trim()
+  ) => {    const targetKey = sessionKey.trim()
     const currentKey =
       settingsOverview.sessionKey
     const gateway =
@@ -1625,12 +1750,18 @@ export function usePetRuntime(
           'chat.history',
           {
             sessionKey: targetKey,
-            limit: 100,
+            limit: 50,
           },
         )
 
       historyMessages =
         readChatHistoryMessages(history)
+
+      historySessionKeyRef.current = targetKey
+      historyOlderCursorRef.current =
+        readHistoryOlderCursor(history)
+      historyHasMoreRef.current =
+        readHistoryHasMore(history)
     } catch (historyError) {
       chatController?.replaceMessages([])
 
@@ -1734,5 +1865,6 @@ export function usePetRuntime(
     createSession,
     deleteSession,
     switchSession,
+    loadOlderHistory,
   }
 }
