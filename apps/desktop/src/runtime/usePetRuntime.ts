@@ -91,6 +91,7 @@ export interface SessionListItem {
   key: string
   sessionId: string | null
   isMain: boolean
+  hasActiveRun: boolean
   updatedAt: number | null
 }
 
@@ -98,6 +99,7 @@ export interface SessionListItem {
   key: string
   sessionId: string | null
   isMain: boolean
+  hasActiveRun: boolean
   updatedAt: number | null
 }
 
@@ -136,6 +138,8 @@ export interface PetRuntime {
     expectedSessionId: string,
   ): Promise<void>
   switchSession(sessionKey: string): Promise<void>
+  refreshSessions(): Promise<void>
+  abortSession(sessionKey: string): Promise<void>
   loadOlderHistory(): Promise<number>
 }
 
@@ -160,6 +164,7 @@ type GatewaySessionSummary = {
   model?: string
   modelName?: string
   modelProvider?: string
+  hasActiveRun?: boolean
   toolCount?: number
   tools?: unknown[]
   toolProfile?: string
@@ -318,6 +323,7 @@ function readSessionList(
           ? session.sessionId
           : null,
       isMain: session?.isMain === true,
+      hasActiveRun: session?.hasActiveRun === true,
       updatedAt:
         typeof session?.updatedAt === 'number'
           ? session.updatedAt
@@ -2028,6 +2034,52 @@ export function usePetRuntime(
     )
   }
 
+  const refreshSessions = async (): Promise<void> => {
+
+    const gateway = gatewayClientRef.current
+
+    if (!gateway) {
+      return
+    }
+
+    const list = await gateway.send('sessions.list', {})
+
+    setSessionList(readSessionList(list))
+    setSettingsOverview(
+      readOverviewForActiveSession(
+        list,
+        activeSessionKeyRef.current,
+      ),
+    )
+  }
+
+
+  const abortSession = async (
+    sessionKey: string,
+  ): Promise<void> => {
+
+    const gateway = gatewayClientRef.current
+
+    if (!gateway) {
+      throw new Error('Gateway unavailable')
+    }
+
+    await gateway.send('sessions.abort', {
+      key: sessionKey,
+      clearQueued: true,
+    })
+
+    appendRuntimeLog(
+      'warn',
+      'gateway',
+      'Session aborted by user',
+      `session=${sessionKey}`,
+    )
+
+    await refreshSessions()
+  }
+
+
   const loadOlderHistory = async (): Promise<number> => {
     const gateway = gatewayClientRef.current
     const sessionKey = settingsOverview.sessionKey
@@ -2270,6 +2322,8 @@ export function usePetRuntime(
     createSession,
     deleteSession,
     switchSession,
+    refreshSessions,
+    abortSession,
     loadOlderHistory,
     petRelation,
     petSpeech,

@@ -83,6 +83,8 @@ export function DesktopTerminal() {
     switchSession,
     loadOlderHistory,
     petRelation,
+    refreshSessions,
+    abortSession,
   } =
     usePetRuntimeContext()
 
@@ -227,6 +229,20 @@ export function DesktopTerminal() {
 
     return () => clearInterval(timer)
   }, [waitingForFirstToken])
+
+  useEffect(() => {
+    if (!sessionPanelOpen) {
+      return
+    }
+
+    refreshSessions().catch(() => undefined)
+
+    const timer = setInterval(() => {
+      refreshSessions().catch(() => undefined)
+    }, 8000)
+
+    return () => clearInterval(timer)
+  }, [sessionPanelOpen])
 
   const refreshOpenclawStatus = () => {
     setOpenclawCheckNote(null)
@@ -1190,6 +1206,7 @@ export function DesktopTerminal() {
               >
                 <span className="connection-state-key">
                   {session.isMain ? 'MAIN' : 'SESSION'}
+                  {session.hasActiveRun ? ' · 运行中' : ''}
                 </span>
 
                 <span className="connection-state-value session-list-value">
@@ -1207,6 +1224,26 @@ export function DesktopTerminal() {
                         session.updatedAt,
                       ).toLocaleString()}
                 </span>
+
+                  {session.hasActiveRun && (
+                    <button
+                      type="button"
+                      className="connection-state-trigger"
+                      onClick={() => {
+                        setSessionSwitchError(null)
+
+                        void abortSession(session.key).catch((err) => {
+                          setSessionSwitchError(
+                            err instanceof Error
+                              ? err.message
+                              : String(err),
+                          )
+                        })
+                      }}
+                    >
+                      强制停止
+                    </button>
+                  )}
 
                   {session.key !==
                     settingsOverview.sessionKey && (
