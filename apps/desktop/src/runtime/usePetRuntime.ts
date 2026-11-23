@@ -1378,6 +1378,8 @@ export function usePetRuntime(
                   '自动重连成功，Session 与审批订阅已恢复。',
               })
 
+              void syncPendingApproval()
+
               if (reconnectTimerRef.current) {
                 clearTimeout(
                   reconnectTimerRef.current,
@@ -1619,6 +1621,9 @@ export function usePetRuntime(
                 'Session message subscription active',
                 `session=${sessionKey}; approvals=true`,
               )
+
+              activeSessionKeyRef.current = sessionKey
+              void syncPendingApproval()
             } catch (
               subscribeError
             ) {
@@ -2302,6 +2307,77 @@ export function usePetRuntime(
   }
 
 
+  const syncPendingApproval = async (): Promise<void> => {
+
+    const gateway = gatewayClientRef.current
+    const key = activeSessionKeyRef.current
+
+    if (!gateway || !key) {
+      return
+    }
+
+    try {
+      const list = (await gateway.send('exec.approval.list', {})) as Array<{
+        id?: string
+        sessionKey?: string
+        expiresAtMs?: number
+        request?: { sessionKey?: string; command?: string }
+      }>
+
+      const items = Array.isArray(list) ? list : []
+
+      const match = items.find((item) => {
+        const itemKey =
+          item?.sessionKey ?? item?.request?.sessionKey ?? null
+
+        return itemKey === key && typeof item?.id === 'string'
+      })
+
+      if (match?.id) {
+        const matchId = match.id
+
+        setApproval((current) => {
+          if (current?.id === matchId) {
+            return current
+          }
+
+          return {
+            id: matchId,
+            commandText: match.request?.command ?? '',
+            expiresAtMs: match.expiresAtMs,
+          }
+        })
+
+        appendRuntimeLog(
+          'info',
+          'gateway',
+          'Pending approval restored',
+          `id=${matchId}; session=${key}`,
+        )
+
+        return
+      }
+
+      setApproval((current) => {
+        if (!current) {
+          return current
+        }
+
+        const stillPending = items.some((item) => item?.id === current.id)
+
+        return stillPending ? current : null
+      })
+    } catch (error) {
+      appendRuntimeLog(
+        'warn',
+        'gateway',
+        'Pending approval sync failed',
+        String((error as Error)?.message ?? error).slice(0, 160),
+      )
+    }
+  }
+
+
   const refreshSessions = async (): Promise<void> => {
 
     const gateway = gatewayClientRef.current
@@ -2456,6 +2532,8 @@ export function usePetRuntime(
         includeApprovals: true,
       },
     )
+
+    void syncPendingApproval()
 
     let historyMessages: ChatMessage[]
 
