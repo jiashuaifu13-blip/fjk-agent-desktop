@@ -20,7 +20,7 @@
 - 范围限制：**不改现有审批行为**，只加记录；不做风险引擎、不做 Scope、不做桌宠卡。
 - 验收：跑 3 次审批（1 允许 / 1 拒绝 / 1 超时）→ 文件里 3 行、字段齐全、无明文密钥；`tsc` + `build` 通过。
 
-**进度（2026-11-23）**：代码已完成并提交，等待实机验证 3 次审批后标记 DONE。
+**进度（2026-11-23 21:00 实机验证通过 → DONE）**：`approvals.jsonl` 共 16 行、0 行非法 JSON；实测两条完整链路（mkdir/write L2、dir/read L0），均含 requested → settled → decided，decision=allow-once、reason=user，resource/command 字段完整、无明文密钥。
 - 新增 `src/system/auditLog.ts`（sanitize / describeCommand / appendAudit / readAuditInfo）
 - 新增 Rust `src-tauri/src/audit_log.rs`（`audit_append` 追加 JSONL、5MB 轮转、`audit_info` 查路径与大小）
 - 接线：审批 requested / decided（auto+timed+user）/ settled 三个阶段；不改任何审批行为
