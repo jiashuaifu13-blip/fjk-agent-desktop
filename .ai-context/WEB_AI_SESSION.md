@@ -41,7 +41,9 @@
 ## 三、当前状态（2026-11-23 18:35 更新）
 
 - 实时状态以 `STATE.md` 为准（`STATE_ID` / `HEAD_AT_SYNC` / 任务 / 未验证项）；
-- `HEAD = origin/main = 2c4d7e8`；工作区 **clean**；
+- 当前记录 `HEAD = origin/main = 175273e`；工作区 **clean**；
+  **HEAD 以仓库最新提交为准**（本文件可能落后一个提交）：可用
+  `https://api.github.com/repos/jiashuaifu13-blip/fjk-agent-desktop/commits/main` 查最新 sha 再核对。
 - 当前任务：**权限系统第一阶段 = P1-020 审批审计落盘**（只加记录、不改审批行为）；
   完整路线图见 `.ai-context/PERMISSION_SYSTEM_PLAN.md`，其余阶段暂不排期。
 
