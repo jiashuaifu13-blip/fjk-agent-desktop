@@ -44,8 +44,9 @@
 - 当前记录 `HEAD = origin/main = 175273e`；工作区 **clean**；
   **HEAD 以仓库最新提交为准**（本文件可能落后一个提交）：可用
   `https://api.github.com/repos/jiashuaifu13-blip/fjk-agent-desktop/commits/main` 查最新 sha 再核对。
-- 当前任务：**权限系统第一阶段 = P1-020 审批审计落盘**（只加记录、不改审批行为）；
-  完整路线图见 `.ai-context/PERMISSION_SYSTEM_PLAN.md`，其余阶段暂不排期。
+- 当前任务：**R1 审批卡恢复（P0）** —— `cea1a7b` 回归删除了审批卡 consumer，pending 审批当前无操作入口；
+  其次 R2（watchdog 在 approval-wait 暂停 / 停止语义）。API 切换漏洞已修复（`e16d63d` + `19eded9`）；
+  P1-020 审计代码已上线，实机验证待补。
 
 已完成且实测（2026-11-22 晚新增，明细见 `STATE.md` 的 `ROUND_PROVIDER-LATENCY`）：
 
