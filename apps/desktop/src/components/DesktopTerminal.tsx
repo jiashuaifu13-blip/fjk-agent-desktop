@@ -917,6 +917,16 @@ export function DesktopTerminal() {
 
             <div className="connection-state-row">
               <span className="connection-state-key">
+                项目范围
+              </span>
+              <span className="connection-state-value">
+                在 policy.json 里设置 {'"'}projectRoots{'"'}（空数组 = 不限制）；
+                启用后跨项目只读需审批、跨项目写删直接拒绝。
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
                 自动放行规则
               </span>
               <span className="connection-state-value">

@@ -31,7 +31,7 @@ fn validate(raw: &str) -> Result<(), String> {
         .as_object()
         .ok_or_else(|| "policy must be a JSON object".to_string())?;
 
-    for key in ["allow", "deny", "protected"] {
+    for key in ["allow", "deny", "protected", "projectRoots"] {
         if let Some(value) = object.get(key) {
             let array = value
                 .as_array()

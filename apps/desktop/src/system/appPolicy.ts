@@ -23,6 +23,7 @@ const POLICY_TEMPLATE = JSON.stringify(
     allow: DEFAULT_COMMAND_POLICY.allow,
     deny: DEFAULT_COMMAND_POLICY.deny,
     protected: DEFAULT_COMMAND_POLICY.protected,
+    projectRoots: [] as string[],
   },
   null,
   2,
@@ -93,6 +94,9 @@ export async function loadAppPolicy(): Promise<AppPolicyState> {
       protected: isValidRegexList(parsed.protected)
         ? parsed.protected
         : DEFAULT_COMMAND_POLICY.protected,
+      projectRoots: Array.isArray(parsed.projectRoots)
+        ? parsed.projectRoots.filter((root): root is string => typeof root === 'string')
+        : DEFAULT_COMMAND_POLICY.projectRoots,
     }
 
     return { rules, source: 'file', path, error: null }

@@ -22,6 +22,7 @@ export interface CommandPolicyRules {
   allow: string[]
   deny: string[]
   protected: string[]
+  projectRoots: string[]
 }
 
 export const DEFAULT_COMMAND_POLICY: CommandPolicyRules = {
@@ -60,6 +61,12 @@ export const DEFAULT_COMMAND_POLICY: CommandPolicyRules = {
     '^\\s*cmd(\\.exe)?\\s+/c\\s+(del|rd|rmdir|format|diskpart|shutdown)\\b',
     '^\\s*(powershell|pwsh)(\\.exe)?\\s+.*(-command|-c)[\\s"\']*(remove-item|rm)\\b',
   ],
+  /**
+   * 项目范围（Project Scope）。空数组 = 不启用。
+   * 启用后：只读跨项目 → 人工审批；写/删跨项目 → 直接拒绝。
+   */
+  projectRoots: [],
+
   protected: [
     '[\\\\/]\\.git[\\\\/]',
     '[\\\\/]\\.ai-context[\\\\/]',
@@ -90,22 +97,69 @@ export class CommandPolicy {
     this.allowRules = compile(rules.allow)
     this.denyRules = compile(rules.deny)
     this.protectedRules = compile(rules.protected)
+    this.projectRoots = (rules.projectRoots ?? []).map((root) =>
+      root.trim().replace(/[\\/]+$/, '').toLowerCase(),
+    )
   }
 
   rules: CommandPolicyRules
   private allowRules: RegExp[]
   private denyRules: RegExp[]
   private protectedRules: RegExp[]
+  private projectRoots: string[]
 
   summary() {
     return {
       allow: this.allowRules.length,
       deny: this.denyRules.length,
       protectedPaths: this.protectedRules.length,
+      projectRoots: this.projectRoots.length,
     }
   }
 
   /* 分级主函数 */
+  private checkProjectScope(
+    text: string,
+    hasChaining: boolean,
+  ): PolicyResult | null {
+
+    if (this.projectRoots.length === 0) {
+      return null
+    }
+
+    const pathMatch = text.match(/[A-Za-z]:\\[^\s"']+/)
+
+    if (!pathMatch) {
+      return null
+    }
+
+    const target = pathMatch[0]
+      .replace(/[\\/]+$/, '')
+      .toLowerCase()
+
+    const inside = this.projectRoots.some(
+      (root) =>
+        target === root ||
+        target.startsWith(root + '\\') ||
+        target.startsWith(root + '/'),
+    )
+
+    if (inside) {
+      return null
+    }
+
+    const writeLike =
+      hasChaining ||
+      /\b(mkdir|md|copy|move|ren|rename|set-content|out-file|new-item|del|erase|rmdir|rd|remove-item|unlink)\b/i.test(
+        text,
+      )
+
+    return writeLike
+      ? { decision: 'deny', reason: '目标路径超出项目范围（写/删）' }
+      : { decision: 'ask', reason: '目标路径超出项目范围（只读也需人工确认）' }
+  }
+
+
   classify(
     commandText: string,
     mode: 'tiered' | 'strict' = 'tiered',
@@ -129,6 +183,16 @@ export class CommandPolicy {
      * 含管道、重定向、串联的，一律交人工。
      */
     const hasChaining = /[|&;><`\n]/.test(text)
+
+    /*
+     * 项目范围优先于“只读自动放行”：
+     * 跨项目的只读也要人工确认，跨项目的写入直接拒绝。
+     */
+    const scope = this.checkProjectScope(text, hasChaining)
+
+    if (scope) {
+      return scope
+    }
 
     if (
       !hasChaining &&
@@ -165,6 +229,9 @@ export function loadCommandPolicy(): CommandPolicyRules {
       protected: Array.isArray(parsed.protected)
         ? parsed.protected
         : DEFAULT_COMMAND_POLICY.protected,
+      projectRoots: Array.isArray(parsed.projectRoots)
+        ? parsed.projectRoots.filter((root) => typeof root === 'string')
+        : DEFAULT_COMMAND_POLICY.projectRoots,
     }
   } catch {
     return DEFAULT_COMMAND_POLICY
