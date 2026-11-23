@@ -177,6 +177,56 @@ export async function addPolicyGrant(
 }
 
 
+/**
+ * 打开 policy.json：
+ * - 文件不存在时先写入完整模板，再打开
+ * - 用系统默认程序（记事本/VSCode 等）打开
+ * 返回空字符串表示成功，否则是错误说明
+ */
+export async function openPolicyFile(): Promise<string> {
+
+  if (!hasTauri()) {
+    return '非 Tauri 环境'
+  }
+
+  const template = await writePolicyTemplate()
+
+  if (!template.ok) {
+    return `写入模板失败：${template.error ?? '未知'}`
+  }
+
+  try {
+    const result = (await invoke('policy_open')) as string
+
+    return result ?? ''
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error)
+  }
+}
+
+/** 在资源管理器中定位 policy.json（不存在时先创建模板） */
+export async function revealPolicyFile(): Promise<string> {
+
+  if (!hasTauri()) {
+    return '非 Tauri 环境'
+  }
+
+  const template = await writePolicyTemplate()
+
+  if (!template.ok) {
+    return `写入模板失败：${template.error ?? '未知'}`
+  }
+
+  try {
+    const result = (await invoke('policy_reveal')) as string
+
+    return result ?? ''
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error)
+  }
+}
+
+
 export async function writePolicyTemplate(): Promise<{
   ok: boolean
   path: string

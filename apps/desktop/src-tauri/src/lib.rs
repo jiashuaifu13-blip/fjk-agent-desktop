@@ -36,6 +36,8 @@ pub fn run() {
             audit_log::audit_info,
             policy_file::policy_load,
             policy_file::policy_save,
+            policy_file::policy_open,
+            policy_file::policy_reveal,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

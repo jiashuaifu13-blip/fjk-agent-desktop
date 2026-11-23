@@ -89,6 +89,8 @@ export function DesktopTerminal() {
     policyInfo,
     appPolicy,
     reloadAppPolicy,
+    openPolicy,
+    revealPolicy,
     createPolicyTemplate,
     execPolicy,
     approvalMode,
@@ -912,6 +914,39 @@ export function DesktopTerminal() {
                 >
                   重新加载
                 </button>
+                <button
+                  type="button"
+                  className="connection-state-trigger"
+                  onClick={() => {
+                    void openPolicy().then((message) => {
+                      setModelWriteStatus(
+                        message ? `打开策略文件失败：${message}` : '已打开 policy.json，改完点「重新加载」',
+                      )
+                    })
+                  }}
+                >
+                  打开文件
+                </button>
+                <button
+                  type="button"
+                  className="connection-state-trigger"
+                  onClick={() => {
+                    void revealPolicy().then((message) => {
+                      if (message) {
+                        setModelWriteStatus(`打开目录失败：${message}`)
+                      }
+                    })
+                  }}
+                >
+                  打开目录
+                </button>
+                <div className="connection-state-copy">
+                  策略文件说明：这是你的「本机审批规则」，可以自定义
+                  allow（自动放行）/ deny（直接拒绝）/ protected（禁止触碰的目录）/
+                  projectRoots（允许操作的项目目录，跨目录写入会被拒绝）/ grants（临时授权）。
+                  改完保存 → 点「重新加载」立即生效。注意 JSON 里 Windows 路径要写成双反斜杠，
+                  例如 D:\\pet-desp 要写成 "D:\\\\pet-desp"。
+                </div>
               </span>
             </div>
 

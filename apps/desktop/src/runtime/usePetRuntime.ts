@@ -19,6 +19,8 @@ import { createCommandPolicy } from '../policy/CommandPolicy'
 import {
   addPolicyGrant,
   loadAppPolicy,
+  openPolicyFile,
+  revealPolicyFile,
   writePolicyTemplate,
 } from '../system/appPolicy'
 import { appendAudit, describeCommand } from '../system/auditLog'
@@ -129,6 +131,8 @@ export interface PetRuntime {
     error: string | null
   }
   reloadAppPolicy(): Promise<void>
+  openPolicy(): Promise<string>
+  revealPolicy(): Promise<string>
   createPolicyTemplate(): Promise<string>
   execPolicy: {
     mode: string
@@ -2467,6 +2471,27 @@ export function usePetRuntime(
     )
   }
 
+  const openPolicy = async (): Promise<string> => {
+
+    const error = await openPolicyFile()
+
+    if (!error) {
+      appendRuntimeLog(
+        'info',
+        'gateway',
+        'Policy file opened',
+        'policy.json',
+      )
+    }
+
+    return error
+  }
+
+  const revealPolicy = async (): Promise<string> => {
+
+    return await revealPolicyFile()
+  }
+
   const createPolicyTemplate = async (): Promise<string> => {
 
     const result = await writePolicyTemplate()
@@ -2810,6 +2835,8 @@ export function usePetRuntime(
     execPolicy,
     appPolicy,
     reloadAppPolicy,
+    openPolicy,
+    revealPolicy,
     createPolicyTemplate,
     approvalMode,
     autoApproveUntil,

@@ -121,6 +121,48 @@ pub fn policy_save(app: AppHandle, content: String) -> String {
     }
 }
 
+/// 用系统默认程序打开 policy.json（不存在时返回错误提示，由前端先写模板）
+#[tauri::command]
+pub fn policy_open(app: AppHandle) -> String {
+    let path = match policy_path(&app) {
+        Ok(path) => path,
+        Err(error) => return format!("ERROR: {error}"),
+    };
+
+    if !path.exists() {
+        return "ERROR: file not found".to_string();
+    }
+
+    let status = std::process::Command::new("cmd")
+        .args(["/C", "start", "", &path.display().to_string()])
+        .status();
+
+    match status {
+        Ok(result) if result.success() => String::new(),
+        Ok(_) => "ERROR: start failed".to_string(),
+        Err(error) => format!("ERROR: {error}"),
+    }
+}
+
+/// 在资源管理器中定位 policy.json
+#[tauri::command]
+pub fn policy_reveal(app: AppHandle) -> String {
+    let path = match policy_path(&app) {
+        Ok(path) => path,
+        Err(error) => return format!("ERROR: {error}"),
+    };
+
+    let status = std::process::Command::new("explorer")
+        .arg(format!("/select,{}", path.display()))
+        .status();
+
+    match status {
+        Ok(_) => String::new(),
+        Err(error) => format!("ERROR: {error}"),
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::validate;
