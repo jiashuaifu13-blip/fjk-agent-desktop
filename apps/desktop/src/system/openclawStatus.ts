@@ -208,6 +208,39 @@ export interface ConfigureResult {
   error: string | null
 }
 
+export interface MergeModelsResult {
+  ok: boolean
+  added: string[]
+  kept: string[]
+  error: string | null
+}
+
+export async function mergeProviderModels(
+  provider: string,
+  ids: string[],
+): Promise<MergeModelsResult> {
+  if (!hasTauri()) {
+    return { ok: false, added: [], kept: [], error: '非 Tauri 环境' }
+  }
+
+  const raw = (await invoke('openclaw_merge_provider_models', {
+    provider,
+    ids,
+  })) as {
+    ok?: boolean
+    added?: string[]
+    kept?: string[]
+    error?: string
+  }
+
+  return {
+    ok: raw.ok === true,
+    added: Array.isArray(raw.added) ? raw.added : [],
+    kept: Array.isArray(raw.kept) ? raw.kept : [],
+    error: raw.ok === true ? null : (raw.error || '未知错误'),
+  }
+}
+
 export interface SetDefaultModelResult {
   ok: boolean
   error: string | null

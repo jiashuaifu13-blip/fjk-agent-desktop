@@ -18,6 +18,7 @@ import {
   configureCustomProvider,
   customListModels,
   listProviderModels,
+  mergeProviderModels,
   readOpenClawStatus,
   saveApiKey,
   setApiKeyViaGateway,
@@ -1108,7 +1109,33 @@ export function DesktopTerminal() {
                         } else if (checked.supported === false) {
                           setApiKeyStatus('已写入 OpenClaw 凭据（该 provider 未内置校验，请在对话里验证）')
                         } else if (checked.ok && checked.models.length > 0) {
-                          setApiKeyStatus(`已写入；可用模型：${checked.models.slice(0, 6).join(', ')}`)
+                          setApiKeyStatus(
+                            `已写入；可用模型：${checked.models.slice(0, 6).join(', ')}，正在登记到目录…`,
+                          )
+
+                          try {
+                            const merged = await mergeProviderModels(
+                              provider,
+                              checked.models,
+                            )
+
+                            if (merged.ok) {
+                              setApiKeyStatus(
+                                `已写入并登记 ${merged.kept.length} 个模型（新增 ${merged.added.length}）` +
+                                  (merged.added.length > 0
+                                    ? `：${merged.added.slice(0, 5).join(', ')}`
+                                    : ''),
+                              )
+                            } else {
+                              setApiKeyStatus(
+                                `已写入，但登记模型失败：${(merged.error ?? '未知').slice(0, 160)}`,
+                              )
+                            }
+                          } catch (mergeError) {
+                            setApiKeyStatus(
+                              `已写入，但登记模型异常：${mergeError instanceof Error ? mergeError.message : String(mergeError)}`,
+                            )
+                          }
                         } else if (checked.ok) {
                           setApiKeyStatus('已写入；但 provider 没有返回模型列表')
                         } else {

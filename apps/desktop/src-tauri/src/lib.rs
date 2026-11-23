@@ -6,6 +6,7 @@ mod gateway;
 mod onboarding;
 mod openclaw_auth;
 mod pet_memory;
+mod provider_catalog;
 mod provider_models;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -24,6 +25,7 @@ pub fn run() {
             openclaw_auth::openclaw_auth_list,
             openclaw_auth::openclaw_save_api_key,
             provider_models::provider_list_models,
+            provider_catalog::openclaw_merge_provider_models,
             custom_provider::custom_list_models,
             custom_provider::openclaw_configure_custom_provider,
             default_model::openclaw_set_default_model,
