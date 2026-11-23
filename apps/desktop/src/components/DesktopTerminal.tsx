@@ -22,7 +22,6 @@ import {
   readOpenClawStatus,
   saveApiKey,
   setApiKeyViaGateway,
-  setDefaultModel,
 } from '../system/openclawStatus'
 
 import type {
@@ -36,6 +35,8 @@ import type {
 import {
   toGatewayIssue,
 } from '../gateway/GatewayError'
+
+import { queueDefaultModelSync } from '../system/defaultModelSync'
 
 import type {
   GatewayIssue,
@@ -696,41 +697,33 @@ export function DesktopTerminal() {
                 </div>
                 <input value={modelDraft} placeholder="输入不同的已允许模型" onChange={(e) => setModelDraft(e.target.value)} />
                 <button type="button" disabled={!settingsOverview.model || !modelDraft.trim()} onClick={async () => {
+                  const draft = modelDraft.trim()
+
                   setModelWriteStatus(`原值：${settingsOverview.model ?? '未提供'}`)
-                  try { await updateSessionModel(modelDraft); setModelDraft(''); setModelWriteStatus('模型修改成功；已记录原值，可回滚') }
-                  catch (err) { setModelWriteStatus(`修改失败：${err instanceof Error ? err.message : String(err)}`) }
-                }}>保存模型</button>
-                <button
-                  type="button"
-                  disabled={!settingsOverview.model}
-                  onClick={async () => {
-                    const model = settingsOverview.model
 
-                    if (!model) {
-                      return
-                    }
+                  try {
+                    await updateSessionModel(draft)
+                    setModelDraft('')
 
-                    const qualified = model.includes('/')
-                      ? model
-                      : `${settingsOverview.provider ?? ''}/${model}`
+                    const qualified = draft.includes('/')
+                      ? draft
+                      : `${settingsOverview.provider ?? ''}/${draft}`
 
-                    try {
-                      const result = await setDefaultModel(qualified)
+                    setModelWriteStatus(
+                      `当前会话已切换为 ${draft}；全局默认后台同步中…`,
+                    )
 
+                    queueDefaultModelSync(qualified, (result) => {
                       setModelWriteStatus(
                         result.ok
-                          ? `已设为全局默认：${qualified}（新会话都会用它）`
-                          : `设置默认模型失败：${(result.error ?? '').slice(0, 160)}`,
+                          ? `当前会话=${draft}，全局默认=${qualified}（新会话也用它）`
+                          : `会话已切换，但全局默认同步失败：${(result.error ?? '').slice(0, 160)}`,
                       )
-                    } catch (error) {
-                      setModelWriteStatus(
-                        `设置默认模型异常：${error instanceof Error ? error.message : String(error)}`,
-                      )
-                    }
-                  }}
-                >
-                  设为全局默认
-                </button>
+                    })
+                  } catch (err) {
+                    setModelWriteStatus(`修改失败：${err instanceof Error ? err.message : String(err)}`)
+                  }
+                }}>保存模型</button>
                 <button type="button" disabled={!previousModel} onClick={async () => {
                   try { await rollbackSessionModel(); setModelWriteStatus('已回滚到原模型') }
                   catch (err) { setModelWriteStatus(`回滚失败：${err instanceof Error ? err.message : String(err)}`) }
