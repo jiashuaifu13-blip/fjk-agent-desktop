@@ -1,5 +1,6 @@
 mod custom_provider;
 mod default_model;
+mod exec_policy;
 mod gateway;
 mod onboarding;
 mod openclaw_auth;
@@ -25,6 +26,8 @@ pub fn run() {
             custom_provider::custom_list_models,
             custom_provider::openclaw_configure_custom_provider,
             default_model::openclaw_set_default_model,
+            exec_policy::openclaw_exec_policy_status,
+            exec_policy::openclaw_set_exec_mode,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

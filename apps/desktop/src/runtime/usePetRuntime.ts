@@ -16,6 +16,7 @@ import { PetHitTest } from '../pet/PetHitTest.js'
 import { PetInteractionController } from '../pet/PetInteractionController.js'
 import { ChatController } from '../chat/ChatController.js'
 import { createCommandPolicy } from '../policy/CommandPolicy'
+import { getExecPolicy, setExecMode } from '../system/openclawStatus'
 import { MockChatClient } from '../chat/MockChatClient.js'
 import { AgentStates } from '@fjk/agent-state/AgentStates.js'
 import { mapAgentStateToPetAction } from '@fjk/agent-state/AgentToPetState.js'
@@ -106,6 +107,15 @@ export interface SessionListItem {
 
 export interface PetRuntime {
   approval: ExecApproval | null
+  execPolicy: {
+    mode: string
+    host: string
+    security: string
+    ask: string
+    allowCount: number
+  }
+  readExecPolicy(): Promise<void>
+  applyExecMode(mode: string): Promise<void>
   policyInfo: {
     allow: number
     deny: number
@@ -561,6 +571,14 @@ export function usePetRuntime(
 
   const [approval, setApproval] =
     useState<ExecApproval | null>(null)
+
+  const [execPolicy, setExecPolicy] = useState({
+    mode: '',
+    host: '',
+    security: '',
+    ask: '',
+    allowCount: 0,
+  })
 
   const [policyInfo, setPolicyInfo] = useState({
     allow: 0,
@@ -1065,6 +1083,13 @@ export function usePetRuntime(
                 last: `${verdict.decision}：${commandText.slice(0, 80)}`,
               }))
 
+              setApproval({
+                id: a.id,
+                commandText,
+                expiresAtMs:
+                  a.presentation.expiresAtMs,
+              })
+
               if (verdict.decision !== 'ask') {
                 appendRuntimeLog(
                   verdict.decision === 'deny' ? 'warn' : 'info',
@@ -1081,18 +1106,24 @@ export function usePetRuntime(
                         ? 'deny'
                         : 'allow-once',
                   })
-                  .catch(() => undefined)
+                  .then(() => {
+                    setApproval((current) =>
+                      current?.id === a.id ? null : current,
+                    )
+                  })
+                  .catch((error) => {
+                    appendRuntimeLog(
+                      'warn',
+                      'gateway',
+                      'Policy auto-resolve failed',
+                      String(
+                        (error as Error)?.message ?? error,
+                      ).slice(0, 160),
+                    )
+                  })
 
                 return
               }
-
-              setApproval({
-                id: a.id,
-                commandText,
-                expiresAtMs:
-                  a.presentation
-                    .expiresAtMs,
-              })
             } else if (
               event.phase ===
                 'terminal' &&
@@ -2083,6 +2114,58 @@ export function usePetRuntime(
     )
   }
 
+  const readExecPolicy = async (): Promise<void> => {
+
+    const status = await getExecPolicy()
+
+    const gateway = gatewayClientRef.current
+
+    let security = ''
+    let ask = ''
+    let allowCount = 0
+
+    if (gateway) {
+      try {
+        const approvals = (await gateway.send('exec.approvals.get', {})) as {
+          file?: {
+            defaults?: { security?: string; ask?: string }
+            agents?: Record<string, { allowlist?: unknown[] }>
+          }
+        }
+
+        security = approvals?.file?.defaults?.security ?? ''
+        ask = approvals?.file?.defaults?.ask ?? ''
+        allowCount =
+          approvals?.file?.agents?.main?.allowlist?.length ?? 0
+      } catch {
+        // 读取失败不阻塞其它信息
+      }
+    }
+
+    setExecPolicy({
+      mode: status?.mode ?? '',
+      host: status?.host ?? '',
+      security,
+      ask,
+      allowCount,
+    })
+  }
+
+  const applyExecMode = async (mode: string): Promise<void> => {
+
+    const result = await setExecMode(mode)
+
+    appendRuntimeLog(
+      result.ok ? 'info' : 'warn',
+      'gateway',
+      'Exec mode changed',
+      result.ok ? `mode=${mode}` : `fail: ${result.error ?? ''}`,
+    )
+
+    await readExecPolicy()
+  }
+
+
   const refreshSessions = async (): Promise<void> => {
 
     const gateway = gatewayClientRef.current
@@ -2350,6 +2433,9 @@ export function usePetRuntime(
   return {
     approval,
     policyInfo,
+    execPolicy,
+    readExecPolicy,
+    applyExecMode,
     resolveApproval,
 
     chatController,

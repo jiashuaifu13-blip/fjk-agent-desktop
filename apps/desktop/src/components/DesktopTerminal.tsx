@@ -85,6 +85,9 @@ export function DesktopTerminal() {
     loadOlderHistory,
     petRelation,
     policyInfo,
+    execPolicy,
+    readExecPolicy,
+    applyExecMode,
     refreshSessions,
     abortSession,
   } =
@@ -245,6 +248,10 @@ export function DesktopTerminal() {
 
     return () => clearInterval(timer)
   }, [sessionPanelOpen])
+
+  useEffect(() => {
+    readExecPolicy().catch(() => undefined)
+  }, [])
 
   const refreshOpenclawStatus = () => {
     setOpenclawCheckNote(null)
@@ -771,6 +778,45 @@ export function DesktopTerminal() {
               <span className="connection-state-value">
                 {settingsOverview.executionMode ??
                   '未提供'}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                执行权限
+              </span>
+              <span className="connection-state-value">
+                {execPolicy.mode || '未配置'}
+                {execPolicy.security
+                  ? ` · ${execPolicy.security}/${execPolicy.ask}`
+                  : ''}
+                {` · 白名单 ${execPolicy.allowCount} 条`}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                权限策略
+              </span>
+              <span className="connection-state-value">
+                <button
+                  type="button"
+                  className="connection-state-trigger"
+                  onClick={() => {
+                    void applyExecMode('auto')
+                  }}
+                >
+                  切到 auto（推荐编码）
+                </button>
+                <button
+                  type="button"
+                  className="connection-state-trigger"
+                  onClick={() => {
+                    void applyExecMode('ask')
+                  }}
+                >
+                  切到 ask（逐条审批）
+                </button>
               </span>
             </div>
 

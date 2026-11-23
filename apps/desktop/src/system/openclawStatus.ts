@@ -213,6 +213,63 @@ export interface SetDefaultModelResult {
   error: string | null
 }
 
+export interface ExecPolicyStatus {
+  ok: boolean
+  mode: string
+  host: string
+  configPath: string
+  error: string
+}
+
+export async function getExecPolicy(): Promise<ExecPolicyStatus | null> {
+  if (!hasTauri()) {
+    return null
+  }
+
+  const raw = (await invoke('openclaw_exec_policy_status')) as {
+    ok?: boolean
+    mode?: string
+    host?: string
+    configPath?: string
+    error?: string
+  }
+
+  return {
+    ok: raw.ok === true,
+    mode: raw.mode ?? '',
+    host: raw.host ?? '',
+    configPath: raw.configPath ?? '',
+    error: raw.error ?? '',
+  }
+}
+
+export interface ExecModeResult {
+  ok: boolean
+  mode: string
+  error: string | null
+}
+
+export async function setExecMode(
+  mode: string,
+): Promise<ExecModeResult> {
+  if (!hasTauri()) {
+    return { ok: false, mode, error: '非 Tauri 环境' }
+  }
+
+  const raw = (await invoke('openclaw_set_exec_mode', { mode })) as {
+    ok?: boolean
+    mode?: string
+    stdout?: string
+    stderr?: string
+  }
+
+  return {
+    ok: raw.ok === true,
+    mode: raw.mode ?? mode,
+    error: raw.ok === true ? null : (raw.stderr || raw.stdout || '未知错误'),
+  }
+}
+
 export async function setDefaultModel(
   model: string,
 ): Promise<SetDefaultModelResult> {
