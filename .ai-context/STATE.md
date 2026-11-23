@@ -303,3 +303,11 @@ ROUND_APPROVAL-CHAIN（2026-11-23 晚，R1/R2 修复实测）:
 - R2-B 停止语义：adapter 在 abort 时发送 `chat.abort {sessionKey, runId}`（`6166ee6`）；
   网关日志出现 `chat.abort requested`，对应审批 `settled=cancelled`。
 - 剩余：P1-034 重连/启动补拉 pending 审批（已实测订阅不重放，需主动查 `exec.approval.list`）。
+
+ROUND_APPROVAL-P034（2026-11-23 晚，审批链路闭环）:
+- 实现 `syncPendingApproval()`（`9394c95`）：主动查 `exec.approval.list`，恢复当前会话的 pending 审批；
+  调用点：启动订阅成功 / 自动重连成功 / 切换会话成功。按 approvalId 去重，找不到则清理失效卡片。
+- 实测：21:37:53 发起审批（fjk-reconnect-test，id=4d0fb42b）→ 关闭应用 → 重开 → 卡片自动出现，用户确认「有」。
+- 至此 R1/R2 全链路闭环：审批卡（9e08cbb）、审批等待暂停看门狗（01a61f9，实测 385 秒）、
+  停止即中止远端（6166ee6）、重连补拉（9394c95）。
+- 遗留可选：清理调试期创建的 scratch 会话；下一阶段（风险引擎/Scope/Grant）按用户决定暂不排期。

@@ -32,7 +32,7 @@
 | P1-031 | 恢复审批卡（`cea1a7b` 回归删除的 consumer） | DONE `e16d63d`→`9e08cbb` | 两次点击产生 decided/allow-once，卡片可见 |
 | P1-032 | 等待审批时暂停首字看门狗 | DONE `01a61f9` | 实测 requested→decided 间隔 **385 秒**（6m25s）未 cancelled |
 | P1-033 | 停止时同时中止远端 run（`chat.abort`） | DONE a6166ee6` | 网关日志 `chat.abort requested` → `settled=cancelled` |
-| P1-034 | 重连/启动补拉 pending 审批（`exec.approval.list`） | TODO | 已实测：订阅不重放 pending（replayed=0） |
+| P1-034 | 重连/启动补拉 pending 审批（`exec.approval.list`） | DONE `9394c95` | 实测：关闭应用时留 pending（4d0fb42b，21:37:53）→ 重开后卡片自动恢复 |
 
 ## TODO
 
