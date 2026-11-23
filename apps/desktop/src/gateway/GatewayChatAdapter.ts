@@ -7,6 +7,7 @@ interface ChatRequest {
   onStart?: () => void | Promise<void>
   onToken?: (token: string) => void
   onStage?: (stage: string) => void
+  onApprovalWait?: (active: boolean) => void
   onDispatch?: (sessionKey: string) => void
 }
 
@@ -50,6 +51,7 @@ export class GatewayChatAdapter {
       onToken,
       onStage,
       onDispatch,
+      onApprovalWait,
     } = request
 
 
@@ -89,6 +91,12 @@ export class GatewayChatAdapter {
 
 
     const onAbort = () => {
+      if (runId) {
+        void this.client
+          .send('chat.abort', { sessionKey, runId })
+          .catch(() => undefined)
+      }
+
       cleanup()
       rejectRun(
         new DOMException(
@@ -141,12 +149,14 @@ export class GatewayChatAdapter {
 
         if (execution?.wait?.kind === 'approval') {
           onStage?.('等待你审批…')
+          onApprovalWait?.(true)
         } else if (execution?.wait?.kind === 'user_input') {
           onStage?.('等待你输入…')
         } else if (execution?.wait?.kind === 'children') {
           onStage?.('等待子任务…')
         } else if (execution?.state === 'running') {
           onStage?.('生成中…')
+          onApprovalWait?.(false)
         }
       }
 
@@ -171,9 +181,11 @@ export class GatewayChatAdapter {
       if (stream === 'lifecycle') {
 
         if (data?.phase === 'end') {
+          onApprovalWait?.(false)
           cleanup()
           resolveRun()
         } else if (data?.phase === 'error') {
+          onApprovalWait?.(false)
           cleanup()
           rejectRun(
             new Error('agent run failed')

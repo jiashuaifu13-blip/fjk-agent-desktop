@@ -72,6 +72,9 @@ export class ChatController {
     this.onDispatch =
       null
 
+    this.watchdogPaused =
+      false
+
     this.flushTimer =
       null
 
@@ -133,6 +136,7 @@ export class ChatController {
     }
 
     this.timedOut = false
+    this.watchdogPaused = false
     this.clearWatchdog()
 
     this.watchdogTimer = setTimeout(() => {
@@ -214,6 +218,14 @@ export class ChatController {
         onStage: (stage) => {
           if (typeof this.onStage === 'function') {
             this.onStage(stage)
+          }
+        },
+
+        onApprovalWait: (active) => {
+          if (active) {
+            this.pauseWatchdog()
+          } else {
+            this.resumeWatchdog()
           }
         },
 
@@ -371,6 +383,8 @@ export class ChatController {
       return false
     }
 
+    this.watchdogPaused = false
+
 
     this.abortController.abort()
 
@@ -493,6 +507,44 @@ export class ChatController {
     if (typeof this.onMood === 'function') {
       this.onMood(marker.mood, marker.intensity)
     }
+  }
+
+
+  pauseWatchdog() {
+
+    this.watchdogPaused = true
+    this.clearWatchdog()
+  }
+
+
+  resumeWatchdog() {
+
+    if (!this.watchdogPaused) {
+      return
+    }
+
+    this.watchdogPaused = false
+
+    if (
+      !this.timings ||
+      this.timings.firstTokenAt !== null
+    ) {
+      return
+    }
+
+    this.clearWatchdog()
+
+    this.watchdogTimer = setTimeout(() => {
+      this.watchdogTimer = null
+
+      if (
+        this.timings &&
+        this.timings.firstTokenAt === null
+      ) {
+        this.timedOut = true
+        this.stop()
+      }
+    }, 90000)
   }
 
 
