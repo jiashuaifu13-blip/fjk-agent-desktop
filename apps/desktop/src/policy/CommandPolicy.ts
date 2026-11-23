@@ -54,6 +54,14 @@ export const DEFAULT_COMMAND_POLICY: CommandPolicyRules = {
     '\\bRemove-Item\\b.*(Windows|Program Files)',
     '^\\s*cmd(\\.exe)?\\s+/c\\s+(del|rd|rmdir|format|diskpart|shutdown)\\b',
     '^\\s*(powershell|pwsh)(\\.exe)?\\s+.*(-command|-c)[\\s"\']*(remove-item|rm)\\b',
+    // 受保护路径（写测试与日常操作都不能碰）
+    '[\\\\/]\\.git[\\\\/]',
+    '[\\\\/]\\.ai-context[\\\\/]',
+    '[\\\\/]\\.openclaw[\\\\/]',
+    '[\\\\/]node_modules[\\\\/]',
+    '[\\\\/]src-tauri[\\\\/]target[\\\\/]',
+    '[A-Za-z]:\\\\Windows\\\\',
+    '[A-Za-z]:\\\\Program Files',
   ],
 }
 
