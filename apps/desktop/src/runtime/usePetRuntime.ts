@@ -2467,7 +2467,7 @@ export function usePetRuntime(
       policyState.source === 'invalid' ? 'warn' : 'info',
       'gateway',
       'Policy reloaded',
-      `source=${policyState.source}; allow=${policyState.rules.allow.length}; deny=${policyState.rules.deny.length}; protected=${policyState.rules.protected.length}`,
+      `source=${policyState.source}; allow=${policyState.rules.allow.length}; deny=${policyState.rules.deny.length}; protected=${policyState.rules.protected.length}; roots=${policyState.rules.projectRoots.length}; grants=${policyState.rules.grants.length}`,
     )
   }
 
