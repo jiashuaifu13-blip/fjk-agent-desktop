@@ -34,6 +34,20 @@
 | P1-033 | 停止时同时中止远端 run（`chat.abort`） | DONE a6166ee6` | 网关日志 `chat.abort requested` → `settled=cancelled` |
 | P1-034 | 重连/启动补拉 pending 审批（`exec.approval.list`） | DONE `9394c95` | 实测：关闭应用时留 pending（4d0fb42b，21:37:53）→ 重开后卡片自动恢复 |
 
+## 权限系统 P1（2026-11-23 完成，已实测）
+
+| 编号 | 任务 | 状态 | 证据 |
+|---|---|---|---|
+| P1-040 | Global 策略文件 policy.json | DONE `515599d` | 生成模板/重新加载/无效回退 |
+| P1-041 | Project Scope（projectRoots） | DONE `3a64f27` | roots=1 生效；跨项目写删拒绝 |
+| P1-042 | FJK 自建 Grant（grants[] + 记住 30 分钟） | DONE `c119ad0` | 授权命中 allow；不可覆盖 deny |
+| P1-043 | 桌宠审批卡 | DONE `2f7a530` | 与终端共享 approvalId |
+| P1-044 | 一键打开策略文件 + 小白说明 | DONE `353350c` | 日志 Policy file opened |
+| P1-045 | 重载日志补 roots/grants | DONE `af09b0d` | 22:37:52 roots=1 |
+| P1-046 | 自动判定不闪卡 | DONE `440ee4c` | 仅人工审批时弹卡 |
+
+> 用户决定：验证到此暂停，P2（安全中心）/ P3（Git·Blog 细分）暂不排期。
+
 ## TODO
 
 - Settings 更多项（工具开关/执行模式展示）。

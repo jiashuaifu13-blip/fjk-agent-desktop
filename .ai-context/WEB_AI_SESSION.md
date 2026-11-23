@@ -44,7 +44,8 @@
 - 当前记录 `HEAD = origin/main = 175273e`；工作区 **clean**；
   **HEAD 以仓库最新提交为准**（本文件可能落后一个提交）：可用
   `https://api.github.com/repos/jiashuaifu13-blip/fjk-agent-desktop/commits/main` 查最新 sha 再核对。
-- 当前任务：**R1 审批卡恢复（P0）** —— `cea1a7b` 回归删除了审批卡 consumer，pending 审批当前无操作入口；
+- 当前状态：**权限系统 P1 已完成为止，暂停**（Global 策略文件 / Project Scope / Grant / 桌宠审批卡 / 一键打开策略文件均已实测）；
+  P2（安全中心）、P3（Git·Blog 细分）暂不排期，等用户决定。
   其次 R2（watchdog 在 approval-wait 暂停 / 停止语义）。API 切换漏洞已修复（`e16d63d` + `19eded9`）；
   P1-020 审计代码已上线，实机验证待补。
 

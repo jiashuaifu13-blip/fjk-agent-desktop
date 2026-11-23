@@ -311,3 +311,19 @@ ROUND_APPROVAL-P034（2026-11-23 晚，审批链路闭环）:
 - 至此 R1/R2 全链路闭环：审批卡（9e08cbb）、审批等待暂停看门狗（01a61f9，实测 385 秒）、
   停止即中止远端（6166ee6）、重连补拉（9394c95）。
 - 遗留可选：清理调试期创建的 scratch 会话；下一阶段（风险引擎/Scope/Grant）按用户决定暂不排期。
+
+ROUND_PERMISSION-P1（2026-11-23 深夜，权限系统 P1 阶段完成）:
+- 本轮落地（全部已推送）:
+  - `515599d` Global 策略文件 `%APPDATA%\com.fjk.agent\policy.json`（allow/deny/protected 可覆盖，无效回退默认）
+  - `3a64f27` Project Scope（`projectRoots`）：跨项目只读→审批、跨项目写删→拒绝
+  - `c119ad0` FJK 自建 Grant（`grants[]`，30 分钟有效期，不可覆盖 deny）+ 审批卡「允许并记住 30 分钟」
+  - `2f7a530` 桌宠审批卡（与终端共享 approvalId）
+  - `353350c` 设置里一键「打开文件 / 打开目录」+ 小白说明文案
+  - `af09b0d` 重载日志增加 roots/grants 字段
+  - `440ee4c` 自动放行/拒绝时不再闪现审批卡（只有真正需要人工时才弹）
+- 实测证据：22:37:52 `Policy reloaded source=file; allow=17; deny=14; protected=7; roots=1; grants=0`
+  → projectRoots 已生效（roots=1）。
+- 原生 grants 只读契约已确认：`exec.approval.grants.list` / `revoke{grantId}` 可用；
+  但 OpenClaw 只允许「自动化任务」创建 grant，交互式无法创建 → 采用 FJK 自建 + 原生只读（C 方案）。
+- 用户决定：**验证到此暂停，暂不继续下一阶段**（P2 安全中心 / P3 Git·Blog 细分待定）。
+- 遗留：`%TEMP%` 下测试目录 fjk-* 可手工清理；调试期创建的 scratch 会话可清理。
