@@ -279,3 +279,17 @@ ROUND_PERMISSION-SYNC（2026-11-23 傍晚，补读完整草案并同步文档）
   - `MODULE_MAP.md` 新增 10 行：CommandPolicy（已有）、exec_policy.rs（已有）、审批链路（已有）、
     审计/Risk Engine/Scope Manager/Grant Manager/桌宠审批卡/安全中心（Planned 或 deferred）。
 - 范围不变：当前仅 P1-020 审批审计落盘（只加记录，不改审批行为）。
+
+ROUND_PROVIDER-CATALOG（2026-11-23 晚，API 切换漏洞修复）:
+- 漏洞：内置 provider 保存密钥后 /models 成功但从不回写 models.providers.<id>.models[]，
+  导致"密钥写成功但模型无法设默认/切换"（日志：no matching models.providers["deepseek"].models[] entry）。
+- 修复 A（`e16d63d`）：新增 Rust `provider_catalog.rs` → `openclaw_merge_provider_models`，
+  读-合并-写（保留人工条目，只追加缺失 id，上限 50，id 白名单）；保存密钥成功后自动登记，状态栏显示新增/保留数量。
+- 修复 B（`19eded9`）：新增 `system/defaultModelSync.ts`（debounce 3s + single-flight），
+  「保存模型」= 立即 sessions.patch（当前会话）+ 后台异步写 agents.defaults.model.primary；
+  移除「设为全局默认」按钮。实测：点击后 1–2 秒返回，约 3 秒后全局默认更新。
+- 探测结论：`config.schema` / `config.get` / `config.schema.lookup` 可用；但 config.patch 的 4.6–7.5s
+  是网关服务端耗时（非 CLI 启动），因此没有迁 RPC，改用后台异步。
+- 用户实测通过：连续两次保存不同模型，全局默认随之切换；deepseek models 三项目录条目保持合并未被覆盖
+  （20:47 实测 default=deepseek/deepseek-v4-flash，models=deepseek-flash,deepseek-v4-pro,deepseek-v4-flash）。
+- 下一步（未开始）：R1 审批卡恢复（P0）→ R2 watchdog 在 approval-wait 暂停 → R2 停止语义 → R3 已完成。
