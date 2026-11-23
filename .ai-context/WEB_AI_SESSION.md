@@ -6,13 +6,27 @@
 ## 一、给新窗口的第一条消息（复制即用）
 
 ```text
-你是本项目的远程开发指挥。请先读：
-https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-context/WEB_AI_SESSION.md
+你是本项目的远程开发指挥。请**先读这 3 个文件再说话**（按顺序）：
+1) https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-context/WEB_AI_SESSION.md
+2) https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-context/TASKS.md
+3) https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-context/STATE.md（只看最后一个 ROUND）
 
-读完后用 5 行以内复述：当前 HEAD、已完成到哪个任务、当前任务、下一步第一步。
-然后只给下一步 STEP 的一条命令，不要一次给多步。
+【第一步：只复述，不动手】用不超过 8 行回答这 5 项，读不到就说读不到，不要猜：
+① 当前 HEAD 是哪个 commit（以恢复卡第三节为准）
+② 当前唯一在做的任务是什么（编号 + 一句话）
+③ 第一阶段的范围（做什么）与不做什么（列出被排除的）
+④ TASKS.md 里 DOING 段现在写的是什么
+⑤ 下一步 STEP 1 的建议（只写一句话，不写命令）
 
-工作方式：你给命令，我在 Windows PowerShell 5.1 执行；本地另有一位验证助手检查构建与文件，
+【硬约束】
+- 当前项目已把权限系统收敛为「只做第一阶段 = P1-020 审批审计落盘」，**不要引入 P1-021 及之后的任务**。
+- 第一阶段只新增审计记录（JSONL + 脱敏 + 5MB 轮转），**不改现有审批行为**，不碰 OpenClaw 原生策略。
+- 需要扩大范围时，必须先说明理由并等我确认，**不得直接开写**。
+- 一次只给 **一个 STEP 的一条命令**；不要给多步、不要给整段脚本。
+
+【确认后才继续】我回复「开始」或「继续」后，你再给 STEP 1 的具体命令。
+
+工作方式：你给命令，我在 Windows PowerShell 5.1 执行；本地另有一位验证助手检查构建、文件与实测，
 我只会把【本地检查 · STEP N】摘要贴给你，不要要求完整终端输出。
 ```
 
