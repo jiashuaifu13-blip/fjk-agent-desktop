@@ -267,3 +267,15 @@ ROUND_PERMISSION-SCOPE（2026-11-23 傍晚，收敛为第一阶段）:
 - TASKS.md：删除整张路线图表，DOING 仅保留 **P1-020 审批审计落盘**（JSONL + 脱敏 + 轮转，不改审批行为）。
 - PERMISSION_SYSTEM_PLAN.md 顶部标注为「参考路线图」，P1/P2/P3 等验收后再逐条确认。
 - PROJECT_STATUS / WEB_AI_SESSION 同步收窄；恢复卡 HEAD 更新为 2c4d7e8。
+
+ROUND_PERMISSION-SYNC（2026-11-23 傍晚，补读完整草案并同步文档）:
+- 完整草案已到位：`D:\桌面\桌宠文件备份\FJK_Agent_\这次直接在聊天里把整份草案重新整理，不生成文件。.docx`
+  （932 段 / 约 1.28 万字，22 章：组合式模型、L0–L4 细则、四层 Scope 与交集原则、临时授权、四种审批模式、
+  审批 11 字段与 7 状态、终端/桌宠联动、Git/Blog 风险表、Windows 命令多层控制、审计 15 字段与安全中心、
+  Kill Switch 边界、Agent 状态机、OpenClaw 集成要求、§18 落地协议、§19 七个验收场景、§21 十四条铁律）。
+- 已同步：
+  - `PERMISSION_SYSTEM_PLAN.md` 来源补完整草案；OPEN #1 关闭（风险细则/Scope 交集/Grant/审批字段/KS 边界/验收场景均已具备）。
+  - `DECISIONS.md` 新增 **ADR-007：权限系统分期**（当前只排期第一阶段 P1-020，其余暂缓；边界 MUST 记录）。
+  - `MODULE_MAP.md` 新增 10 行：CommandPolicy（已有）、exec_policy.rs（已有）、审批链路（已有）、
+    审计/Risk Engine/Scope Manager/Grant Manager/桌宠审批卡/安全中心（Planned 或 deferred）。
+- 范围不变：当前仅 P1-020 审批审计落盘（只加记录，不改审批行为）。

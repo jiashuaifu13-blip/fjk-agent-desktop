@@ -3,7 +3,8 @@
 > 文档 ID：FJK-PLAN-PERMISSION-PHASE1
 > 版本：v0.1（待确认）
 > 日期：2026-11-23
-> 来源：`FJK_Agent_\PERMISSION_READING_GUIDE.md`、`PERMISSION_DESIGN_OVERVIEW.md`（完整草案未提供，标记 OPEN）
+> 来源：`FJK_Agent_\PERMISSION_READING_GUIDE.md`、`PERMISSION_DESIGN_OVERVIEW.md`、
+> **完整草案**（`这次直接在聊天里把整份草案重新整理，不生成文件。.docx`，2026-11-23 校核，932 段/约 1.28 万字）
 > 依据：仓库现状核查（代码 / 文档 / OpenClaw 2026.11.6 实测）
 > 状态：**参考路线图**。当前排期只含第一阶段（P1-020 审批审计落盘）；P1/P2/P3 等第一阶段验收后再逐条确认。
 
@@ -131,7 +132,8 @@
 
 ## 5. 待确认（OPEN）
 
-1. 完整设计草案（`FJK_Agent_权限与审批系统设计草案.md`）未提供 → 风险判定细则、Scope 校验细节、Grant 生命周期、Kill Switch 边界均待补。
+1. ~~完整设计草案未提供~~ → **已补齐（2026-11-23 docx 全文已读）**，风险分级细则（§四）、Scope 交集原则（§五）、
+   临时授权机制（§六）、审批字段与状态（§八）、Kill Switch 边界（§十四）、第一阶段 7 个验收场景（§十九）均已具备。
 2. `exec.approvals.set` 的 schema 与 hash 语义（是否可安全写 allowlist）。
 3. `exec.approval.grants.*` 与 FJK 自建 Grant 的关系（双写 / 只读 / 替代）。
 4. `tools.invoke` 的可用工具范围（能否做只读探测，避免消耗模型 token）。

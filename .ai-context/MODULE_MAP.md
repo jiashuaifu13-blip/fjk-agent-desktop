@@ -26,4 +26,14 @@
 | PetRuntime | /apps/desktop/src/runtime/ | React wrapper (usePetRuntime + context), gateway status | Added |
 | DesktopTerminal | /apps/desktop/src/components/DesktopTerminal.tsx | Terminal UI, real gateway chat, status banner | Updated |
 | PetView | /apps/desktop/src/components/PetView.tsx | Pet canvas host | Added |
+| CommandPolicy | /apps/desktop/src/policy/CommandPolicy.ts | exec 审批分级（allow/deny/ask、受保护路径、strict/tiered） | Added / verified |
+| Exec policy (Rust) | /apps/desktop/src-tauri/src/exec_policy.rs | 读取/切换 `tools.exec.mode`（deny/allowlist/ask/auto/full） | Added |
+| Approval pipeline | /apps/desktop/src/runtime/usePetRuntime.ts | `session.approval` → 分级 → 卡片 / 自动 resolve / 提醒 | Added / verified |
+| Permission Plan (docs) | /.ai-context/PERMISSION_SYSTEM_PLAN.md | 权限系统差距分析与分期计划（仅第一阶段排期） | Added |
+| Audit log | TBD（P1-020） | 审批/执行审计 JSONL（`approvals.jsonl`，脱敏 + 轮转） | Planned / phase 1 |
+| Risk Engine | TBD（P1-024） | L0–L4 风险判定与原因 | Planned / deferred |
+| Scope Manager | TBD（P1-025/27） | Global / Agent / Project / Task 范围校验 | Planned / deferred |
+| Grant Manager | TBD（P1-026） | 临时授权范围、有效期、撤销 | Planned / deferred |
+| Pet approval card | TBD（P1-028） | 桌宠紧凑审批卡（与终端共享 approvalId） | Planned / deferred |
+| Security Center | TBD（P1-029） | 审计查询 / 筛选 / 导出 | Planned / deferred |
 | Extensions | TBD | Blog / Files / Git / GitHub | Not started |
