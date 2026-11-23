@@ -31,21 +31,22 @@ export interface CommandDescriptor {
 
 const DELETE_HINTS = /\b(del|erase|rmdir|rd|rm|remove-item|unlink)\b/i
 const WRITE_HINTS =
-  /\b(mkdir|md|copy|move|ren|rename|set-content|out-file|new-item|echo\s*>|>\s*)\b/i
+  /\b(mkdir|md|copy|move|ren|rename|set-content|out-file|new-item)\b/i
+const REDIRECT_HINTS = /(^|\s)>{1,2}\s*/i
 const READ_HINTS =
   /\b(dir|ls|type|cat|get-content|get-childitem|test-path|git\s+(status|diff|log|show))\b/i
 
 export function describeCommand(commandText: string): CommandDescriptor {
   const text = sanitizeAuditText(commandText)
 
-  const pathMatch = text.match(/[A-Za-z]:\\\\[^\s"']+|(?:\/[\w.-]+){2,}/)
+  const pathMatch = text.match(/[A-Za-z]:\\[^\s"']+|(?:\/[\w.-]+){2,}/)
   const resource = pathMatch ? pathMatch[0].slice(0, 240) : 'unknown'
 
   let operation: CommandDescriptor['operation'] = 'other'
 
   if (DELETE_HINTS.test(text)) {
     operation = 'delete'
-  } else if (WRITE_HINTS.test(text)) {
+  } else if (REDIRECT_HINTS.test(text) || WRITE_HINTS.test(text)) {
     operation = 'write'
   } else if (READ_HINTS.test(text)) {
     operation = 'read'
