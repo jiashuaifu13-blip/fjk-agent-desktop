@@ -16,6 +16,7 @@ import { PetHitTest } from '../pet/PetHitTest.js'
 import { PetInteractionController } from '../pet/PetInteractionController.js'
 import { ChatController } from '../chat/ChatController.js'
 import { createCommandPolicy } from '../policy/CommandPolicy'
+import { loadAppPolicy, writePolicyTemplate } from '../system/appPolicy'
 import { appendAudit, describeCommand } from '../system/auditLog'
 import { getExecPolicy, setExecMode } from '../system/openclawStatus'
 import { MockChatClient } from '../chat/MockChatClient.js'
@@ -117,6 +118,13 @@ export interface PetRuntime {
   autoApproveUntil: number
   enableAutoApprove(minutes: number): void
   setApprovalMode(mode: 'tiered' | 'strict'): void
+  appPolicy: {
+    source: 'file' | 'defaults' | 'invalid'
+    path: string
+    error: string | null
+  }
+  reloadAppPolicy(): Promise<void>
+  createPolicyTemplate(): Promise<string>
   execPolicy: {
     mode: string
     host: string
@@ -551,6 +559,8 @@ export function usePetRuntime(
     useRef<ReturnType<typeof setTimeout> | null>(null)
   const wasSendingRef = useRef(false)
 
+  const commandPolicyRef = useRef<ReturnType<typeof createCommandPolicy> | null>(null)
+
   const settingsOverviewRef = useRef<SettingsOverview>({
     model: null,
     provider: null,
@@ -611,6 +621,12 @@ export function usePetRuntime(
     } catch {
       return 0
     }
+  })
+
+  const [appPolicy, setAppPolicy] = useState({
+    source: 'defaults' as 'file' | 'defaults' | 'invalid',
+    path: '',
+    error: null as string | null,
   })
 
   const [policyInfo, setPolicyInfo] = useState({
@@ -1058,11 +1074,33 @@ export function usePetRuntime(
           'Tauri runtime detected',
         )
 
-        const commandPolicy = createCommandPolicy()
+        const policyState = await loadAppPolicy()
+
+        setAppPolicy({
+          source: policyState.source,
+          path: policyState.path,
+          error: policyState.error,
+        })
+
+        if (policyState.source === 'invalid') {
+          appendRuntimeLog(
+            'warn',
+            'gateway',
+            'Policy file invalid',
+            (policyState.error ?? 'unknown').slice(0, 160),
+          )
+        }
+
+        commandPolicyRef.current = createCommandPolicy(
+          policyState.rules,
+        )
+
+        const policySummary = commandPolicyRef.current?.summary()
 
         setPolicyInfo((current) => ({
           ...current,
-          ...commandPolicy.summary(),
+          allow: policySummary?.allow ?? 0,
+          deny: policySummary?.deny ?? 0,
         }))
 
         const gateway =
@@ -1125,8 +1163,11 @@ export function usePetRuntime(
                 expiresAtMs: a.presentation.expiresAtMs ?? null,
               })
 
+              const activePolicy =
+                commandPolicyRef.current ?? createCommandPolicy()
+
               const classified =
-                commandPolicy.classify(commandText, approvalMode)
+                activePolicy.classify(commandText, approvalMode)
 
               const autoActive = Date.now() < autoApproveUntil
 
@@ -2391,6 +2432,40 @@ export function usePetRuntime(
   }
 
 
+  const reloadAppPolicy = async (): Promise<void> => {
+
+    const policyState = await loadAppPolicy()
+
+    setAppPolicy({
+      source: policyState.source,
+      path: policyState.path,
+      error: policyState.error,
+    })
+
+    commandPolicyRef.current = createCommandPolicy(policyState.rules)
+
+    appendRuntimeLog(
+      policyState.source === 'invalid' ? 'warn' : 'info',
+      'gateway',
+      'Policy reloaded',
+      `source=${policyState.source}; allow=${policyState.rules.allow.length}; deny=${policyState.rules.deny.length}; protected=${policyState.rules.protected.length}`,
+    )
+  }
+
+  const createPolicyTemplate = async (): Promise<string> => {
+
+    const result = await writePolicyTemplate()
+
+    appendRuntimeLog(
+      result.ok ? 'info' : 'warn',
+      'gateway',
+      'Policy template written',
+      result.ok ? `path=${result.path}` : String(result.error ?? '').slice(0, 160),
+    )
+
+    return result.ok ? result.path : `失败：${result.error ?? '未知'}`
+  }
+
   const refreshSessions = async (): Promise<void> => {
 
     const gateway = gatewayClientRef.current
@@ -2680,6 +2755,9 @@ export function usePetRuntime(
     approval,
     policyInfo,
     execPolicy,
+    appPolicy,
+    reloadAppPolicy,
+    createPolicyTemplate,
     approvalMode,
     autoApproveUntil,
     enableAutoApprove,

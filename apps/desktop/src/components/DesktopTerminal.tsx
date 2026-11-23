@@ -87,6 +87,9 @@ export function DesktopTerminal() {
     loadOlderHistory,
     petRelation,
     policyInfo,
+    appPolicy,
+    reloadAppPolicy,
+    createPolicyTemplate,
     execPolicy,
     approvalMode,
     setApprovalMode,
@@ -875,6 +878,39 @@ export function DesktopTerminal() {
                   }}
                 >
                   立即关闭
+                </button>
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                策略来源
+              </span>
+              <span className="connection-state-value">
+                {appPolicy.source === 'file'
+                  ? '自定义（policy.json）'
+                  : appPolicy.source === 'invalid'
+                    ? '⚠ 文件无效，已回退默认'
+                    : '内置默认'}
+                <button
+                  type="button"
+                  className="connection-state-trigger"
+                  onClick={() => {
+                    void createPolicyTemplate().then((message) => {
+                      setModelWriteStatus(message)
+                    })
+                  }}
+                >
+                  生成模板
+                </button>
+                <button
+                  type="button"
+                  className="connection-state-trigger"
+                  onClick={() => {
+                    void reloadAppPolicy()
+                  }}
+                >
+                  重新加载
                 </button>
               </span>
             </div>

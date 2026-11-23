@@ -171,6 +171,8 @@ export function loadCommandPolicy(): CommandPolicyRules {
   }
 }
 
-export function createCommandPolicy(): CommandPolicy {
-  return new CommandPolicy(loadCommandPolicy())
+export function createCommandPolicy(
+  rules?: CommandPolicyRules,
+): CommandPolicy {
+  return new CommandPolicy(rules ?? loadCommandPolicy())
 }

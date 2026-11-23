@@ -6,6 +6,7 @@ mod gateway;
 mod onboarding;
 mod openclaw_auth;
 mod pet_memory;
+mod policy_file;
 mod provider_catalog;
 mod provider_models;
 
@@ -33,6 +34,8 @@ pub fn run() {
             exec_policy::openclaw_set_exec_mode,
             audit_log::audit_append,
             audit_log::audit_info,
+            policy_file::policy_load,
+            policy_file::policy_save,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
