@@ -1,10 +1,14 @@
 /*
  * CommandPolicy —— exec 审批的风险分级
  *
- * 分三档：
- * - allow：只读、无副作用，自动放行（不含管道/重定向/串联）
- * - deny ：明确破坏性，自动拒绝
- * - ask  ：其余一律弹审批（当前默认行为）
+ * 判定顺序：
+ *   1. strict 模式 → 全部人工确认
+ *   2. 危险命令 → 自动拒绝
+ *   3. 只读命令（单条、无管道/重定向）→ 自动放行
+ *   4. 命中受保护路径（且不是只读命令）→ 自动拒绝
+ *   5. 其余 → 人工审批
+ *
+ * 受保护路径只拦“有副作用”的命令；`dir .git` 这类只读查看仍然放行。
  */
 
 export type PolicyDecision = 'allow' | 'deny' | 'ask'
@@ -17,6 +21,7 @@ export interface PolicyResult {
 export interface CommandPolicyRules {
   allow: string[]
   deny: string[]
+  protected: string[]
 }
 
 export const DEFAULT_COMMAND_POLICY: CommandPolicyRules = {
@@ -54,7 +59,8 @@ export const DEFAULT_COMMAND_POLICY: CommandPolicyRules = {
     '\\bRemove-Item\\b.*(Windows|Program Files)',
     '^\\s*cmd(\\.exe)?\\s+/c\\s+(del|rd|rmdir|format|diskpart|shutdown)\\b',
     '^\\s*(powershell|pwsh)(\\.exe)?\\s+.*(-command|-c)[\\s"\']*(remove-item|rm)\\b',
-    // 受保护路径（写测试与日常操作都不能碰）
+  ],
+  protected: [
     '[\\\\/]\\.git[\\\\/]',
     '[\\\\/]\\.ai-context[\\\\/]',
     '[\\\\/]\\.openclaw[\\\\/]',
@@ -83,16 +89,19 @@ export class CommandPolicy {
     this.rules = rules
     this.allowRules = compile(rules.allow)
     this.denyRules = compile(rules.deny)
+    this.protectedRules = compile(rules.protected)
   }
 
   rules: CommandPolicyRules
   private allowRules: RegExp[]
   private denyRules: RegExp[]
+  private protectedRules: RegExp[]
 
   summary() {
     return {
       allow: this.allowRules.length,
       deny: this.denyRules.length,
+      protectedPaths: this.protectedRules.length,
     }
   }
 
@@ -128,6 +137,10 @@ export class CommandPolicy {
       return { decision: 'allow', reason: '命中只读命令规则' }
     }
 
+    if (this.protectedRules.some((rule) => rule.test(text))) {
+      return { decision: 'deny', reason: '命中受保护路径（禁止写入/删除）' }
+    }
+
     return { decision: 'ask', reason: '未命中规则，需人工审批' }
   }
 }
@@ -143,8 +156,15 @@ export function loadCommandPolicy(): CommandPolicyRules {
     const parsed = JSON.parse(raw) as Partial<CommandPolicyRules>
 
     return {
-      allow: Array.isArray(parsed.allow) ? parsed.allow : DEFAULT_COMMAND_POLICY.allow,
-      deny: Array.isArray(parsed.deny) ? parsed.deny : DEFAULT_COMMAND_POLICY.deny,
+      allow: Array.isArray(parsed.allow)
+        ? parsed.allow
+        : DEFAULT_COMMAND_POLICY.allow,
+      deny: Array.isArray(parsed.deny)
+        ? parsed.deny
+        : DEFAULT_COMMAND_POLICY.deny,
+      protected: Array.isArray(parsed.protected)
+        ? parsed.protected
+        : DEFAULT_COMMAND_POLICY.protected,
     }
   } catch {
     return DEFAULT_COMMAND_POLICY

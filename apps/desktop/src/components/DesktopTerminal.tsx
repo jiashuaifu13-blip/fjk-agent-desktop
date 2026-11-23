@@ -88,6 +88,8 @@ export function DesktopTerminal() {
     execPolicy,
     approvalMode,
     setApprovalMode,
+    autoApproveUntil,
+    enableAutoApprove,
     readExecPolicy,
     applyExecMode,
     refreshSessions,
@@ -811,6 +813,9 @@ export function DesktopTerminal() {
                   ? ` · ${execPolicy.security}/${execPolicy.ask}`
                   : ''}
                 {` · 白名单 ${execPolicy.allowCount} 条`}
+                {execPolicy.mode && execPolicy.mode !== 'ask'
+                  ? ' · ⚠ 网关自动批准，不会弹卡片'
+                  : ''}
               </span>
             </div>
 
@@ -823,10 +828,16 @@ export function DesktopTerminal() {
                   type="button"
                   className="connection-state-trigger"
                   onClick={() => {
-                    void applyExecMode('auto')
+                    const ok = window.confirm(
+                      '切到 auto 后，网关会自行批准命令，\n不再弹审批卡片；\n危险命令与受保护路径规则也会失效。\n\n确定切换吗？',
+                    )
+
+                    if (ok) {
+                      void applyExecMode('auto')
+                    }
                   }}
                 >
-                  切到 auto（推荐编码）
+                  自动批准（不弹卡，慎用）
                 </button>
                 <button
                   type="button"
@@ -836,6 +847,35 @@ export function DesktopTerminal() {
                   }}
                 >
                   切到 ask（逐条审批）
+                </button>
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                限时自动批准
+              </span>
+              <span className="connection-state-value">
+                {autoApproveUntil > Date.now()
+                  ? `剩余 ${Math.ceil((autoApproveUntil - Date.now()) / 60000)} 分钟`
+                  : '未启用'}
+                <button
+                  type="button"
+                  className="connection-state-trigger"
+                  onClick={() => {
+                    enableAutoApprove(30)
+                  }}
+                >
+                  开启 30 分钟
+                </button>
+                <button
+                  type="button"
+                  className="connection-state-trigger"
+                  onClick={() => {
+                    enableAutoApprove(0)
+                  }}
+                >
+                  立即关闭
                 </button>
               </span>
             </div>

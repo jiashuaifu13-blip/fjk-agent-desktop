@@ -108,6 +108,8 @@ export interface SessionListItem {
 export interface PetRuntime {
   approval: ExecApproval | null
   approvalMode: 'tiered' | 'strict'
+  autoApproveUntil: number
+  enableAutoApprove(minutes: number): void
   setApprovalMode(mode: 'tiered' | 'strict'): void
   execPolicy: {
     mode: string
@@ -591,6 +593,17 @@ export function usePetRuntime(
       return raw === 'strict' ? 'strict' : 'tiered'
     } catch {
       return 'tiered'
+    }
+  })
+
+  const [autoApproveUntil, setAutoApproveUntil] = useState<number>(() => {
+    try {
+      const raw = window.localStorage.getItem('fjk-auto-approve-until-v1')
+      const value = raw ? Number(raw) : 0
+
+      return Number.isFinite(value) && value > Date.now() ? value : 0
+    } catch {
+      return 0
     }
   })
 
@@ -1089,13 +1102,24 @@ export function usePetRuntime(
               const commandText =
                 a.presentation.commandText ?? ''
 
-              const verdict =
+              const classified =
                 commandPolicy.classify(commandText, approvalMode)
+
+              const autoActive = Date.now() < autoApproveUntil
+
+              const verdict =
+                classified.decision === 'ask' && autoActive
+                  ? { decision: 'allow' as const, reason: '会话限时自动批准' }
+                  : classified
 
               setPolicyInfo((current) => ({
                 ...current,
                 last: `${verdict.decision}：${commandText.slice(0, 80)}`,
               }))
+
+              if (verdict.decision === 'ask') {
+                notifyApproval()
+              }
 
               setApproval({
                 id: a.id,
@@ -2138,6 +2162,33 @@ export function usePetRuntime(
     }
   }
 
+  const enableAutoApprove = (minutes: number): void => {
+    const until = minutes > 0 ? Date.now() + minutes * 60_000 : 0
+
+    setAutoApproveUntil(until)
+
+    try {
+      window.localStorage.setItem('fjk-auto-approve-until-v1', String(until))
+    } catch {
+      // ignore storage failures
+    }
+  }
+
+  const notifyApproval = (): void => {
+    try {
+      void import('@tauri-apps/api/window')
+        .then(({ getCurrentWindow }) => {
+          const win = getCurrentWindow()
+
+          void win.requestUserAttention(2).catch(() => undefined)
+          void win.setFocus().catch(() => undefined)
+        })
+        .catch(() => undefined)
+    } catch {
+      // ignore attention failures
+    }
+  }
+
   const readExecPolicy = async (): Promise<void> => {
 
     const status = await getExecPolicy()
@@ -2164,6 +2215,15 @@ export function usePetRuntime(
       } catch {
         // 读取失败不阻塞其它信息
       }
+    }
+
+    if (status?.mode && status.mode !== 'ask') {
+      appendRuntimeLog(
+        'warn',
+        'gateway',
+        'Policy inactive',
+        `tools.exec.mode=${status.mode}：网关自行批准，不会弹审批卡片`,
+      )
     }
 
     setExecPolicy({
@@ -2459,6 +2519,8 @@ export function usePetRuntime(
     policyInfo,
     execPolicy,
     approvalMode,
+    autoApproveUntil,
+    enableAutoApprove,
     setApprovalMode,
     readExecPolicy,
     applyExecMode,
