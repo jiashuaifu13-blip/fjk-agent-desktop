@@ -44,6 +44,8 @@ export interface ChatControllerLike {
   onGeneratingChange: ((generating: boolean) => void) | null
   onBubbleChange: ((content: string) => void) | null
   onError: ((error: unknown) => void) | null
+  pauseWatchdog?(): void
+  resumeWatchdog?(): void
 }
 
 // Map the pet's presentation state back to the unified FJK AgentState
@@ -1146,6 +1148,12 @@ export function usePetRuntime(
                   a.presentation.expiresAtMs,
               })
 
+              /*
+               * 等待审批期间暂停首字看门狗：
+               * 审批耗时由人决定，不能算成模型超时。
+               */
+              controller.pauseWatchdog?.()
+
               if (verdict.decision !== 'ask') {
                 appendRuntimeLog(
                   verdict.decision === 'deny' ? 'warn' : 'info',
@@ -1201,6 +1209,8 @@ export function usePetRuntime(
                 'terminal' &&
               a?.id
             ) {
+              controller.resumeWatchdog?.()
+
               void appendAudit({
                 phase: 'settled',
                 approvalId: a.id,
