@@ -15,6 +15,7 @@ import { PetEmotionEngine } from '../pet/PetEmotionEngine.js'
 import { PetHitTest } from '../pet/PetHitTest.js'
 import { PetInteractionController } from '../pet/PetInteractionController.js'
 import { ChatController } from '../chat/ChatController.js'
+import { createCommandPolicy } from '../policy/CommandPolicy'
 import { MockChatClient } from '../chat/MockChatClient.js'
 import { AgentStates } from '@fjk/agent-state/AgentStates.js'
 import { mapAgentStateToPetAction } from '@fjk/agent-state/AgentToPetState.js'
@@ -105,6 +106,11 @@ export interface SessionListItem {
 
 export interface PetRuntime {
   approval: ExecApproval | null
+  policyInfo: {
+    allow: number
+    deny: number
+    last: string | null
+  }
   resolveApproval(decision: 'allow-once' | 'deny'): Promise<void>
 
   chatController: ChatControllerLike | null
@@ -556,6 +562,12 @@ export function usePetRuntime(
   const [approval, setApproval] =
     useState<ExecApproval | null>(null)
 
+  const [policyInfo, setPolicyInfo] = useState({
+    allow: 0,
+    deny: 0,
+    last: null as string | null,
+  })
+
   const [chatController, setChatController] =
     useState<ChatControllerLike | null>(null)
 
@@ -995,6 +1007,13 @@ export function usePetRuntime(
           'Tauri runtime detected',
         )
 
+        const commandPolicy = createCommandPolicy()
+
+        setPolicyInfo((current) => ({
+          ...current,
+          ...commandPolicy.summary(),
+        }))
+
         const gateway =
           new TauriGatewayClient()
 
@@ -1035,11 +1054,41 @@ export function usePetRuntime(
               a.presentation?.kind ===
                 'exec'
             ) {
+              const commandText =
+                a.presentation.commandText ?? ''
+
+              const verdict =
+                commandPolicy.classify(commandText)
+
+              setPolicyInfo((current) => ({
+                ...current,
+                last: `${verdict.decision}：${commandText.slice(0, 80)}`,
+              }))
+
+              if (verdict.decision !== 'ask') {
+                appendRuntimeLog(
+                  verdict.decision === 'deny' ? 'warn' : 'info',
+                  'gateway',
+                  `Policy auto-${verdict.decision}`,
+                  `${verdict.reason}; command=${commandText.slice(0, 120)}`,
+                )
+
+                void gateway
+                  .send('exec.approval.resolve', {
+                    id: a.id,
+                    decision:
+                      verdict.decision === 'deny'
+                        ? 'deny'
+                        : 'allow-once',
+                  })
+                  .catch(() => undefined)
+
+                return
+              }
+
               setApproval({
                 id: a.id,
-                commandText:
-                  a.presentation
-                    .commandText ?? '',
+                commandText,
                 expiresAtMs:
                   a.presentation
                     .expiresAtMs,
@@ -2300,6 +2349,7 @@ export function usePetRuntime(
 
   return {
     approval,
+    policyInfo,
     resolveApproval,
 
     chatController,

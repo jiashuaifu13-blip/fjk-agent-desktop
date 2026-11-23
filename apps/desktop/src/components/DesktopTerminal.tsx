@@ -84,6 +84,7 @@ export function DesktopTerminal() {
     switchSession,
     loadOlderHistory,
     petRelation,
+    policyInfo,
     refreshSessions,
     abortSession,
   } =
@@ -770,6 +771,33 @@ export function DesktopTerminal() {
               <span className="connection-state-value">
                 {settingsOverview.executionMode ??
                   '未提供'}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                自动放行规则
+              </span>
+              <span className="connection-state-value">
+                {policyInfo.allow}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                危险拒绝规则
+              </span>
+              <span className="connection-state-value">
+                {policyInfo.deny}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                最近判定
+              </span>
+              <span className="connection-state-value">
+                {policyInfo.last ?? '暂无'}
               </span>
             </div>
 
