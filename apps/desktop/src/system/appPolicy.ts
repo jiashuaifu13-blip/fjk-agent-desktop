@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 
 import { DEFAULT_COMMAND_POLICY } from '../policy/CommandPolicy'
-import type { CommandPolicyRules } from '../policy/CommandPolicy'
+import type { CommandPolicyRules, PolicyGrant } from '../policy/CommandPolicy'
 
 /*
  * 用户级策略文件（Global 策略）
@@ -24,6 +24,7 @@ const POLICY_TEMPLATE = JSON.stringify(
     deny: DEFAULT_COMMAND_POLICY.deny,
     protected: DEFAULT_COMMAND_POLICY.protected,
     projectRoots: [] as string[],
+    grants: [] as PolicyGrant[],
   },
   null,
   2,
@@ -94,6 +95,22 @@ export async function loadAppPolicy(): Promise<AppPolicyState> {
       protected: isValidRegexList(parsed.protected)
         ? parsed.protected
         : DEFAULT_COMMAND_POLICY.protected,
+      grants: Array.isArray(parsed.grants)
+        ? parsed.grants.filter(
+            (grant): grant is PolicyGrant =>
+              typeof (grant as PolicyGrant)?.id === 'string' &&
+              typeof (grant as PolicyGrant)?.pattern === 'string' &&
+              typeof (grant as PolicyGrant)?.expiresAt === 'number' &&
+              (() => {
+                try {
+                  new RegExp((grant as PolicyGrant).pattern, 'i')
+                  return true
+                } catch {
+                  return false
+                }
+              })(),
+          )
+        : DEFAULT_COMMAND_POLICY.grants,
       projectRoots: Array.isArray(parsed.projectRoots)
         ? parsed.projectRoots.filter((root): root is string => typeof root === 'string')
         : DEFAULT_COMMAND_POLICY.projectRoots,
@@ -108,6 +125,57 @@ export async function loadAppPolicy(): Promise<AppPolicyState> {
     }
   }
 }
+
+export async function addPolicyGrant(
+  pattern: string,
+  resource: string | null,
+  minutes: number,
+): Promise<{ ok: boolean; grant: PolicyGrant | null; error: string | null }> {
+
+  if (!hasTauri()) {
+    return { ok: false, grant: null, error: '非 Tauri 环境' }
+  }
+
+  const state = await loadAppPolicy()
+
+  if (state.source === 'invalid') {
+    return { ok: false, grant: null, error: state.error ?? 'policy.json 无效' }
+  }
+
+  const now = Date.now()
+
+  const grant: PolicyGrant = {
+    id: `g-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    pattern,
+    ...(resource ? { resource } : {}),
+    expiresAt: now + Math.max(1, minutes) * 60_000,
+    createdAt: now,
+  }
+
+  const next: CommandPolicyRules = {
+    ...state.rules,
+    grants: [...state.rules.grants, grant],
+  }
+
+  const content = JSON.stringify(next, null, 2)
+
+  try {
+    const result = (await invoke('policy_save', { content })) as string
+
+    if (typeof result === 'string' && result.startsWith('ERROR:')) {
+      return { ok: false, grant: null, error: result.slice(6).trim() }
+    }
+
+    return { ok: true, grant, error: null }
+  } catch (error) {
+    return {
+      ok: false,
+      grant: null,
+      error: error instanceof Error ? error.message : String(error),
+    }
+  }
+}
+
 
 export async function writePolicyTemplate(): Promise<{
   ok: boolean

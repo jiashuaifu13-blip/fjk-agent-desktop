@@ -18,11 +18,23 @@ export interface PolicyResult {
   reason: string
 }
 
+export interface PolicyGrant {
+  id: string
+  /** 命令正则（整条命令匹配，忽略大小写） */
+  pattern: string
+  /** 可选资源前缀约束，例如 D:\\pet-desp */
+  resource?: string
+  /** Unix 毫秒时间戳；<= Date.now() 视为过期 */
+  expiresAt: number
+  createdAt: number
+}
+
 export interface CommandPolicyRules {
   allow: string[]
   deny: string[]
   protected: string[]
   projectRoots: string[]
+  grants: PolicyGrant[]
 }
 
 export const DEFAULT_COMMAND_POLICY: CommandPolicyRules = {
@@ -67,6 +79,9 @@ export const DEFAULT_COMMAND_POLICY: CommandPolicyRules = {
    */
   projectRoots: [],
 
+  /** 用户/会话级授权（FJK 自建，非 OpenClaw 原生 grant） */
+  grants: [],
+
   protected: [
     '[\\\\/]\\.git[\\\\/]',
     '[\\\\/]\\.ai-context[\\\\/]',
@@ -97,6 +112,24 @@ export class CommandPolicy {
     this.allowRules = compile(rules.allow)
     this.denyRules = compile(rules.deny)
     this.protectedRules = compile(rules.protected)
+    this.grants = (rules.grants ?? [])
+      .filter(
+        (grant) =>
+          typeof grant?.id === 'string' &&
+          typeof grant?.pattern === 'string' &&
+          typeof grant?.expiresAt === 'number',
+      )
+      .map((grant) => ({
+        ...grant,
+        matcher: (() => {
+          try {
+            return new RegExp(grant.pattern, 'i')
+          } catch {
+            return null
+          }
+        })(),
+      }))
+
     this.projectRoots = (rules.projectRoots ?? []).map((root) =>
       root.trim().replace(/[\\/]+$/, '').toLowerCase(),
     )
@@ -107,6 +140,7 @@ export class CommandPolicy {
   private denyRules: RegExp[]
   private protectedRules: RegExp[]
   private projectRoots: string[]
+  private grants: Array<PolicyGrant & { matcher: RegExp | null }>
 
   summary() {
     return {
@@ -114,10 +148,42 @@ export class CommandPolicy {
       deny: this.denyRules.length,
       protectedPaths: this.protectedRules.length,
       projectRoots: this.projectRoots.length,
+      grants: this.grants.length,
     }
   }
 
   /* 分级主函数 */
+  private findGrant(
+    text: string,
+  ): PolicyGrant | null {
+
+    const now = Date.now()
+
+    for (const grant of this.grants) {
+      if (!grant.matcher || grant.expiresAt <= now) {
+        continue
+      }
+
+      if (!grant.matcher.test(text)) {
+        continue
+      }
+
+      if (grant.resource) {
+        const prefix = grant.resource.toLowerCase()
+        const lower = text.toLowerCase()
+
+        if (!lower.includes(prefix)) {
+          continue
+        }
+      }
+
+      return grant
+    }
+
+    return null
+  }
+
+
   private checkProjectScope(
     text: string,
     hasChaining: boolean,
@@ -184,6 +250,12 @@ export class CommandPolicy {
      */
     const hasChaining = /[|&;><`\n]/.test(text)
 
+    const grant = this.findGrant(text)
+
+    if (grant) {
+      return { decision: 'allow', reason: `grant:${grant.id}` }
+    }
+
     /*
      * 项目范围优先于“只读自动放行”：
      * 跨项目的只读也要人工确认，跨项目的写入直接拒绝。
@@ -229,6 +301,14 @@ export function loadCommandPolicy(): CommandPolicyRules {
       protected: Array.isArray(parsed.protected)
         ? parsed.protected
         : DEFAULT_COMMAND_POLICY.protected,
+      grants: Array.isArray(parsed.grants)
+        ? parsed.grants.filter(
+            (grant): grant is PolicyGrant =>
+              typeof (grant as PolicyGrant)?.id === 'string' &&
+              typeof (grant as PolicyGrant)?.pattern === 'string' &&
+              typeof (grant as PolicyGrant)?.expiresAt === 'number',
+          )
+        : DEFAULT_COMMAND_POLICY.grants,
       projectRoots: Array.isArray(parsed.projectRoots)
         ? parsed.projectRoots.filter((root) => typeof root === 'string')
         : DEFAULT_COMMAND_POLICY.projectRoots,

@@ -917,6 +917,15 @@ export function DesktopTerminal() {
 
             <div className="connection-state-row">
               <span className="connection-state-key">
+                有效授权
+              </span>
+              <span className="connection-state-value">
+                {appPolicy.grants} 个（policy.json 的 grants，到期自动失效）
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
                 项目范围
               </span>
               <span className="connection-state-value">
@@ -1867,6 +1876,24 @@ export function DesktopTerminal() {
               }}
             >
               允许一次
+            </button>
+            <button
+              type="button"
+              disabled={approvalBusy}
+              onClick={() => {
+                setApprovalBusy(true)
+                setApprovalError(null)
+
+                void resolveApproval('allow-once', 30)
+                  .catch((err) => {
+                    setApprovalError(
+                      err instanceof Error ? err.message : String(err),
+                    )
+                  })
+                  .finally(() => setApprovalBusy(false))
+              }}
+            >
+              允许并记住 30 分钟
             </button>
             <button
               type="button"

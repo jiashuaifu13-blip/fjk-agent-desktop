@@ -77,7 +77,7 @@ export function describeCommand(commandText: string): CommandDescriptor {
 }
 
 export interface AuditRecord {
-  phase: 'requested' | 'decided' | 'settled' | 'exec'
+  phase: 'requested' | 'decided' | 'settled' | 'exec' | 'grant'
   approvalId?: string | null
   sessionKey?: string | null
   runId?: string | null

@@ -16,7 +16,11 @@ import { PetHitTest } from '../pet/PetHitTest.js'
 import { PetInteractionController } from '../pet/PetInteractionController.js'
 import { ChatController } from '../chat/ChatController.js'
 import { createCommandPolicy } from '../policy/CommandPolicy'
-import { loadAppPolicy, writePolicyTemplate } from '../system/appPolicy'
+import {
+  addPolicyGrant,
+  loadAppPolicy,
+  writePolicyTemplate,
+} from '../system/appPolicy'
 import { appendAudit, describeCommand } from '../system/auditLog'
 import { getExecPolicy, setExecMode } from '../system/openclawStatus'
 import { MockChatClient } from '../chat/MockChatClient.js'
@@ -119,6 +123,7 @@ export interface PetRuntime {
   enableAutoApprove(minutes: number): void
   setApprovalMode(mode: 'tiered' | 'strict'): void
   appPolicy: {
+    grants: number
     source: 'file' | 'defaults' | 'invalid'
     path: string
     error: string | null
@@ -139,7 +144,10 @@ export interface PetRuntime {
     deny: number
     last: string | null
   }
-  resolveApproval(decision: 'allow-once' | 'deny'): Promise<void>
+  resolveApproval(
+    decision: 'allow-once' | 'deny',
+    grantMinutes?: number,
+  ): Promise<void>
 
   chatController: ChatControllerLike | null
   petState: string
@@ -627,6 +635,7 @@ export function usePetRuntime(
     source: 'defaults' as 'file' | 'defaults' | 'invalid',
     path: '',
     error: null as string | null,
+    grants: 0,
   })
 
   const [policyInfo, setPolicyInfo] = useState({
@@ -1080,6 +1089,9 @@ export function usePetRuntime(
           source: policyState.source,
           path: policyState.path,
           error: policyState.error,
+          grants: policyState.rules.grants.filter(
+            (grant) => grant.expiresAt > Date.now(),
+          ).length,
         })
 
         if (policyState.source === 'invalid') {
@@ -2440,6 +2452,9 @@ export function usePetRuntime(
       source: policyState.source,
       path: policyState.path,
       error: policyState.error,
+      grants: policyState.rules.grants.filter(
+        (grant) => grant.expiresAt > Date.now(),
+      ).length,
     })
 
     commandPolicyRef.current = createCommandPolicy(policyState.rules)
@@ -2712,6 +2727,7 @@ export function usePetRuntime(
     decision:
       | 'allow-once'
       | 'deny',
+    grantMinutes?: number,
   ) => {
     const id =
       approval?.id
@@ -2736,6 +2752,43 @@ export function usePetRuntime(
 
     const descriptor =
       describeCommand(commandText)
+
+    if (grantMinutes && decision === 'allow-once') {
+      const escaped = commandText.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        (match) => `\\${match}`,
+      )
+
+      const created = await addPolicyGrant(
+        `^${escaped}$`,
+        descriptor.resource === 'unknown' ? null : descriptor.resource,
+        grantMinutes,
+      ).catch(() => null)
+
+      if (created?.ok && created.grant) {
+        await reloadAppPolicy()
+
+        void appendAudit({
+          phase: 'grant',
+          approvalId: id,
+          sessionKey: activeSessionKeyRef.current,
+          tool: 'exec',
+          operation: descriptor.operation,
+          resource: descriptor.resource,
+          risk: descriptor.risk,
+          decision: 'allow-once',
+          reason: `grant:${created.grant.id} (${grantMinutes}m)`,
+          command: commandText,
+        })
+      } else if (created) {
+        appendRuntimeLog(
+          'warn',
+          'gateway',
+          'Grant save failed',
+          String(created.error ?? '').slice(0, 160),
+        )
+      }
+    }
 
     void appendAudit({
       phase: 'decided',
