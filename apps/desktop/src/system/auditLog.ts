@@ -33,6 +33,14 @@ const DELETE_HINTS = /\b(del|erase|rmdir|rd|rm|remove-item|unlink)\b/i
 const WRITE_HINTS =
   /\b(mkdir|md|copy|move|ren|rename|set-content|out-file|new-item)\b/i
 const REDIRECT_HINTS = /(^|\s)>{1,2}\s*/i
+// L4：破坏性/不可逆操作（与 CommandPolicy 的 deny 规则保持语义一致）
+const CRITICAL_HINTS =
+  /\b(format\s+[a-z]:|diskpart|mkfs|shutdown|restart-computer|git\s+push\s+--force|git\s+reset\s+--hard|rm\s+-[a-z]*r[a-z]*f)/i
+
+// L3：写系统目录、删除、强制覆盖
+const HIGH_HINTS =
+  /(?:[A-Za-z]:\\Windows|[A-Za-z]:\\Program Files|\bRemove-Item\b.*-Force)/i
+
 const READ_HINTS =
   /\b(dir|ls|type|cat|get-content|get-childitem|test-path|git\s+(status|diff|log|show))\b/i
 
@@ -53,13 +61,17 @@ export function describeCommand(commandText: string): CommandDescriptor {
   }
 
   const risk: CommandDescriptor['risk'] =
-    operation === 'read'
-      ? 'L0'
-      : operation === 'write'
-        ? 'L2'
-        : operation === 'delete'
-          ? 'L3'
-          : 'L1'
+    CRITICAL_HINTS.test(text)
+      ? 'L4'
+      : HIGH_HINTS.test(text)
+        ? 'L3'
+        : operation === 'read'
+          ? 'L0'
+          : operation === 'delete'
+            ? 'L3'
+            : operation === 'write'
+              ? 'L2'
+              : 'L1'
 
   return { operation, resource, risk }
 }

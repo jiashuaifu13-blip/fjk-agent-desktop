@@ -1780,10 +1780,24 @@ export function DesktopTerminal() {
 
       {approval && (
         <div className="terminal-notice terminal-notice-warn">
-          <div className="notice-title">审批请求</div>
+          <div className="notice-title">
+            审批请求
+            {approval.risk && (
+              <span
+                className="connection-state-badge connection-state-badge-neutral"
+                style={{ marginLeft: 8 }}
+              >
+                {approval.risk}
+                {approval.operation ? ` · ${approval.operation}` : ''}
+              </span>
+            )}
+          </div>
           <div className="notice-detail">
             <code>{approval.commandText || '（无命令文本）'}</code>
           </div>
+          {approval.resource && approval.resource !== 'unknown' && (
+            <div className="notice-hint">目标：{approval.resource}</div>
+          )}
           {approval.expiresAtMs && (
             <div className="notice-hint">
               过期时间 {new Date(approval.expiresAtMs).toLocaleTimeString()}

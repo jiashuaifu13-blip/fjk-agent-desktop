@@ -77,6 +77,9 @@ export interface RuntimeLogEntry {
 
 export interface ExecApproval {
   id: string
+  risk?: string
+  operation?: string
+  resource?: string
   commandText: string
   expiresAtMs?: number
 }
@@ -1143,6 +1146,9 @@ export function usePetRuntime(
 
               setApproval({
                 id: a.id,
+                risk: descriptor.risk,
+                operation: descriptor.operation,
+                resource: descriptor.resource,
                 commandText,
                 expiresAtMs:
                   a.presentation.expiresAtMs,
@@ -2341,8 +2347,15 @@ export function usePetRuntime(
             return current
           }
 
+          const descriptor = describeCommand(
+            match.request?.command ?? '',
+          )
+
           return {
             id: matchId,
+            risk: descriptor.risk,
+            operation: descriptor.operation,
+            resource: descriptor.resource,
             commandText: match.request?.command ?? '',
             expiresAtMs: match.expiresAtMs,
           }
