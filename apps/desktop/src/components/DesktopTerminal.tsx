@@ -96,6 +96,8 @@ export function DesktopTerminal() {
     applyExecMode,
     refreshSessions,
     abortSession,
+    approval,
+    resolveApproval,
   } =
     usePetRuntimeContext()
 
@@ -193,6 +195,9 @@ export function DesktopTerminal() {
     setSessionSwitchError,
   ] =
     useState<string | null>(null)
+
+  const [approvalBusy, setApprovalBusy] = useState(false)
+  const [approvalError, setApprovalError] = useState<string | null>(null)
 
   const [openclawStatus, setOpenclawStatus] =
     useState<OpenClawStatus | null>(null)
@@ -1772,6 +1777,61 @@ export function DesktopTerminal() {
           </div>
         )}
       </div>
+
+      {approval && (
+        <div className="terminal-notice terminal-notice-warn">
+          <div className="notice-title">审批请求</div>
+          <div className="notice-detail">
+            <code>{approval.commandText || '（无命令文本）'}</code>
+          </div>
+          {approval.expiresAtMs && (
+            <div className="notice-hint">
+              过期时间 {new Date(approval.expiresAtMs).toLocaleTimeString()}
+            </div>
+          )}
+          <div className="terminal-actions">
+            <button
+              type="button"
+              disabled={approvalBusy}
+              onClick={() => {
+                setApprovalBusy(true)
+                setApprovalError(null)
+
+                void resolveApproval('allow-once')
+                  .catch((err) => {
+                    setApprovalError(
+                      err instanceof Error ? err.message : String(err),
+                    )
+                  })
+                  .finally(() => setApprovalBusy(false))
+              }}
+            >
+              允许一次
+            </button>
+            <button
+              type="button"
+              disabled={approvalBusy}
+              onClick={() => {
+                setApprovalBusy(true)
+                setApprovalError(null)
+
+                void resolveApproval('deny')
+                  .catch((err) => {
+                    setApprovalError(
+                      err instanceof Error ? err.message : String(err),
+                    )
+                  })
+                  .finally(() => setApprovalBusy(false))
+              }}
+            >
+              拒绝
+            </button>
+          </div>
+          {approvalError && (
+            <div className="notice-hint">操作失败：{approvalError}</div>
+          )}
+        </div>
+      )}
 
       {lastError && (
         <div className="terminal-error">
