@@ -1199,25 +1199,23 @@ export function usePetRuntime(
 
               if (verdict.decision === 'ask') {
                 notifyApproval()
-              }
 
-              setApproval({
-                id: a.id,
-                risk: descriptor.risk,
-                operation: descriptor.operation,
-                resource: descriptor.resource,
-                commandText,
-                expiresAtMs:
-                  a.presentation.expiresAtMs,
-              })
+                setApproval({
+                  id: a.id,
+                  risk: descriptor.risk,
+                  operation: descriptor.operation,
+                  resource: descriptor.resource,
+                  commandText,
+                  expiresAtMs:
+                    a.presentation.expiresAtMs,
+                })
 
-              /*
-               * 等待审批期间暂停首字看门狗：
-               * 审批耗时由人决定，不能算成模型超时。
-               */
-              controller.pauseWatchdog?.()
-
-              if (verdict.decision !== 'ask') {
+                /*
+                 * 等待审批期间暂停首字看门狗：
+                 * 审批耗时由人决定，不能算成模型超时。
+                 */
+                controller.pauseWatchdog?.()
+              } else {
                 appendRuntimeLog(
                   verdict.decision === 'deny' ? 'warn' : 'info',
                   'gateway',
