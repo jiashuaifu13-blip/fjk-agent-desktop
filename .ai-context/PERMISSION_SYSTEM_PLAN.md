@@ -5,7 +5,7 @@
 > 日期：2026-11-23
 > 来源：`FJK_Agent_\PERMISSION_READING_GUIDE.md`、`PERMISSION_DESIGN_OVERVIEW.md`（完整草案未提供，标记 OPEN）
 > 依据：仓库现状核查（代码 / 文档 / OpenClaw 2026.11.6 实测）
-> 状态：**策略方案已确认方向，任务拆分待逐条确认后进入 `TASKS.md` 执行**
+> 状态：**参考路线图**。当前排期只含第一阶段（P1-020 审批审计落盘）；P1/P2/P3 等第一阶段验收后再逐条确认。
 
 ---
 

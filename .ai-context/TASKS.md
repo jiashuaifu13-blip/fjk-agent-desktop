@@ -7,25 +7,18 @@
   operation / resource / risk / decision / result / reason；含 `sk-…` 脱敏与 5MB 轮转。
   计划见 `.ai-context/PERMISSION_SYSTEM_PLAN.md`。
 
-## 权限系统（阶段计划，2026-11-23 制定）
+## 权限系统（仅第一阶段在排期）
 
-> 差距分析、OpenClaw 接口实测、阶段划分见 `.ai-context/PERMISSION_SYSTEM_PLAN.md`。
-> 原则：FJK 只做前置判断 + 人机交互 + 审计；底层执行与安全仍由 OpenClaw 承担，不绕过、不削弱。
+> 完整路线图（P0–P3）见 `.ai-context/PERMISSION_SYSTEM_PLAN.md`，**当前只执行第一阶段**，
+> 其余阶段等第一阶段验收后再讨论排期，避免一次背上过大开发量。
 
-| 编号 | 任务 | 阶段 | 状态 |
-|---|---|---|---|
-| P1-020 | 审批审计落盘（JSONL + 脱敏 + 轮转） | P0 | DOING |
-| P1-021 | PermissionModel（tool/operation/resource/scope/risk/mode 类型） | P0 | TODO |
-| P1-022 | 审批卡字段增强（Tool/Operation/Resource/Risk） | P0 | TODO |
-| P1-023 | Kill Switch 组合（abort + 拒绝 pending + 停止发送） | P0 | TODO |
-| P1-024 | 风险引擎 v1（L0–L4 映射 + 风险原因） | P1 | TODO |
-| P1-025 | Project Scope（项目根路径约束） | P1 | TODO |
-| P1-026 | Grant 雏形（范围 + 有效期 + 可撤销） | P1 | TODO（先 VERIFY exec.approvals/grants） |
-| P1-027 | Global 策略文件（policy.json 覆盖默认规则） | P1 | TODO |
-| P1-028 | 桌宠审批卡（与终端共享 approvalId） | P2 | TODO |
-| P1-029 | 安全中心（审计查询/筛选/导出） | P2 | TODO |
-| P1-030 | Git / Blog 操作细分 | P3 | DEFER |
-
+**第一阶段（唯一进行中）：P1-020 审批审计落盘**
+- 目标：每次审批写一行 JSONL（请求 / 决策 / 执行结果），为用户可见的审计打底。
+- 文件：`%APPDATA%\com.fjk.agent\approvals.jsonl`（按天文件名，5MB 轮转）。
+- 字段：`ts, approvalId, sessionKey, runId, tool, operation, resource, risk, decision, result, reason`。
+- 脱敏：命中 `sk-[A-Za-z0-9]{10,}`、`Bearer\s+\S+` 一律替换为 `***`。
+- 范围限制：**不改现有审批行为**，只加记录；不做风险引擎、不做 Scope、不做桌宠卡。
+- 验收：跑 3 次审批（1 允许 / 1 拒绝 / 1 超时）→ 文件里 3 行、字段齐全、无明文密钥；`tsc` + `build` 通过。
 
 ## TODO
 

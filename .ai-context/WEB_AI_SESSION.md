@@ -24,12 +24,12 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 - 分支：`main`
 - 环境：Windows 11、Windows PowerShell 5.1、Node 18+、Rust stable、本地 OpenClaw Gateway（`ws://127.0.0.1:18789`）
 
-## 三、当前状态（2026-11-22 23:15 更新）
+## 三、当前状态（2026-11-23 18:35 更新）
 
 - 实时状态以 `STATE.md` 为准（`STATE_ID` / `HEAD_AT_SYNC` / 任务 / 未验证项）；
-- `HEAD = origin/main = 650681f`；工作区 **clean**；
-- 当前任务：**权限与审批系统 P0**（审计落盘 / PermissionModel / 审批卡增强 / Kill Switch）；
-  计划见 `.ai-context/PERMISSION_SYSTEM_PLAN.md`；API 与对话链路已收尾，仅剩稳定性观察。
+- `HEAD = origin/main = 2c4d7e8`；工作区 **clean**；
+- 当前任务：**权限系统第一阶段 = P1-020 审批审计落盘**（只加记录、不改审批行为）；
+  完整路线图见 `.ai-context/PERMISSION_SYSTEM_PLAN.md`，其余阶段暂不排期。
 
 已完成且实测（2026-11-22 晚新增，明细见 `STATE.md` 的 `ROUND_PROVIDER-LATENCY`）：
 

@@ -261,3 +261,9 @@ ROUND_PERMISSION-PLAN（2026-11-23 傍晚，权限系统阶段计划）:
   缺 Operation/Resource/Scope/Grant/审计/风险等级/桌宠审批卡；Kill Switch 仅 sessions.abort。
 - 已写入：TASKS.md（DOING=P1-020 审计落盘 + P1-020..P1-030 任务表）、PROJECT_STATUS 下一步、WEB_AI_SESSION 当前任务。
 - 第一批（P0）：审计落盘 → PermissionModel → 审批卡字段增强 → Kill Switch 组合。
+
+ROUND_PERMISSION-SCOPE（2026-11-23 傍晚，收敛为第一阶段）:
+- 用户决定：路线图（P0–P3）任务量过大，**当前只做第一阶段**，其余阶段暂不排期。
+- TASKS.md：删除整张路线图表，DOING 仅保留 **P1-020 审批审计落盘**（JSONL + 脱敏 + 轮转，不改审批行为）。
+- PERMISSION_SYSTEM_PLAN.md 顶部标注为「参考路线图」，P1/P2/P3 等验收后再逐条确认。
+- PROJECT_STATUS / WEB_AI_SESSION 同步收窄；恢复卡 HEAD 更新为 2c4d7e8。
