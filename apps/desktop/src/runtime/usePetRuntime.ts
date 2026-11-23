@@ -107,6 +107,8 @@ export interface SessionListItem {
 
 export interface PetRuntime {
   approval: ExecApproval | null
+  approvalMode: 'tiered' | 'strict'
+  setApprovalMode(mode: 'tiered' | 'strict'): void
   execPolicy: {
     mode: string
     host: string
@@ -578,6 +580,18 @@ export function usePetRuntime(
     security: '',
     ask: '',
     allowCount: 0,
+  })
+
+  const [approvalMode, setApprovalModeState] = useState<
+    'tiered' | 'strict'
+  >(() => {
+    try {
+      const raw = window.localStorage.getItem('fjk-approval-mode-v1')
+
+      return raw === 'strict' ? 'strict' : 'tiered'
+    } catch {
+      return 'tiered'
+    }
   })
 
   const [policyInfo, setPolicyInfo] = useState({
@@ -1076,7 +1090,7 @@ export function usePetRuntime(
                 a.presentation.commandText ?? ''
 
               const verdict =
-                commandPolicy.classify(commandText)
+                commandPolicy.classify(commandText, approvalMode)
 
               setPolicyInfo((current) => ({
                 ...current,
@@ -2114,6 +2128,16 @@ export function usePetRuntime(
     )
   }
 
+  const setApprovalMode = (mode: 'tiered' | 'strict'): void => {
+    setApprovalModeState(mode)
+
+    try {
+      window.localStorage.setItem('fjk-approval-mode-v1', mode)
+    } catch {
+      // ignore storage failures
+    }
+  }
+
   const readExecPolicy = async (): Promise<void> => {
 
     const status = await getExecPolicy()
@@ -2434,6 +2458,8 @@ export function usePetRuntime(
     approval,
     policyInfo,
     execPolicy,
+    approvalMode,
+    setApprovalMode,
     readExecPolicy,
     applyExecMode,
     resolveApproval,

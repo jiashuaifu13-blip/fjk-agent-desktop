@@ -86,6 +86,8 @@ export function DesktopTerminal() {
     petRelation,
     policyInfo,
     execPolicy,
+    approvalMode,
+    setApprovalMode,
     readExecPolicy,
     applyExecMode,
     refreshSessions,
@@ -778,6 +780,24 @@ export function DesktopTerminal() {
               <span className="connection-state-value">
                 {settingsOverview.executionMode ??
                   '未提供'}
+              </span>
+            </div>
+
+            <div className="connection-state-row">
+              <span className="connection-state-key">
+                审批模式
+              </span>
+              <span className="connection-state-value">
+                {approvalMode === 'strict' ? '全部人工确认' : '分级（只读自动/危险自动拒）'}
+                <button
+                  type="button"
+                  className="connection-state-trigger"
+                  onClick={() => {
+                    setApprovalMode(approvalMode === 'strict' ? 'tiered' : 'strict')
+                  }}
+                >
+                  {approvalMode === 'strict' ? '切到分级' : '切到全部人工'}
+                </button>
               </span>
             </div>
 

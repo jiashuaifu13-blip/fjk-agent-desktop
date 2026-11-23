@@ -97,11 +97,18 @@ export class CommandPolicy {
   }
 
   /* 分级主函数 */
-  classify(commandText: string): PolicyResult {
+  classify(
+    commandText: string,
+    mode: 'tiered' | 'strict' = 'tiered',
+  ): PolicyResult {
     const text = String(commandText ?? '').trim()
 
     if (!text) {
       return { decision: 'ask', reason: 'empty command' }
+    }
+
+    if (mode === 'strict') {
+      return { decision: 'ask', reason: '严格模式：一律人工确认' }
     }
 
     if (this.denyRules.some((rule) => rule.test(text))) {
