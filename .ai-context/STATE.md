@@ -251,3 +251,13 @@ ROUND_EXEC-ROOTCAUSE（2026-11-23 午后，exec 被拒根因）:
   2. `CommandPolicy` 增规则：`cmd /c dir|type|where|findstr|echo`、`powershell -Command Get-ChildItem|Get-Content|Test-Path` 自动放行；`cmd /c del|rd|rmdir|format|diskpart|shutdown`、`powershell Remove-Item` 自动拒绝。
   3. `tools.exec.mode` 由 `ask` 改为 `auto`（配置备份 `openclaw.json.bak-20261123-1310`），模型侧不再看到 “Approved executables: none” 就自我劝退。
 - 验证：用户在聊天里发 `cmd /c dir D:\pet-desp`，成功返回目录列表（2026-11-23）。
+
+ROUND_PERMISSION-PLAN（2026-11-23 傍晚，权限系统阶段计划）:
+- 输入：`D:\桌面\桌宠文件备份\FJK_Agent_\PERMISSION_READING_GUIDE.md` + `PERMISSION_DESIGN_OVERVIEW.md` 全文已读；
+  **完整草案 `FJK_Agent_权限与审批系统设计草案.md` 未随资料提供**（整个备份目录搜不到）→ 标 OPEN。
+- 产出：`.ai-context/PERMISSION_SYSTEM_PLAN.md`（现状盘点 EXISTS/PARTIAL/MISSING/VERIFY + OpenClaw 接口实测
+  + 差距取舍 + P0–P3 阶段任务 + 边界 MUST + OPEN 清单）。
+- 现状要点：审批事件/resolve 可用；CommandPolicy 只是「命令字符串」级 allow/deny/ask；
+  缺 Operation/Resource/Scope/Grant/审计/风险等级/桌宠审批卡；Kill Switch 仅 sessions.abort。
+- 已写入：TASKS.md（DOING=P1-020 审计落盘 + P1-020..P1-030 任务表）、PROJECT_STATUS 下一步、WEB_AI_SESSION 当前任务。
+- 第一批（P0）：审计落盘 → PermissionModel → 审批卡字段增强 → Kill Switch 组合。

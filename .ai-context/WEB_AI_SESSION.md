@@ -28,7 +28,8 @@ https://raw.githubusercontent.com/jiashuaifu13-blip/fjk-agent-desktop/main/.ai-c
 
 - 实时状态以 `STATE.md` 为准（`STATE_ID` / `HEAD_AT_SYNC` / 任务 / 未验证项）；
 - `HEAD = origin/main = 650681f`；工作区 **clean**；
-- 当前任务：**API 接入与对话体验收尾**（首启引导 / 多 provider / 模型作用域 / 延迟优化 / 会话可观测）。
+- 当前任务：**权限与审批系统 P0**（审计落盘 / PermissionModel / 审批卡增强 / Kill Switch）；
+  计划见 `.ai-context/PERMISSION_SYSTEM_PLAN.md`；API 与对话链路已收尾，仅剩稳定性观察。
 
 已完成且实测（2026-11-22 晚新增，明细见 `STATE.md` 的 `ROUND_PROVIDER-LATENCY`）：
 

@@ -2,8 +2,30 @@
 
 ## DOING
 
-- **P1-014 新建/删除会话**（写操作，删除需二次确认）：STEP-0 基线已复核，等网页 AI 的 STEP 1。
-  顺序：补 `sessionId` 进会话列表数据 → 新建会话（`sessions.create`）→ 删除（归档 + 删除，二次确认）。
+- **P1-020 审批审计落盘**（权限系统 P0-①）：每次审批（请求/决策/结果）写 JSONL 到
+  `%APPDATA%\com.fjk.agent\approvals.jsonl`；字段 ts / approvalId / sessionKey / runId / tool /
+  operation / resource / risk / decision / result / reason；含 `sk-…` 脱敏与 5MB 轮转。
+  计划见 `.ai-context/PERMISSION_SYSTEM_PLAN.md`。
+
+## 权限系统（阶段计划，2026-11-23 制定）
+
+> 差距分析、OpenClaw 接口实测、阶段划分见 `.ai-context/PERMISSION_SYSTEM_PLAN.md`。
+> 原则：FJK 只做前置判断 + 人机交互 + 审计；底层执行与安全仍由 OpenClaw 承担，不绕过、不削弱。
+
+| 编号 | 任务 | 阶段 | 状态 |
+|---|---|---|---|
+| P1-020 | 审批审计落盘（JSONL + 脱敏 + 轮转） | P0 | DOING |
+| P1-021 | PermissionModel（tool/operation/resource/scope/risk/mode 类型） | P0 | TODO |
+| P1-022 | 审批卡字段增强（Tool/Operation/Resource/Risk） | P0 | TODO |
+| P1-023 | Kill Switch 组合（abort + 拒绝 pending + 停止发送） | P0 | TODO |
+| P1-024 | 风险引擎 v1（L0–L4 映射 + 风险原因） | P1 | TODO |
+| P1-025 | Project Scope（项目根路径约束） | P1 | TODO |
+| P1-026 | Grant 雏形（范围 + 有效期 + 可撤销） | P1 | TODO（先 VERIFY exec.approvals/grants） |
+| P1-027 | Global 策略文件（policy.json 覆盖默认规则） | P1 | TODO |
+| P1-028 | 桌宠审批卡（与终端共享 approvalId） | P2 | TODO |
+| P1-029 | 安全中心（审计查询/筛选/导出） | P2 | TODO |
+| P1-030 | Git / Blog 操作细分 | P3 | DEFER |
+
 
 ## TODO
 
