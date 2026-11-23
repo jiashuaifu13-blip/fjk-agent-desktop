@@ -36,6 +36,8 @@ export const DEFAULT_COMMAND_POLICY: CommandPolicyRules = {
     '^\\s*git\\s+(status|diff|log|show|branch|remote|rev-parse|ls-files)\\b',
     '^\\s*(node|npm|pnpm|yarn|python|cargo|rustc)\\s+(--version|-v|version)\\b',
     '^\\s*git\\s+--version\\b',
+    '^\\s*cmd(\\.exe)?\\s+/c\\s+(dir|type|where|findstr|echo)\\b',
+    '^\\s*(powershell|pwsh)(\\.exe)?\\s+.*(-command|-c)[\\s"\']*(get-childitem|get-content|test-path|get-item)\\b',
   ],
   deny: [
     '\\brm\\s+-[a-z]*r[a-z]*f\\b',
@@ -50,6 +52,8 @@ export const DEFAULT_COMMAND_POLICY: CommandPolicyRules = {
     '\\bmkfs\\b',
     '\\bdiskpart\\b',
     '\\bRemove-Item\\b.*(Windows|Program Files)',
+    '^\\s*cmd(\\.exe)?\\s+/c\\s+(del|rd|rmdir|format|diskpart|shutdown)\\b',
+    '^\\s*(powershell|pwsh)(\\.exe)?\\s+.*(-command|-c)[\\s"\']*(remove-item|rm)\\b',
   ],
 }
 

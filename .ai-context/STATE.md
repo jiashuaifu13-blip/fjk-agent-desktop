@@ -240,3 +240,14 @@ NEXT（明天）:
 2. 若频繁 `tool_execution_wait`：在 UI 显示 run 卡在哪个工具，并提供「停止该工具」。
 3. 可选：模型快捷切换（快模型/深思考）、思考链展示、打字机平滑。
 4. 收尾：把本轮 API/对话改动同步进 PROJECT_STATUS 与 WEB_AI_SESSION。
+
+ROUND_EXEC-ROOTCAUSE（2026-11-23 午后，exec 被拒根因）:
+- 现象：让 agent 执行 `dir D:\pet-desp` 被拒，回复 "SYSTEM_RUN_DENIED / Approved executables: none"。
+- 真因（对话记录里 exec 的原始返回）：`Exec denied (SYSTEM_RUN_DENIED: approval requires a resolved executable): dir D:\pet-desp; Command did not run.`
+  —— `dir` 是 cmd **内建命令**，审批层绑不到可执行文件，直接拒绝，**根本不弹审批卡**。
+- 与卡巴斯基/防火墙无关：拒绝发生在创建进程之前；网络问题是另一类（`[model-fetch] code=runtime-unavailable`，免费中转 15s 无响应）。
+- 修复：
+  1. `~/.openclaw/workspace/AGENTS.md` 增「exec 命令规范」：禁止裸内建命令，必须 `cmd /c dir ...` / `powershell -Command Get-ChildItem ...` / 直接 `git.exe`；需要目录时显式传 `workdir`；被拒先改写再重试。备份 `AGENTS.md.bak-20261123-1320`。
+  2. `CommandPolicy` 增规则：`cmd /c dir|type|where|findstr|echo`、`powershell -Command Get-ChildItem|Get-Content|Test-Path` 自动放行；`cmd /c del|rd|rmdir|format|diskpart|shutdown`、`powershell Remove-Item` 自动拒绝。
+  3. `tools.exec.mode` 由 `ask` 改为 `auto`（配置备份 `openclaw.json.bak-20261123-1310`），模型侧不再看到 “Approved executables: none” 就自我劝退。
+- 验证：用户在聊天里发 `cmd /c dir D:\pet-desp`，成功返回目录列表（2026-11-23）。
