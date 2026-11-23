@@ -16,6 +16,7 @@ import { PetHitTest } from '../pet/PetHitTest.js'
 import { PetInteractionController } from '../pet/PetInteractionController.js'
 import { ChatController } from '../chat/ChatController.js'
 import { createCommandPolicy } from '../policy/CommandPolicy'
+import { appendAudit, describeCommand } from '../system/auditLog'
 import { getExecPolicy, setExecMode } from '../system/openclawStatus'
 import { MockChatClient } from '../chat/MockChatClient.js'
 import { AgentStates } from '@fjk/agent-state/AgentStates.js'
@@ -1084,6 +1085,7 @@ export function usePetRuntime(
               event.approval as
                 | {
                     id?: string
+                    status?: string
                     presentation?: {
                       kind?: string
                       commandText?: string
@@ -1101,6 +1103,22 @@ export function usePetRuntime(
             ) {
               const commandText =
                 a.presentation.commandText ?? ''
+
+              const descriptor =
+                describeCommand(commandText)
+
+              void appendAudit({
+                phase: 'requested',
+                approvalId: a.id,
+                sessionKey: (event as { sessionKey?: string }).sessionKey ?? null,
+                tool: 'exec',
+                operation: descriptor.operation,
+                resource: descriptor.resource,
+                risk: descriptor.risk,
+                result: 'pending',
+                command: commandText,
+                expiresAtMs: a.presentation.expiresAtMs ?? null,
+              })
 
               const classified =
                 commandPolicy.classify(commandText, approvalMode)
@@ -1136,6 +1154,22 @@ export function usePetRuntime(
                   `${verdict.reason}; command=${commandText.slice(0, 120)}`,
                 )
 
+                void appendAudit({
+                  phase: 'decided',
+                  approvalId: a.id,
+                  sessionKey: (event as { sessionKey?: string }).sessionKey ?? null,
+                  tool: 'exec',
+                  operation: descriptor.operation,
+                  resource: descriptor.resource,
+                  risk: descriptor.risk,
+                  decision:
+                    verdict.decision === 'deny'
+                      ? 'deny'
+                      : 'allow-once',
+                  reason: `${autoActive ? 'timed-auto' : 'policy-auto'}：${verdict.reason}`,
+                  command: commandText,
+                })
+
                 void gateway
                   .send('exec.approval.resolve', {
                     id: a.id,
@@ -1167,6 +1201,14 @@ export function usePetRuntime(
                 'terminal' &&
               a?.id
             ) {
+              void appendAudit({
+                phase: 'settled',
+                approvalId: a.id,
+                sessionKey: (event as { sessionKey?: string }).sessionKey ?? null,
+                tool: 'exec',
+                result: a.status ?? 'unknown',
+              })
+
               setApproval((current) =>
                 current?.id === a.id
                   ? null
@@ -2512,6 +2554,25 @@ export function usePetRuntime(
         decision,
       },
     )
+
+    const commandText =
+      approval?.commandText ?? ''
+
+    const descriptor =
+      describeCommand(commandText)
+
+    void appendAudit({
+      phase: 'decided',
+      approvalId: id,
+      sessionKey: activeSessionKeyRef.current,
+      tool: 'exec',
+      operation: descriptor.operation,
+      resource: descriptor.resource,
+      risk: descriptor.risk,
+      decision,
+      reason: 'user',
+      command: commandText,
+    })
   }
 
   return {

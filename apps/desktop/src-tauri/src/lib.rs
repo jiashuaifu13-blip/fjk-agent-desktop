@@ -1,3 +1,4 @@
+mod audit_log;
 mod custom_provider;
 mod default_model;
 mod exec_policy;
@@ -28,6 +29,8 @@ pub fn run() {
             default_model::openclaw_set_default_model,
             exec_policy::openclaw_exec_policy_status,
             exec_policy::openclaw_set_exec_mode,
+            audit_log::audit_append,
+            audit_log::audit_info,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
