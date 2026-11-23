@@ -25,6 +25,15 @@
 - 新增 Rust `src-tauri/src/audit_log.rs`（`audit_append` 追加 JSONL、5MB 轮转、`audit_info` 查路径与大小）
 - 接线：审批 requested / decided（auto+timed+user）/ settled 三个阶段；不改任何审批行为
 
+## 审批链路修复（2026-11-23 晚，已实测）
+
+| 编号 | 任务 | 状态 | 证据 |
+|---|---|---|---|
+| P1-031 | 恢复审批卡（`cea1a7b` 回归删除的 consumer） | DONE `e16d63d`→`9e08cbb` | 两次点击产生 decided/allow-once，卡片可见 |
+| P1-032 | 等待审批时暂停首字看门狗 | DONE `01a61f9` | 实测 requested→decided 间隔 **385 秒**（6m25s）未 cancelled |
+| P1-033 | 停止时同时中止远端 run（`chat.abort`） | DONE a6166ee6` | 网关日志 `chat.abort requested` → `settled=cancelled` |
+| P1-034 | 重连/启动补拉 pending 审批（`exec.approval.list`） | TODO | 已实测：订阅不重放 pending（replayed=0） |
+
 ## TODO
 
 - Settings 更多项（工具开关/执行模式展示）。

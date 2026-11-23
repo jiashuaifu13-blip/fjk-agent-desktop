@@ -293,3 +293,13 @@ ROUND_PROVIDER-CATALOG（2026-11-23 晚，API 切换漏洞修复）:
 - 用户实测通过：连续两次保存不同模型，全局默认随之切换；deepseek models 三项目录条目保持合并未被覆盖
   （20:47 实测 default=deepseek/deepseek-v4-flash，models=deepseek-flash,deepseek-v4-pro,deepseek-v4-flash）。
 - 下一步（未开始）：R1 审批卡恢复（P0）→ R2 watchdog 在 approval-wait 暂停 → R2 停止语义 → R3 已完成。
+
+ROUND_APPROVAL-CHAIN（2026-11-23 晚，R1/R2 修复实测）:
+- R1 审批卡：`cea1a7b` 回归删除的 consumer 已恢复（`9e08cbb`），展示命令/过期时间 + 允许一次/拒绝，busy 与错误提示。
+- R2-A 看门狗：第一版用 `execution.wait.kind=approval` 实测无效（抓包证明网关不发 execution 事件），
+  改为 `session.approval` pending/terminal 驱动 `pauseWatchdog/resumeWatchdog`（`01a61f9`）。
+- 实测证据：requested 13:23:01.913 → decided 13:29:27.234（**385 秒**），result=allowed、decision=allow-once、reason=user，
+  期间无 cancelled（修复前 86 秒即 cancelled）。
+- R2-B 停止语义：adapter 在 abort 时发送 `chat.abort {sessionKey, runId}`（`6166ee6`）；
+  网关日志出现 `chat.abort requested`，对应审批 `settled=cancelled`。
+- 剩余：P1-034 重连/启动补拉 pending 审批（已实测订阅不重放，需主动查 `exec.approval.list`）。
