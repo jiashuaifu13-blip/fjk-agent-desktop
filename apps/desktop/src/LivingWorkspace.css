@@ -171,3 +171,25 @@ body {background:var(--fjk-bg); color:var(--fjk-text)}
    .fjk-pet-scenery 使用 right:-5% 装饰光晕，会撑出消息区横向滚动条。 */
 .fjk-welcome { overflow-x: clip; }
 .fjk-main-workspace .terminal-messages { overflow-x: hidden; }
+
+/* pet-size（2026-11-24）：当前为「原 2 倍尺寸再缩小 1/1.5」→ 显示宽 clamp(320, 29vw, 533px)，
+   有聊天消息时缩到 0.92 并上移，避免压住输入框。 */
+.fjk-workspace .pet-canvas { width: clamp(320px, 29vw, 533px); }
+.fjk-workspace .pet-root { right: clamp(11px, 3%, 40px); bottom: clamp(120px, 13%, 173px); }
+.fjk-workspace:has(.msg) .pet-root { right: 16px; bottom: 127px; transform: scale(.92); }
+.fjk-workspace .pet-speech { max-width: 200px; }
+.fjk-workspace .pet-approval { bottom: 115px; }
+
+@media (max-width: 1440px) {
+  .fjk-workspace .pet-canvas { width: 347px; }
+  .fjk-workspace .pet-root { right: 1%; bottom: 24%; }
+}
+
+@media (max-width: 1040px) {
+  .fjk-workspace .pet-canvas { width: 293px; }
+  .fjk-workspace .pet-root { right: 0; bottom: 100px; transform: scale(.62); }
+}
+
+@media (max-height: 780px) {
+  .fjk-workspace .pet-root { bottom: 170px; }
+}

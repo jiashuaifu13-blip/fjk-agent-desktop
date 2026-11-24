@@ -355,3 +355,30 @@ ROUND_UI-V02-AND-PANEL-LAG（2026-11-24 上午，UI v0.2 整合 + 卡顿修复�
   - 根因②：61KB 单组件整树重渲染 → 检测结果 60s 缓存 + 轮询 8s→30s + sessions.list 结果去重不 setState。
 - 验证：tsc 0 / cargo check 0 / vite build PASS；实际体感待装包验证（VERIFY）。
 - 新主线：Windows 首启安装向导（4 个 Phase，见 TASKS.md）；决策：Gateway 自动拉起、Node 缺失引导下载、面向普通用户。
+
+
+ROUND_GATEWAY-AUTOSTART（2026-11-24 晚，Gateway 自动拉起 Phase A–C）:
+- 现状核对（计划书 626 行 vs 代码）：仅「连上之后的断线重连」一致（退避 1/2/4/8/15s + epoch + 重连后恢复会话/订阅/审批）；
+  计划核心「Gateway 未启动 → 自动拉起 → 就绪 → 连接」完全缺失；boot 连接失败直接进 Mock 且不重试；5 次重连失败即放弃并要求重启 App。
+- 本轮实现：
+  - 新增 `src-tauri/src/gateway_launch.rs`：`gateway_ensure_running` — 端口探测复用 / 未运行则 `cmd /C openclaw gateway start`（CREATE_NO_WINDOW，stdout/stderr 落 gateway-launch.log）/ 20s 轮询就绪；tokio 单飞锁；PID 文件含 pid+startedAtMs。
+  - `onboarding::find_cli` 提升为 `pub(crate)` 复用；`lib.rs` 注册模块、状态与命令。
+  - 前端 `system/gatewayLaunch.ts` 包装 invoke；`usePetRuntime` boot 路径改为 `connectWithAutoStart()`：首次握手失败 → 状态「正在启动 OpenClaw Gateway…」→ ensure → 再握手一次。
+  - 连接面板新增「启动 / 重试 Gateway」按钮（复用 invoke，显示 reused/started/失败原因）。
+- 验证：tsc 0 / vite build PASS / cargo check 0。运行时行为待实测（VERIFY）。
+- 已知未做：重连路径未接 ensure；托管进程停止与清理未做；错误分类仅在日志/按钮提示；计划书 §14 17 项测试矩阵未跑。
+
+
+ROUND_GATEWAY-AUTOSTART-V2（2026-11-24 晚，冷启动误判失败修复）:
+- 现象：重启电脑后打开 FJK 报 `Gateway auto-start failed: start_timeout`（20s 未监听 18789）。
+- 根因（三方日志对齐，~/.openclaw/tmp/openclaw/openclaw-2026-11-24.log）：
+  - `openclaw gateway start` 在 Windows 上走 `cmd → 登录项/Startup VBS → gateway.cmd → node`，发起后约 20s node 才开始加载；
+  - node 启动到 `http.bound` 实测 21.5s（process.bootstrap 一项 14s），冷启动总耗时约 32s，远超我们 20s 超时；
+  - 超时后 boot 路径直接降级 Mock 且 `reconnectEnabledRef` 未启用 → 网关后来起来了应用也不会连，必须重启应用。
+- 修复（1+2+3+4）：
+  - Rust `gateway_ensure_running` 改为「发起启动后立即返回」，新增 `gateway_probe`（只读 TCP 探测）；
+  - 优先直接运行 `%USERPROFILE%\.openclaw\gateway.cmd`（省掉 CLI 链路约 20s），不存在回退 `openclaw gateway start`；
+  - 120s 内重复 ensure 视为「启动中」，避免拉起第二个实例；PID/file 记录 phase=started|reused，成功时用 netstat 反查真实 PID；
+  - 前端 `connectWithAutoStart` 改为轮询：每 3s probe，最多 180s，成功即握手；UI 显示「正在启动 OpenClaw Gateway… 已等待 N 秒」。
+- 验证：cargo check 0 / tsc 0 / vite build PASS / NSIS 重新打包成功（35.18 MiB）。
+- 待实测：重启电脑后打开应用是否 12–25s 内自动连上（VERIFY）。

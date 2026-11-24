@@ -2,6 +2,14 @@
 
 ## DOING
 
+- **Gateway 自动恢复（进行中，Phase A–C 已完成）**
+  - 依据：`FJK_Agent_Gateway_自动恢复机制改造计划书`（626 行）现状核对结论：一致性约 25%。
+  - ✅ A `gateway_launch.rs`：`gateway_ensure_running`（端口探测 → 复用/拉起 CLI → 20s 就绪等待；单飞锁；PID 文件 `gateway.pid`；日志 `gateway-launch.log`）
+  - ✅ B 启动连接失败自动拉起：`usePetRuntime` 的 boot 路径改为 `connectWithAutoStart()`（失败 → ensure → 再握手一次）
+  - ✅ C 连接面板新增「启动 / 重试 Gateway」按钮 + 结果提示
+  - ✅ V2 冷启动修复：ensure 立即返回 + 前端 180s 轮询（3s/次）+ 优先跑 `gateway.cmd` 快路径 + PID 反查；见 STATE `ROUND_GATEWAY-AUTOSTART-V2`
+  - ⏳ 待做：重连路径（运行中断线）也走 ensure；托管进程停止/清理；错误分类进 UI；计划书 §14 测试矩阵
+
 - **Windows 首启安装向导（规划完成，待实施）**
   - 决策（2026-11-24）：Gateway 由应用自动拉起；Node 缺失引导下载；目标用户＝普通用户。
   - Phase 1 环境自检 + 向导骨架（env_check / FirstRunWizard / setup.json 标记）
