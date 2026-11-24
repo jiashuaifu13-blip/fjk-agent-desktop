@@ -47,3 +47,6 @@ temp/
 
 # Test / coverage
 coverage/
+
+# local desktop-control binary
+tools/bin/
