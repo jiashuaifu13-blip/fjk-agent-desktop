@@ -341,3 +341,17 @@ ROUND_NONEXEC-BOUNDARY（2026-11-24 早，文件工具越界漏洞修复）:
 - 结论：漏洞已堵；文件工具受 OpenClaw 会话边界约束（无审批卡，越界直接拒绝）。
 - 文档：`PERMISSION_SYSTEM_PLAN.md` OPEN #6 关闭、差距表更新；`TASKS.md` 新增 P1-059 DONE。
 - 配置当前保持修复状态（未回滚）；如需回滚：恢复 `openclaw.json.bak-20261124-cwdtest`。
+
+
+ROUND_UI-V02-AND-PANEL-LAG（2026-11-24 上午，UI v0.2 整合 + 卡顿修复）:
+- 4666c1d feat(ui): 整合 Living Workspace v0.2（App / Sidebar / Welcome / LivingWorkspace.css；DesktopTerminal 三处桥接；桌宠位置一次性迁移）。
+- 后续修复：
+  - 桌宠「消失」根因＝pet-stage 坐标系被缩进侧栏（288px），而 PetInteractionController 按视口存取位置 → CSS 恢复 inset:0 + 一次性清旧坐标。
+    证据：localStorage fjk-blog-pet-position-v1 = {xRatio:0.7298, yRatio:0.0948}。
+  - 面板「点开再点不关闭」根因＝桥接 hook 用 setXxx(panel===...) 赋值而非 togglePanel → 改用 togglePanel，deps 改为 [togglePanel]。
+  - 欢迎页横向滚动条根因＝.fjk-pet-scenery right:-5% → overflow-x: clip + terminal-messages overflow-x: hidden。
+- 面板卡顿（本轮）：
+  - 根因①：设置面板打开时，同步命令 openclaw_status 在主线程执行 cmd /C openclaw --version（0.5–2s 冻结）→ 改为 async + spawn_blocking。
+  - 根因②：61KB 单组件整树重渲染 → 检测结果 60s 缓存 + 轮询 8s→30s + sessions.list 结果去重不 setState。
+- 验证：tsc 0 / cargo check 0 / vite build PASS；实际体感待装包验证（VERIFY）。
+- 新主线：Windows 首启安装向导（4 个 Phase，见 TASKS.md）；决策：Gateway 自动拉起、Node 缺失引导下载、面向普通用户。

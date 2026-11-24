@@ -106,7 +106,23 @@ fn config_found() -> bool {
 }
 
 #[tauri::command]
-pub fn openclaw_status() -> OpenClawStatus {
+pub async fn openclaw_status() -> OpenClawStatus {
+    /*
+     * 探测会拉起 `openclaw --version`（Node CLI 启动 0.5–2s）。
+     * Tauri 的同步命令跑在主线程，会冻结界面，因此放进阻塞线程池。
+     */
+    tauri::async_runtime::spawn_blocking(collect_status)
+        .await
+        .unwrap_or_else(|_| OpenClawStatus {
+            installed: false,
+            cli_path: None,
+            version: None,
+            gateway_running: gateway_running(),
+            config_found: config_found(),
+        })
+}
+
+fn collect_status() -> OpenClawStatus {
     let cli = find_cli();
     let version = cli.as_ref().and_then(read_version);
 

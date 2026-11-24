@@ -2,7 +2,15 @@
 
 ## DOING
 
-- **UI 设计优化（当前主线）**：先由审查输出「问题清单 + 阶段计划」，用户确认后按条目实施；
+- **Windows 首启安装向导（规划完成，待实施）**
+  - 决策（2026-11-24）：Gateway 由应用自动拉起；Node 缺失引导下载；目标用户＝普通用户。
+  - Phase 1 环境自检 + 向导骨架（env_check / FirstRunWizard / setup.json 标记）
+  - Phase 2 一键安装 OpenClaw（npm i -g，流式输出，失败分类，国内源重试）
+  - Phase 3 Gateway 自动拉起（spawn detached + PID 防重 + 不主动杀）
+  - Phase 4 硬化（全中文、webviewInstallMode、重新运行向导入口）
+  - 风险：普通用户装 Node 摩擦大；npm 权限/网络；杀软拦截。
+
+- **UI 设计优化（已完成 v0.2，等待装包验收）**：先由审查输出「问题清单 + 阶段计划」，用户确认后按条目实施；
   范围：App.css 视觉一致性、DesktopTerminal.tsx 内联样式与组件拆分、面板层级与状态反馈、
   桌宠与终端一致性、可访问性、1366/1920/2560 三档布局。
 - 暂停项：权限系统 P2/P3（见下方「权限系统 P2」表），等用户恢复。

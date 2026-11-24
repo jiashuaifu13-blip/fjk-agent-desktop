@@ -2537,12 +2537,24 @@ export function usePetRuntime(
 
     const list = await gateway.send('sessions.list', {})
 
-    setSessionList(readSessionList(list))
-    setSettingsOverview(
-      readOverviewForActiveSession(
-        list,
-        activeSessionKeyRef.current,
-      ),
+    const nextList = readSessionList(list)
+    const nextOverview = readOverviewForActiveSession(
+      list,
+      activeSessionKeyRef.current,
+    )
+
+    /*
+     * 面板/轮询会频繁刷新；内容没变时保持同一引用，避免整棵组件树重渲染。
+     */
+    setSessionList((current) =>
+      JSON.stringify(current) === JSON.stringify(nextList)
+        ? current
+        : nextList,
+    )
+    setSettingsOverview((current) =>
+      JSON.stringify(current) === JSON.stringify(nextOverview)
+        ? current
+        : nextOverview,
     )
   }
 

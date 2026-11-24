@@ -44,7 +44,10 @@
 - 当前记录 `HEAD = origin/main = 175273e`；工作区 **clean**；
   **HEAD 以仓库最新提交为准**（本文件可能落后一个提交）：可用
   `https://api.github.com/repos/jiashuaifu13-blip/fjk-agent-desktop/commits/main` 查最新 sha 再核对。
-- **当前任务：UI 设计优化（进行中）**。权限系统 P1 已完成并实测（审计 / 风险 L0–L4 / Project Scope /
+- **当前任务：Windows 首启安装向导（规划完成，待实施）**；UI v0.2 已整合并修复两轮。
+  决策：Gateway 自动拉起 / Node 缺失引导下载 / 目标用户＝普通用户；4 个 Phase 见 TASKS.md。
+- UI 已完成：Living Workspace v0.2（4666c1d）、桌宠坐标系/面板 toggle/横向溢出修复、面板卡顿修复（异步 status / 60s 缓存 / 30s 轮询 / 渲染去重）。
+- 旧主线（已完成）：权限系统 P1 已完成并实测（审计 / 风险 L0–L4 / Project Scope /
   Grant / Global 策略文件 / 桌宠审批卡 / 文件工具边界）；P2（安全中心 / 拒绝原因回传 / Kill Switch 组合 /
   PermissionRequest）与 P3（Git·Blog 细分）**暂停，等用户决定**。
 - UI 审查入口：`apps/desktop/src/App.css`（816 行）、`components/DesktopTerminal.tsx`（约 61KB，内联样式集中）、

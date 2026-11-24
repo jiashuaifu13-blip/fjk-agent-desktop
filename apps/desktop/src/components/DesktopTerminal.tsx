@@ -302,9 +302,12 @@ export function DesktopTerminal() {
 
     refreshSessions().catch(() => undefined)
 
+    /*
+     * 30 秒轮询：8 秒一次会让面板开着时周期性整树重渲染，体感是“顿一下”。
+     */
     const timer = setInterval(() => {
       refreshSessions().catch(() => undefined)
-    }, 8000)
+    }, 30000)
 
     return () => clearInterval(timer)
   }, [sessionPanelOpen])
@@ -313,11 +316,37 @@ export function DesktopTerminal() {
     readExecPolicy().catch(() => undefined)
   }, [])
 
-  const refreshOpenclawStatus = () => {
-    setOpenclawCheckNote(null)
+  const openclawStatusCacheRef = useRef<{
+    at: number
+    status: OpenClawStatus | null
+  }>({ at: 0, status: null })
+
+  const describeOpenclawStatus = (status: OpenClawStatus) =>
+    status.installed
+      ? `已安装 OpenClaw ${status.version ?? '（版本未知）'}`
+      : '未检测到 OpenClaw'
+
+  const refreshOpenclawStatus = (options?: { force?: boolean }) => {
+    const cached = openclawStatusCacheRef.current
+
+    /*
+     * 60 秒缓存：探测要拉起 openclaw CLI，频繁开关设置面板时不重复付这个代价。
+     */
+    if (
+      !options?.force &&
+      cached.status &&
+      Date.now() - cached.at < 60000
+    ) {
+      setOpenclawStatus(cached.status)
+      setOpenclawCheckNote(describeOpenclawStatus(cached.status))
+      return
+    }
+
+    setOpenclawCheckNote('检测中…')
 
     void readOpenClawStatus()
       .then((status) => {
+        openclawStatusCacheRef.current = { at: Date.now(), status }
         setOpenclawStatus(status)
 
         if (!status) {
@@ -325,11 +354,7 @@ export function DesktopTerminal() {
           return
         }
 
-        setOpenclawCheckNote(
-          status.installed
-            ? `已安装 OpenClaw ${status.version ?? '（版本未知）'}`
-            : '未检测到 OpenClaw',
-        )
+        setOpenclawCheckNote(describeOpenclawStatus(status))
       })
       .catch(() => {
         setOpenclawStatus(null)
@@ -719,7 +744,7 @@ export function DesktopTerminal() {
               <button
                 type="button"
                 className="connection-state-trigger"
-                onClick={refreshOpenclawStatus}
+                onClick={() => refreshOpenclawStatus({ force: true })}
               >
                 重新检测
               </button>
