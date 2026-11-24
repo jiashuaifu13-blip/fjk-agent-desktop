@@ -68,7 +68,8 @@
 | `tools.effective` | ✅ 可用 | profile=full、64 工具、toolAccess（exec=available） |
 | `tools.invoke` | ⚠️ **VERIFY** | exec 不可经此调用 |
 | `config.schema` / `config.get` / `config.schema.lookup` | ✅ 可用 | `config.patch` 的 4.6–7.5s 是网关服务端耗时 |
-| 非 exec 工具的审批（write / apply_patch / browser / 插件） | ⚠️ **VERIFY** | 不产生 `session.approval`，当前分级层覆盖不到 |
+| 非 exec 文件工具边界 | `agents.entries.main.cwd=D:\pet-desp` + `tools.fs.workspaceOnly=true` | `openclaw.json` | **EXISTS**（实测：项目内写入成功、跨项目写入被拒 `Path escapes sandbox root`） |
+| 非 exec 工具的审批（write / apply_patch / browser / 插件） | 文件工具已由 OpenClaw 会话边界约束；**审批层仍不覆盖**（无卡片，靠边界拒绝） | — | **PARTIAL** |
 
 ---
 
@@ -85,7 +86,7 @@
 | 审计持久化 | 已实现 | 无查询界面 | **P2-010 未做** |
 | Kill Switch | 有 abort + chat.abort | 缺组合急停 | **P2-003 部分** |
 | Git/Blog 细分 | 无 | 全缺 | **P3 暂缓** |
-| 非 exec 能力覆盖 | 无 | 博客/浏览器/文件工具都在审批层之外 | **新增差距（2026-11-24 识别）** |
+| 非 exec 能力覆盖 | 文件工具已受会话边界约束（`cwd` + `fs.workspaceOnly`） | 仍无**审批卡**，边界外直接拒绝；browser/插件未验证 | **部分解决（2026-11-24）** |
 
 ---
 
@@ -156,7 +157,10 @@
 3. ~~原生 grants 与自建关系~~ → ✅ 定为 C 方案（自建为主 + 原生只读/撤销；原生不可创建）。
 4. `tools.invoke` 的可用工具范围。—— **OPEN**
 5. 沙箱（sandbox）是否启用及对 exec cwd 的影响。—— **OPEN**
-6. **非 exec 工具是否受 OpenClaw 会话权限约束**（`write` 能否写 `D:\pet-desp`）—— **OPEN（安全影响大）**
+6. ~~非 exec 工具是否受 OpenClaw 会话权限约束~~ → ✅ **已确认并修复（2026-11-24）**：
+   启用 `agents.entries.main.cwd="D:\pet-desp"` + `tools.fs.workspaceOnly=true` 后，
+   `write` 可在项目内写、跨项目被拒（`Path escapes sandbox root (D:\pet-desp)`）；
+   人设/记忆文件仍留在原 workspace（`~/.openclaw/workspace`），无需迁移。备份：`openclaw.json.bak-20261124-cwdtest`。
 7. 多实例同时运行时的审批归属（同一网关多个客户端订阅）—— **OPEN（已观察到双实例现象）**
 
 ---

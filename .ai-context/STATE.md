@@ -327,3 +327,17 @@ ROUND_PERMISSION-P1（2026-11-23 深夜，权限系统 P1 阶段完成）:
   但 OpenClaw 只允许「自动化任务」创建 grant，交互式无法创建 → 采用 FJK 自建 + 原生只读（C 方案）。
 - 用户决定：**验证到此暂停，暂不继续下一阶段**（P2 安全中心 / P3 Git·Blog 细分待定）。
 - 遗留：`%TEMP%` 下测试目录 fjk-* 可手工清理；调试期创建的 scratch 会话可清理。
+
+ROUND_NONEXEC-BOUNDARY（2026-11-24 早，文件工具越界漏洞修复）:
+- 验证（只读探测）：`write` 工具原先可写 `D:\pet-desp\.tmp\write-probe.txt`，全程无审批 → 项目范围保护可被绕过。
+- 受控实验（用户批准，配置已备份 `openclaw.json.bak-20261124-cwdtest`）：
+  - 设 `agents.entries.main.cwd = "D:\\pet-desp"`（coding 工具工作目录）
+  - 设 `tools.fs.workspaceOnly = true`（文件工具限制在 workspace 边界内）
+- 实测结果：
+  - 项目内写入 `D:\pet-desp\.tmp\c-test.txt` → ✅ 成功
+  - 跨项目写入 `C:\Users\付家康\.dsh\c-test-outside.txt` → ❌ 被拒
+    （错误原文：`Path escapes sandbox root (D:\pet-desp): ...`）
+  - 人设/记忆文件仍在 `~/.openclaw/workspace`（SOUL.md / AGENTS.md / MEMORY.md 均存在，未迁移）
+- 结论：漏洞已堵；文件工具受 OpenClaw 会话边界约束（无审批卡，越界直接拒绝）。
+- 文档：`PERMISSION_SYSTEM_PLAN.md` OPEN #6 关闭、差距表更新；`TASKS.md` 新增 P1-059 DONE。
+- 配置当前保持修复状态（未回滚）；如需回滚：恢复 `openclaw.json.bak-20261124-cwdtest`。
