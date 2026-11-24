@@ -3,6 +3,7 @@ mod custom_provider;
 mod default_model;
 mod exec_policy;
 mod gateway;
+mod gateway_launch;
 mod onboarding;
 mod openclaw_auth;
 mod pet_memory;
@@ -14,11 +15,14 @@ mod provider_models;
 pub fn run() {
     tauri::Builder::default()
         .manage(gateway::GatewayState::default())
+        .manage(gateway_launch::GatewayLaunchState::default())
         .invoke_handler(tauri::generate_handler![
             gateway::gateway_info,
             gateway::gateway_connect,
             gateway::gateway_request,
             gateway::gateway_disconnect,
+            gateway_launch::gateway_ensure_running,
+            gateway_launch::gateway_probe,
             pet_memory::pet_memory_load,
             pet_memory::pet_memory_save,
             pet_memory::pet_memory_clear,

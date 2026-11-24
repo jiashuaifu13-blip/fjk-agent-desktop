@@ -38,7 +38,7 @@ fn candidate_paths() -> Vec<PathBuf> {
     paths
 }
 
-fn find_cli() -> Option<PathBuf> {
+pub(crate) fn find_cli() -> Option<PathBuf> {
     for path in candidate_paths() {
         if path.exists() {
             return Some(path);

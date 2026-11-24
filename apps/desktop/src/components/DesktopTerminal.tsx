@@ -28,6 +28,8 @@ import type {
   OpenClawStatus,
 } from '../system/openclawStatus'
 
+import { ensureGatewayRunning } from '../system/gatewayLaunch'
+
 import type {
   ChatMessage,
 } from '../runtime/PetRuntimeContext'
@@ -253,6 +255,9 @@ export function DesktopTerminal() {
 
   const [waitingSeconds, setWaitingSeconds] =
     useState(0)
+
+  const [gatewayEnsureNote, setGatewayEnsureNote] =
+    useState<string | null>(null)
 
   const [openclawCheckNote, setOpenclawCheckNote] =
     useState<string | null>(null)
@@ -1780,6 +1785,44 @@ export function DesktopTerminal() {
                   gatewayStatus.hint
                 }
               </div>
+            )}
+          </div>
+
+          <div className="connection-state-section">
+            <div className="connection-state-section-title">
+              Gateway 进程
+            </div>
+
+            <div className="terminal-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  void (async () => {
+                    setGatewayEnsureNote('正在检查 / 启动 Gateway…')
+
+                    const ensured = await ensureGatewayRunning()
+
+                    if (!ensured) {
+                      setGatewayEnsureNote('当前运行环境不支持自动启动（非 Tauri）。')
+                      return
+                    }
+
+                    setGatewayEnsureNote(
+                      ensured.ok
+                        ? `${ensured.phase === 'reused' ? '已复用运行中的 Gateway' : '已启动 Gateway'}${
+                            ensured.pid ? `（pid=${ensured.pid}）` : ''
+                          }，请等待连接。`
+                        : `启动失败：${ensured.errorKind ?? 'unknown'} — ${ensured.detail ?? ''}`,
+                    )
+                  })()
+                }}
+              >
+                启动 / 重试 Gateway
+              </button>
+            </div>
+
+            {gatewayEnsureNote && (
+              <div className="connection-state-copy">{gatewayEnsureNote}</div>
             )}
           </div>
 

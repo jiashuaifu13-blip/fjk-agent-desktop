@@ -26,6 +26,10 @@ import {
 import { appendAudit, describeCommand } from '../system/auditLog'
 import { getExecPolicy, setExecMode } from '../system/openclawStatus'
 import { MockChatClient } from '../chat/MockChatClient.js'
+import {
+  ensureGatewayRunning,
+  probeGateway,
+} from '../system/gatewayLaunch'
 import { AgentStates } from '@fjk/agent-state/AgentStates.js'
 import { mapAgentStateToPetAction } from '@fjk/agent-state/AgentToPetState.js'
 import { createAgentStateReducer } from '@fjk/agent-state/AgentStateReducer.js'
@@ -1514,6 +1518,97 @@ export function usePetRuntime(
             },
           )
 
+        /*
+         * 首次连接失败最常见的原因是 Gateway 进程没在运行。
+         * 交给 Rust 侧探测/拉起（幂等：已在运行会直接复用），成功后再握手一次。
+         * 认证失败、CLI 缺失等不可恢复问题由 ensure 结果分类返回，不在这里无限重试。
+         */
+        const connectWithAutoStart = async () => {
+          try {
+            await gateway.connect()
+            return
+          } catch (firstError) {
+            setGatewayStatus({
+              state: 'connecting',
+              title: '正在启动 OpenClaw Gateway…',
+              detail: '未检测到运行中的 Gateway，正在尝试自动启动。',
+            })
+
+            const ensured = await ensureGatewayRunning()
+
+            if (!ensured) {
+              throw firstError
+            }
+
+            if (!ensured.ok) {
+              appendRuntimeLog(
+                'error',
+                'gateway',
+                `Gateway auto-start failed: ${ensured.errorKind ?? 'unknown'}`,
+                ensured.detail ?? '无法启动 Gateway',
+              )
+
+              throw firstError
+            }
+
+            appendRuntimeLog(
+              'info',
+              'gateway',
+              `Gateway auto-start ${ensured.phase}`,
+              ensured.detail ?? '',
+            )
+
+            /*
+             * 网关冷启动实测 12–32 秒，单次命令里“等死”会误判失败，
+             * 超时后又无法再恢复。这里改为轮询端口，最多等 3 分钟：
+             * 端口就绪 → 立刻握手；期间 UI 显示已等待秒数。
+             */
+            const deadline = Date.now() + 180000
+            let waitedSeconds = 0
+
+            while (Date.now() < deadline) {
+              if (cancelled) {
+                throw firstError
+              }
+
+              await new Promise<void>((resolve) => {
+                setTimeout(resolve, 3000)
+              })
+
+              waitedSeconds += 3
+
+              const probe = await probeGateway()
+
+              if (probe?.portOpen) {
+                appendRuntimeLog(
+                  'info',
+                  'gateway',
+                  'Gateway port ready',
+                  `waited=${waitedSeconds}s; pid=${probe.pid ?? 'unknown'}`,
+                )
+
+                await gateway.connect()
+                return
+              }
+
+              setGatewayStatus({
+                state: 'connecting',
+                title: '正在启动 OpenClaw Gateway…',
+                detail: `已等待 ${waitedSeconds} 秒，端口尚未就绪。`,
+              })
+            }
+
+            appendRuntimeLog(
+              'error',
+              'gateway',
+              'Gateway start timeout',
+              'waited=180s; port not open',
+            )
+
+            throw firstError
+          }
+        }
+
         try {
           appendRuntimeLog(
             'info',
@@ -1521,7 +1616,7 @@ export function usePetRuntime(
             'Connecting to OpenClaw Gateway',
           )
 
-          await gateway.connect()
+          await connectWithAutoStart()
 
           appendRuntimeLog(
             'info',
