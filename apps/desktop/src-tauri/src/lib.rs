@@ -11,9 +11,43 @@ mod policy_file;
 mod provider_catalog;
 mod provider_models;
 
+use tauri::Manager;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+            /*
+             * 把随安装包分发的 fjkctl.exe 释放到用户目录（%APPDATA%\com.fjk.agent\bin）。
+             * agent 通过 exec 调用这个固定路径；长度不同才覆盖，避免每次启动重复写盘。
+             */
+            if let Ok(resource) = app
+                .path()
+                .resolve("resources/fjkctl.exe", tauri::path::BaseDirectory::Resource)
+            {
+                if resource.exists() {
+                    if let Ok(dir) = app.path().app_data_dir() {
+                        let bin_dir = dir.join("bin");
+                        let _ = std::fs::create_dir_all(&bin_dir);
+
+                        let target = bin_dir.join("fjkctl.exe");
+                        let stale = match (
+                            std::fs::metadata(&target),
+                            std::fs::metadata(&resource),
+                        ) {
+                            (Ok(existing), Ok(source)) => existing.len() != source.len(),
+                            _ => true,
+                        };
+
+                        if stale {
+                            let _ = std::fs::copy(&resource, &target);
+                        }
+                    }
+                }
+            }
+
+            Ok(())
+        })
         .manage(gateway::GatewayState::default())
         .manage(gateway_launch::GatewayLaunchState::default())
         .invoke_handler(tauri::generate_handler![

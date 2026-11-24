@@ -50,3 +50,6 @@ coverage/
 
 # local desktop-control binary
 tools/bin/
+
+# 构建时由 stage-fjkctl 生成
+apps/desktop/src-tauri/resources/fjkctl.exe
