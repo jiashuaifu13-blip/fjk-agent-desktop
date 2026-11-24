@@ -2,6 +2,11 @@
 
 ## DOING
 
+- **UI 设计优化（当前主线）**：先由审查输出「问题清单 + 阶段计划」，用户确认后按条目实施；
+  范围：App.css 视觉一致性、DesktopTerminal.tsx 内联样式与组件拆分、面板层级与状态反馈、
+  桌宠与终端一致性、可访问性、1366/1920/2560 三档布局。
+- 暂停项：权限系统 P2/P3（见下方「权限系统 P2」表），等用户恢复。
+
 - **P1-020 审批审计落盘**（权限系统 P0-①）：每次审批（请求/决策/结果）写 JSONL 到
   `%APPDATA%\com.fjk.agent\approvals.jsonl`；字段 ts / approvalId / sessionKey / runId / tool /
   operation / resource / risk / decision / result / reason；含 `sk-…` 脱敏与 5MB 轮转。

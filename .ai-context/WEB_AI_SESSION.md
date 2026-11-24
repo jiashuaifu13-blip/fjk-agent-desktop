@@ -38,16 +38,18 @@
 - 分支：`main`
 - 环境：Windows 11、Windows PowerShell 5.1、Node 18+、Rust stable、本地 OpenClaw Gateway（`ws://127.0.0.1:18789`）
 
-## 三、当前状态（2026-11-23 18:35 更新）
+## 三、当前状态（2026-11-24 08:20 更新）
 
 - 实时状态以 `STATE.md` 为准（`STATE_ID` / `HEAD_AT_SYNC` / 任务 / 未验证项）；
 - 当前记录 `HEAD = origin/main = 175273e`；工作区 **clean**；
   **HEAD 以仓库最新提交为准**（本文件可能落后一个提交）：可用
   `https://api.github.com/repos/jiashuaifu13-blip/fjk-agent-desktop/commits/main` 查最新 sha 再核对。
-- 当前状态：**权限系统 P1 已完成为止，暂停**（Global 策略文件 / Project Scope / Grant / 桌宠审批卡 / 一键打开策略文件均已实测）；
-  P2（安全中心）、P3（Git·Blog 细分）暂不排期，等用户决定。
-  其次 R2（watchdog 在 approval-wait 暂停 / 停止语义）。API 切换漏洞已修复（`e16d63d` + `19eded9`）；
-  P1-020 审计代码已上线，实机验证待补。
+- **当前任务：UI 设计优化（进行中）**。权限系统 P1 已完成并实测（审计 / 风险 L0–L4 / Project Scope /
+  Grant / Global 策略文件 / 桌宠审批卡 / 文件工具边界）；P2（安全中心 / 拒绝原因回传 / Kill Switch 组合 /
+  PermissionRequest）与 P3（Git·Blog 细分）**暂停，等用户决定**。
+- UI 审查入口：`apps/desktop/src/App.css`（816 行）、`components/DesktopTerminal.tsx`（约 61KB，内联样式集中）、
+  `components/PetView.tsx`、`components/RuntimeLogViewer.tsx`；UI 相关历史修复见 `PROJECT_STATUS.md`。
+- 工作方式：UI 优化先出「问题清单 + 阶段计划」，经用户确认后按「一条一条改 + tsc/build 验证 + 提交」推进。
 
 已完成且实测（2026-11-22 晚新增，明细见 `STATE.md` 的 `ROUND_PROVIDER-LATENCY`）：
 
