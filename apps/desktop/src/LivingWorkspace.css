@@ -1,0 +1,173 @@
+/* FJK Living Workspace v0.2 — visual target: reference/FJK_Living_Workspace_visual_target.png
+   Layered AFTER App.css. Keep original runtime styles and app behavior. */
+:root {
+  color-scheme: dark;
+  --fjk-bg:#0b121b; --fjk-base:#101a26; --fjk-panel:#142231; --fjk-panel-2:#1a2b3b;
+  --fjk-border:rgba(136,184,205,.14); --fjk-border-hi:rgba(126,222,225,.37);
+  --fjk-text:#e9f2f7; --fjk-secondary:#a5bacd; --fjk-muted:#8198ac;
+  --fjk-accent:#72e1dc; --fjk-accent-soft:rgba(94,220,216,.13);
+  --fjk-danger:#ef9a9f; --fjk-warning:#edc98e;
+  --fjk-shadow:0 22px 60px rgba(0,0,0,.32);
+  --fjk-sidebar-width:288px;
+}
+body {background:var(--fjk-bg); color:var(--fjk-text)}
+.fjk-workspace {display:grid;grid-template-columns:var(--fjk-sidebar-width) minmax(0,1fr);grid-template-rows:minmax(0,1fr);height:100%;background:radial-gradient(ellipse at 70% 35%,rgba(42,87,108,.13),transparent 56%),var(--fjk-bg)}
+.fjk-sidebar {min-width:0;min-height:0;display:flex;flex-direction:column;padding:26px 16px 16px;border-right:1px solid var(--fjk-border);background:linear-gradient(165deg,#142131 0%,#101926 74%,#121d2a 100%);z-index:2;overflow:hidden}
+.fjk-brand {display:flex;align-items:center;gap:15px;padding:5px 14px 28px}
+.fjk-brand-mark {display:grid;place-items:center;width:34px;height:40px;color:var(--fjk-accent);font-size:34px;text-shadow:0 0 22px rgba(69,225,218,.5)}
+.fjk-brand strong {display:block;font-size:17px;letter-spacing:.1px;color:var(--fjk-text)}
+.fjk-brand small {display:block;margin-top:5px;color:var(--fjk-muted);font-size:10px;letter-spacing:1.1px}
+.fjk-primary-nav {display:flex;flex-direction:column;gap:4px;padding-bottom:22px;border-bottom:1px solid var(--fjk-border)}
+.fjk-nav-item {border:1px solid transparent;background:transparent;color:var(--fjk-secondary);font-family:inherit;font-size:13px;font-weight:500;text-align:left;padding:11px 16px;display:flex;align-items:center;gap:14px;border-radius:10px;cursor:pointer;transition:background .16s,border-color .16s,color .16s}
+.fjk-nav-item span {width:18px;text-align:center;font-size:19px;font-weight:400}
+.fjk-nav-item:hover {background:rgba(122,183,209,.075);color:#fff}
+.fjk-nav-item.is-current {background:linear-gradient(90deg,rgba(70,196,197,.2),rgba(57,137,150,.12));border-color:rgba(105,227,221,.42);color:#eaffff;box-shadow:inset 0 0 14px rgba(91,207,206,.11),0 0 16px rgba(38,165,169,.1)}
+.fjk-session-heading {display:flex;align-items:center;justify-content:space-between;padding:22px 12px 12px;font-size:13px;font-weight:600;color:#d5e4ee}
+.fjk-session-count {display:inline-grid;place-items:center;padding:2px 7px;margin-left:4px;border-radius:15px;background:rgba(166,194,214,.1);font-size:11px;color:var(--fjk-secondary)}
+.fjk-icon-action {color:var(--fjk-secondary);border:1px solid var(--fjk-border);border-radius:9px;background:rgba(196,221,231,.05);width:28px;height:28px;font-size:21px;line-height:1;cursor:pointer}
+.fjk-icon-action:hover:not(:disabled){border-color:var(--fjk-border-hi);color:var(--fjk-accent)}
+.fjk-session-list {flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:5px;padding-right:2px}
+.fjk-session-item {width:100%;display:flex;align-items:center;gap:10px;min-width:0;background:transparent;border:1px solid transparent;border-radius:10px;text-align:left;color:var(--fjk-secondary);padding:11px 9px;cursor:pointer}
+.fjk-session-item:hover:not(:disabled),.fjk-session-item.is-active {background:rgba(106,194,202,.1);border-color:rgba(123,225,223,.1)}
+.fjk-session-item:disabled {cursor:default;opacity:1}
+.fjk-session-icon {font-size:21px;flex:0 0 20px;color:#abc5d4}
+.fjk-session-copy {display:flex;flex-direction:column;gap:5px;min-width:0;flex:1}
+.fjk-session-copy strong {font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fjk-text);font-weight:600}
+.fjk-session-copy small {font-size:10px;color:var(--fjk-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fjk-active-pip {width:5px;height:5px;border-radius:50%;background:var(--fjk-accent)}
+.fjk-sidebar-empty,.fjk-sidebar-error {font-size:12px;line-height:1.5;margin:12px;color:var(--fjk-muted)}
+.fjk-sidebar-error {color:var(--fjk-danger)}
+.fjk-sidebar-connection {display:flex;align-items:center;gap:9px;width:100%;min-height:44px;background:rgba(6,14,23,.24);border:1px solid var(--fjk-border);border-radius:11px;padding:10px 12px;color:var(--fjk-text);font:inherit;font-size:11px;cursor:pointer}
+.fjk-connection-dot {width:8px;height:8px;background:var(--fjk-warning);border-radius:50%;flex:0 0 auto}
+.fjk-connection-dot.is-online {background:#64d9b7;box-shadow:0 0 8px rgba(79,215,169,.26)}
+.fjk-connection-arrow {margin-left:auto;color:var(--fjk-muted);font-size:20px}
+.fjk-sidebar-agent-sr {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.fjk-main-workspace {position:relative;min-width:0;min-height:0;overflow:hidden;margin:12px 12px 12px 0;border-radius:18px;border:1px solid rgba(147,192,206,.1);background:radial-gradient(ellipse at 82% 56%,rgba(35,84,104,.26),transparent 45%),linear-gradient(145deg,#111b28,#101822 65%,#132435);box-shadow:inset 0 1px rgba(216,244,246,.045),0 12px 42px rgba(0,0,0,.14)}
+.fjk-main-workspace>.terminal {width:100%;height:100%;background:transparent;z-index:auto}
+.fjk-main-workspace .terminal-header {height:68px;flex:0 0 68px;background:rgba(12,24,35,.42);border-bottom:1px solid var(--fjk-border);padding:0 36px}
+.fjk-main-workspace .terminal-title {font-size:14px;color:#e1ecf3}
+.fjk-main-workspace .terminal-dot {box-shadow:0 0 14px currentColor}
+.fjk-main-workspace .terminal-meta {gap:10px}
+/* Existing panel buttons remain reachable through sidebar. Do not duplicate them visually. */
+.fjk-main-workspace .terminal-meta > .connection-state-trigger {display:none}
+.fjk-main-workspace .terminal-mode,.fjk-main-workspace .terminal-agent {border:1px solid var(--fjk-border);border-radius:30px;background:rgba(18,44,56,.42);padding:7px 12px;font-size:12px;color:var(--fjk-accent)}
+.fjk-main-workspace .terminal-agent {color:#bfd3e0}
+.fjk-main-workspace .terminal-messages {padding:22px clamp(28px,4.2vw,84px) 28px;gap:16px;z-index:1}
+.fjk-main-workspace .msg {max-width:min(78%,820px)}
+.fjk-main-workspace .msg-content {background:rgba(27,43,59,.72);border:1px solid rgba(143,186,201,.1);border-radius:13px;color:var(--fjk-text);padding:12px 16px;line-height:1.65}
+.fjk-main-workspace .msg-user .msg-content {background:rgba(56,115,132,.24);border-color:rgba(110,216,215,.25);color:var(--fjk-text)}
+.fjk-main-workspace .msg-role {color:var(--fjk-muted);font-size:11px}
+.fjk-main-workspace .terminal-input {border:0;background:transparent;padding:12px clamp(25px,4.2vw,72px) 24px;gap:8px;position:relative;z-index:2}
+.fjk-main-workspace .terminal-input textarea {display:block;max-width:1120px;margin:auto;background:linear-gradient(115deg,rgba(33,54,71,.98),rgba(20,33,47,.98));border:1px solid rgba(125,215,214,.42);border-radius:13px;min-height:66px;padding:18px 20px;color:var(--fjk-text);box-shadow:0 8px 22px rgba(0,0,0,.1),inset 0 1px rgba(246,255,255,.035);line-height:1.55}
+.fjk-main-workspace .terminal-input textarea::placeholder {color:#9db4c7}
+.fjk-main-workspace .terminal-input textarea:focus {border-color:var(--fjk-accent);outline:2px solid rgba(100,223,221,.25);outline-offset:2px}
+.fjk-main-workspace .terminal-actions {width:min(100%,1120px);margin:auto}
+.fjk-main-workspace .terminal-actions button[type='submit'] {background:linear-gradient(140deg,#a7f9f1,#4ccacb);border-color:#6ee2df;color:#102935;box-shadow:0 3px 18px rgba(69,212,203,.15);font-weight:650}
+.fjk-main-workspace .terminal-actions button:not([type='submit']) {background:rgba(38,57,74,.9);color:#e4f1f5;border-color:var(--fjk-border)}
+.fjk-main-workspace .terminal-empty {width:100%;height:100%;margin:0;color:inherit}
+.fjk-welcome {width:100%;height:100%;min-height:0;position:relative;display:flex;align-items:center;padding:18px clamp(20px,4vw,70px) 12px;isolation:isolate}
+.fjk-welcome-copy {position:relative;z-index:2;width:min(74%,790px);padding-bottom:28px}
+.fjk-welcome-kicker {letter-spacing:2px;font-size:10px;font-weight:600;color:var(--fjk-accent);margin-bottom:24px;opacity:.85}
+.fjk-welcome-greeting {font-size:18px;color:#d6e6f0;margin:0 0 7px}
+.fjk-welcome h1 {font-size:clamp(44px,5.7vw,74px);font-weight:700;line-height:1.12;letter-spacing:1px;margin:0;background:linear-gradient(90deg,#f4f9fe 28%,#e1f1f8 52%,#65d4d7 88%);background-clip:text;-webkit-background-clip:text;color:transparent}
+.fjk-welcome-description {font-size:14px;line-height:1.75;color:#b5cbdc;margin:18px 0 34px;max-width:560px}
+.fjk-capability-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:690px}
+.fjk-capability {min-height:116px;padding:18px 16px;border:1px solid var(--fjk-border);border-radius:14px;background:linear-gradient(140deg,rgba(40,61,77,.6),rgba(24,41,58,.57));box-shadow:inset 0 1px rgba(221,248,250,.04);display:flex;flex-direction:column;gap:8px}
+.fjk-capability>span {color:#8be7e6;font-family:Consolas,monospace;font-size:22px;line-height:1.1}
+.fjk-capability strong {font-size:13px;color:#e8f2f5;font-weight:600}
+.fjk-capability small {font-size:11px;color:#a4b8cb;line-height:1.45}
+.fjk-prompt-heading {margin-top:40px;margin-bottom:15px;font-size:12px;color:#bccbd8}
+.fjk-prompt-row {display:flex;gap:10px;flex-wrap:wrap;max-width:860px}
+.fjk-prompt-row button {display:flex;align-items:center;gap:9px;background:rgba(31,50,66,.78);border:1px solid var(--fjk-border);border-radius:25px;padding:10px 15px;color:#c9dce7;font:inherit;font-size:11px;cursor:pointer;transition:background .14s,border-color .14s}
+.fjk-prompt-row button:hover:not(:disabled) {background:rgba(56,98,112,.45);border-color:var(--fjk-border-hi)}
+.fjk-prompt-row button span {color:var(--fjk-accent);font-size:16px}
+.fjk-pet-scenery {position:absolute;pointer-events:none;inset:3% -5% 0 66%;z-index:0;background:radial-gradient(ellipse at 58% 55%,rgba(28,126,139,.23),transparent 45%)}
+.fjk-pet-orbit {position:absolute;right:2%;top:15%;width:90%;aspect-ratio:1;border:1px solid rgba(87,224,226,.15);border-left-color:transparent;border-bottom-color:transparent;border-radius:50%;transform:rotate(-15deg);box-shadow:0 0 28px rgba(47,185,189,.08)}
+.fjk-pet-platform {position:absolute;right:8%;bottom:14%;width:70%;height:16%;border-radius:50%;border:1px solid rgba(118,235,232,.4);background:radial-gradient(ellipse,rgba(86,210,212,.2),transparent 68%);box-shadow:0 0 60px rgba(57,193,207,.19)}
+/* Original pet still renders with runtime's canvasRef/rootRef; no replacement sprite. */
+.fjk-workspace>.pet-stage {position:absolute;inset:0 12px 12px var(--fjk-sidebar-width);z-index:5;pointer-events:none;overflow:visible}
+.fjk-workspace .pet-root {right:clamp(16px,7%,120px);bottom:clamp(160px,20%,250px);z-index:5}
+.fjk-workspace .pet-canvas {width:clamp(270px,24vw,400px);height:auto;aspect-ratio:16/9;filter:drop-shadow(0 15px 28px rgba(46,194,197,.14))}
+.fjk-workspace:has(.msg) .pet-root {right:20px;bottom:140px;transform:scale(.78);transform-origin:bottom right}
+.fjk-workspace:has(.msg) .fjk-pet-scenery {display:none}
+.fjk-workspace .pet-speech {max-width:245px;border:1px solid rgba(133,228,228,.4);border-radius:15px;--bubble-bg:#1c3545;--bubble-bg-top:#284455;--bubble-border:#649baf;--bubble-text:#e4f6f7;--bubble-shadow:#1b4654;box-shadow:0 10px 30px rgba(0,0,0,.34)}
+.fjk-workspace .pet-badge {opacity:.75}
+/* Keep all safety actions above decorative pet. Panels are above chat and pet, approval above panels. */
+.fjk-main-workspace .connection-state-panel,.fjk-main-workspace .runtime-log-viewer {z-index:30;top:72px;left:24px;right:24px;max-height:calc(100% - 182px);background:#172533;border-color:var(--fjk-border-hi);color:var(--fjk-text);box-shadow:var(--fjk-shadow)}
+.fjk-main-workspace .terminal-notice-warn:has(.terminal-actions) {position:relative;z-index:50;background:#2a2830;border:1px solid rgba(241,197,129,.44);border-radius:12px;margin:8px 18px;box-shadow:var(--fjk-shadow)}
+.fjk-workspace>.pet-stage:has(.pet-approval) {z-index:60}
+.fjk-workspace .pet-approval {z-index:61;background:linear-gradient(165deg,#2d2b36,#1d2938);border-color:rgba(242,198,140,.48);color:#f9e9d5;right:20px;bottom:120px}
+.fjk-main-workspace .terminal-notice-warn:has(.terminal-actions) .terminal-actions button {background:rgba(221,191,146,.12);color:#f6e9db;border-color:rgba(235,201,153,.28)}
+.fjk-main-workspace .terminal-notice-warn:has(.terminal-actions) .terminal-actions button:first-child {background:#b8eae3;color:#15333b;border-color:#b8eae3}
+.fjk-main-workspace .terminal-notice-warn:has(.terminal-actions) code {font-family:'Cascadia Code',Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.fjk-main-workspace .runtime-log-viewer {background:#142230}
+.fjk-main-workspace .connection-state-trigger,.fjk-main-workspace .runtime-log-actions button {border-radius:8px;background:#223446;color:#dfedf4;border-color:var(--fjk-border)}
+.fjk-main-workspace .connection-state-row {border-color:var(--fjk-border)}
+.fjk-main-workspace .connection-state-value {overflow-wrap:anywhere}
+.fjk-workspace :is(button,textarea,input,select,summary):focus-visible {outline:2px solid var(--fjk-accent);outline-offset:3px}
+.fjk-workspace button:disabled {cursor:not-allowed;opacity:.55}
+/* Responsive limits: preserve interaction space and let sidebar collapse at narrow widths. */
+@media (max-width:1450px) {
+  :root {--fjk-sidebar-width:250px}
+  .fjk-sidebar {padding:16px 12px 12px}
+  .fjk-main-workspace {margin:8px 8px 8px 0}
+  .fjk-main-workspace .terminal-header {height:56px;flex-basis:56px;padding:0 22px}
+  .fjk-welcome {padding:12px 24px}
+  .fjk-welcome-copy {width:77%}
+  .fjk-welcome-kicker {margin-bottom:13px}
+  .fjk-welcome-description {margin:12px 0 22px}
+  .fjk-capability {min-height:100px;padding:12px}
+  .fjk-prompt-heading {margin-top:22px}
+  .fjk-workspace .pet-root {right:1%;bottom:25%}
+  .fjk-workspace .pet-canvas {width:280px}
+  .fjk-main-workspace .terminal-input {padding-bottom:14px}
+}
+@media (max-width:1040px) {
+  :root {--fjk-sidebar-width:208px}
+  .fjk-brand {gap:7px;padding-left:5px}
+  .fjk-brand strong {font-size:14px}
+  .fjk-brand small {font-size:8px}
+  .fjk-welcome-copy {width:88%}
+  .fjk-pet-scenery {opacity:.45}
+  .fjk-workspace .pet-root {right:0;bottom:135px;transform:scale(.72);transform-origin:bottom right}
+  .fjk-main-workspace .terminal-mode,.fjk-main-workspace .terminal-agent {padding:5px 8px;font-size:10px}
+}
+@media (max-width:760px) {
+  :root {--fjk-sidebar-width:62px}
+  .fjk-sidebar {padding:15px 6px}
+  .fjk-brand {padding:6px 8px 20px}
+  .fjk-brand>div:last-child,.fjk-nav-item:not(.is-current),.fjk-nav-item.is-current {font-size:0}
+  .fjk-nav-item {justify-content:center;padding:11px 0}
+  .fjk-nav-item span {font-size:21px}
+  .fjk-session-heading,.fjk-session-list,.fjk-sidebar-connection {display:none}
+  .fjk-welcome-copy {width:100%}
+  .fjk-capability-grid {grid-template-columns:1fr;gap:7px}
+  .fjk-capability {min-height:0;padding:9px 12px}
+  .fjk-capability small {display:none}
+  .fjk-welcome h1 {font-size:40px}
+  .fjk-workspace .pet-root {opacity:.5}
+}
+@media (max-height:780px) {
+  .fjk-welcome {align-items:flex-start;padding-top:30px;overflow-y:auto}
+  .fjk-welcome-copy {padding-bottom:16px}
+  .fjk-welcome h1 {font-size:clamp(40px,4.6vw,62px)}
+  .fjk-welcome-description {margin:10px 0 18px}
+  .fjk-prompt-heading {margin-top:20px}
+  .fjk-capability {min-height:90px}
+  .fjk-workspace .pet-root {bottom:150px}
+}
+@media (prefers-reduced-motion: reduce) {
+  .fjk-workspace *, .fjk-workspace *::before, .fjk-workspace *::after {animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+
+
+/* pet-stage-coordinate-fix（2026-11-24 适配）
+   PetInteractionController 以视口坐标保存/夹取桌宠位置，
+   而 position:absolute 的 left/top 是相对 pet-stage 的。
+   舞台必须覆盖整窗，否则恢复位置会被侧栏宽度推偏、被面板遮住。 */
+.fjk-workspace > .pet-stage { inset: 0; }
+
+/* welcome-overflow-fix（2026-11-24 适配）
+   .fjk-pet-scenery 使用 right:-5% 装饰光晕，会撑出消息区横向滚动条。 */
+.fjk-welcome { overflow-x: clip; }
+.fjk-main-workspace .terminal-messages { overflow-x: hidden; }

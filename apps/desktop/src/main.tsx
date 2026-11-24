@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import './App.css'
+import './LivingWorkspace.css'
 
 // Note: intentionally NOT wrapped in <StrictMode>. The pet runtime is an
 // imperative canvas pipeline (fetch + requestAnimationFrame + audio) whose

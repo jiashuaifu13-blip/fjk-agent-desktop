@@ -42,6 +42,11 @@ import type {
   GatewayIssue,
 } from '../gateway/GatewayError'
 
+import { WorkspaceWelcome } from './WorkspaceWelcome'
+import {
+  WORKSPACE_PANEL_EVENT,
+  WORKSPACE_QUICK_PROMPT_EVENT,
+} from './WorkspaceSidebar'
 import {
   RuntimeLogViewer,
 } from './RuntimeLogViewer'
@@ -185,6 +190,45 @@ export function DesktopTerminal() {
       !isOpen && panel === 'connection',
     )
   }
+
+  // FJK Living Workspace UI bridge: open existing panel logic, never duplicate RPC calls.
+  useEffect(() => {
+    const onPanel = (event: Event) => {
+      const panel = (event as CustomEvent<string>).detail
+      if (!['session', 'settings', 'log', 'connection'].includes(panel)) {
+        return
+      }
+
+      // 复用仓库已有互斥开关：再次点击同一入口会关闭面板。
+      togglePanel(panel as PanelName)
+    }
+
+    const onQuick = (event: Event) => {
+      const detail = (event as CustomEvent<{ prompt: string; action: string }>).detail
+
+      if (!detail) {
+        return
+      }
+
+      if (detail.action === 'log') {
+        setSessionPanelOpen(false)
+        setSettingsPanelOpen(false)
+        setLogViewerOpen(true)
+        setConnectionPanelOpen(false)
+      } else if (detail.action === 'fill' && typeof detail.prompt === 'string') {
+        setInput(detail.prompt)
+      }
+    }
+
+    window.addEventListener(WORKSPACE_PANEL_EVENT, onPanel)
+    window.addEventListener(WORKSPACE_QUICK_PROMPT_EVENT, onQuick)
+
+    return () => {
+      window.removeEventListener(WORKSPACE_PANEL_EVENT, onPanel)
+      window.removeEventListener(WORKSPACE_QUICK_PROMPT_EVENT, onQuick)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [togglePanel])
 
   const [modelDraft, setModelDraft] =
     useState('')
@@ -1844,12 +1888,9 @@ export function DesktopTerminal() {
             })
         }}
       >
-        {messages.length ===
-          0 && (
+        {messages.length === 0 && !sending && (
           <div className="terminal-empty">
-            {ready
-              ? '向桌宠说点什么吧。'
-              : '正在启动桌宠…'}
+            <WorkspaceWelcome ready={ready} />
           </div>
         )}
 

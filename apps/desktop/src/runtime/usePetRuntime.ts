@@ -1862,6 +1862,29 @@ export function usePetRuntime(
 
       interaction.mount()
 
+      /*
+       * 一次性位置迁移（v0.2 UI）：
+       * 旧存档按「舞台 = 全窗口」计算；v0.2 曾把舞台缩进侧栏，
+       * 恢复出来的坐标会偏移到顶部/面板后方。迁移一次后回到默认右下角，
+       * 之后拖动仍会正常保存。
+       */
+      try {
+        const migrationKey = 'fjk-pet-pos-migrated-v2'
+
+        const petInteraction = interaction as unknown as {
+          clearSavedPosition?: () => void
+          clampToViewport?: () => void
+        }
+
+        if (!window.localStorage.getItem(migrationKey)) {
+          petInteraction.clearSavedPosition?.()
+          petInteraction.clampToViewport?.()
+          window.localStorage.setItem(migrationKey, '1')
+        }
+      } catch {
+        // localStorage 不可用时忽略迁移
+      }
+
       let pointerDownAt = 0
       let pointerDownX = 0
       let pointerDownY = 0
