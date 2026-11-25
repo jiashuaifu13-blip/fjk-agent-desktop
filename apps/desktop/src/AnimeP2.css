@@ -1,0 +1,246 @@
+/* ============================================================================
+   FJK P2 · 二次元点睛（蔚蓝档案式，中等强度）
+   约束：动画仅 transform / opacity；无模糊背景；静态光晕总数 ≤6；
+         切角用角标(L 形)实现，避免 clip-path 裁掉阴影。
+   ========================================================================== */
+
+/* ---------- 1. 光环切片（品牌区 + 欢迎页） ---------- */
+.fjk-brand {
+  position: relative;
+}
+
+.fjk-brand::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  margin-top: -23px;
+  border-radius: 50%;
+  border: 1px solid rgba(18, 138, 250, 0.28);
+  border-left-color: transparent;
+  border-bottom-color: transparent;
+  transform: rotate(-28deg);
+  pointer-events: none;
+}
+
+.fjk-brand::before {
+  content: '';
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  width: 68px;
+  height: 68px;
+  margin-top: -34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 143, 196, 0.22);
+  border-right-color: transparent;
+  border-top-color: transparent;
+  transform: rotate(18deg);
+  pointer-events: none;
+}
+
+/* ---------- 2. 轻切角角标（工作台与卡片） ---------- */
+.fjk-main-workspace {
+  position: relative;
+}
+
+.fjk-main-workspace::before,
+.fjk-main-workspace::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0.9;
+}
+
+.fjk-main-workspace::before {
+  left: 10px;
+  top: 10px;
+  border-left: 2px solid rgba(18, 138, 250, 0.45);
+  border-top: 2px solid rgba(18, 138, 250, 0.45);
+  border-top-left-radius: 10px;
+}
+
+.fjk-main-workspace::after {
+  right: 10px;
+  bottom: 10px;
+  border-right: 2px solid rgba(255, 143, 196, 0.4);
+  border-bottom: 2px solid rgba(255, 143, 196, 0.4);
+  border-bottom-right-radius: 10px;
+}
+
+/* 能力卡：右上角光环切片（母题） */
+.fjk-capability {
+  position: relative;
+  overflow: hidden;
+}
+
+.fjk-capability::after {
+  content: '';
+  position: absolute;
+  right: -26px;
+  top: -26px;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: 7px solid rgba(18, 138, 250, 0.08);
+  pointer-events: none;
+}
+
+.fjk-capability:hover::after {
+  border-color: rgba(18, 138, 250, 0.16);
+}
+
+/* ---------- 3. 单个 Agent 状态脉冲（仅在线点） ---------- */
+.fjk-connection-dot,
+.fjk-active-pip {
+  position: relative;
+}
+
+.fjk-connection-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid rgba(18, 138, 250, 0.45);
+  animation: fjk-pulse 2.4s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes fjk-pulse {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.75;
+  }
+  70% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* ---------- 4. 桌宠静态底光 ---------- */
+.fjk-pet-platform::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 128%;
+  height: 190%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(18, 138, 250, 0.22),
+    rgba(18, 138, 250, 0) 68%
+  );
+  pointer-events: none;
+}
+
+/* ---------- 5. 少量金色装饰 ---------- */
+.fjk-main-workspace .terminal-header {
+  position: relative;
+}
+
+.fjk-main-workspace .terminal-header::after {
+  content: '';
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(232, 201, 138, 0) 0%,
+    rgba(232, 201, 138, 0.75) 18%,
+    rgba(232, 201, 138, 0) 55%
+  );
+  pointer-events: none;
+}
+
+.fjk-welcome-kicker::before {
+  content: '◈ ';
+  color: #e0b46a;
+}
+
+/* ---------- 6. 按钮体系统一（技能按钮质感） ---------- */
+/* 次级按钮：白底蓝字 + 底厚，按压陷落 */
+.fjk-main-workspace .terminal-actions button:not([type='submit']) {
+  border: 1px solid #b8dcff;
+  background: #ffffff;
+  color: #0b6fd8;
+  font-weight: 600;
+  box-shadow: 0 3px 0 #e6f1fd;
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
+}
+
+.fjk-main-workspace .terminal-actions button:not([type='submit']):hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.fjk-main-workspace .terminal-actions button:not([type='submit']):active:not(:disabled) {
+  transform: translateY(2px) scale(0.98);
+  box-shadow: none;
+}
+
+/* 危险按钮（审批拒绝 = 最后一个动作） */
+.pet-approval-actions button:last-child,
+.terminal-notice-warn .terminal-actions button:last-child {
+  border-color: #ffc6de;
+  background: #fff4f9;
+  color: #c92f6c;
+  box-shadow: 0 3px 0 #ffe6f1;
+}
+
+/* 主按钮（允许一次 / 发送）保持蓝渐变厚底 */
+.pet-approval-actions button:first-child,
+.terminal-notice-warn .terminal-actions button:first-child {
+  border: 1px solid #0a5fbb;
+  background: linear-gradient(180deg, #38a3ff, #128afa 55%, #0b6fd8);
+  color: #ffffff;
+  box-shadow: 0 3px 0 #0a5fbb;
+}
+
+/* ---------- 7. 桌面图标按钮（顶栏圆形技能键） ---------- */
+.fjk-icon-action {
+  position: relative;
+  border-radius: 11px;
+}
+
+.fjk-icon-action::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% 40%, rgba(18, 138, 250, 0.18), transparent 70%);
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+  pointer-events: none;
+}
+
+.fjk-icon-action:hover::after {
+  opacity: 1;
+}
+
+/* ---------- 8. 减少动态 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .fjk-connection-dot::after,
+  .fjk-active-pip::after {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+
+  .fjk-brand::before,
+  .fjk-brand::after,
+  .fjk-capability::after,
+  .fjk-icon-action::after {
+    transition: none !important;
+  }
+}

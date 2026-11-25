@@ -1,6 +1,6 @@
 /* ============================================================================
    FJK · 蔚蓝档案式主题（明亮 / 单一亮蓝 / 樱粉点缀 / 圆润 / 光环）
-   约束：动画只用 transform / opacity；不使用 backdrop-filter；静态阴影。
+   约束：动画只用 transform / opacity；不使用模糊背景；静态阴影。
    ========================================================================== */
 
 :root {
@@ -70,8 +70,7 @@ body {
   border-radius: 13px;
   border: 1px solid transparent;
   color: var(--ba-text);
-  transition: background 150ms ease-out, color 150ms ease-out,
-    border-color 150ms ease-out, transform 90ms ease-out;
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
 }
 
 .fjk-nav-item:hover {
@@ -101,8 +100,7 @@ body {
   border: 1px solid transparent;
   background: #ffffff;
   color: var(--ba-text);
-  transition: background 150ms ease-out, border-color 150ms ease-out,
-    transform 90ms ease-out, box-shadow 150ms ease-out;
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
 }
 
 .fjk-session-item:hover:not(:disabled) {
@@ -135,7 +133,7 @@ body {
   border: 1px solid var(--ba-line);
   background: #ffffff;
   color: var(--ba-text);
-  transition: border-color 150ms ease-out, transform 90ms ease-out;
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
 }
 
 .fjk-sidebar-connection:hover {
@@ -205,8 +203,7 @@ body {
   background: linear-gradient(160deg, #ffffff, #f2f9ff);
   box-shadow: 0 10px 24px rgba(24, 74, 140, 0.1);
   overflow: hidden;
-  transition: transform 160ms ease-out, box-shadow 160ms ease-out,
-    border-color 160ms ease-out;
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
 }
 
 .fjk-capability:hover {
@@ -231,8 +228,7 @@ body {
   border: 1px solid var(--ba-line);
   background: #ffffff;
   color: var(--ba-text);
-  transition: transform 140ms ease-out, border-color 140ms ease-out,
-    color 140ms ease-out, box-shadow 140ms ease-out;
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
 }
 
 .fjk-prompt-row button:hover:not(:disabled) {
@@ -269,7 +265,7 @@ body {
   border: 2px solid #d9ecff;
   background: #ffffff;
   color: var(--ba-navy);
-  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
 }
 
 .terminal-input:focus,
@@ -289,8 +285,7 @@ body {
   background: #ffffff;
   color: var(--ba-blue-deep);
   font-weight: 600;
-  transition: transform 90ms ease-out, box-shadow 150ms ease-out,
-    border-color 150ms ease-out, background 150ms ease-out;
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
 }
 
 .terminal-actions button:hover:not(:disabled) {
@@ -359,8 +354,7 @@ body {
   border: 1px solid var(--ba-line);
   background: #ffffff;
   color: var(--ba-blue-deep);
-  transition: transform 90ms ease-out, border-color 150ms ease-out,
-    background 150ms ease-out;
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
 }
 
 .terminal-settings-row button:hover:not(:disabled),
@@ -438,7 +432,7 @@ body {
   background: #ffffff;
   color: var(--ba-blue-deep);
   font-weight: 600;
-  transition: transform 90ms ease-out, border-color 150ms ease-out;
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
 }
 
 .fjk-setup-row button:hover:not(:disabled),
@@ -494,5 +488,292 @@ body {
   .fjk-workspace *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+
+/* ===== 以下为交接包 P0_Settings_Fix.css 原样合并（勿随意删减） ===== */
+/* =========================================
+   FJK Settings P0 Light Theme Fix
+   ========================================= */
+
+:root {
+  color-scheme: light;
+}
+
+/* 设置打开时隐藏聊天输入区 */
+.fjk-main-workspace
+.terminal:has(#settings-overview-panel)
+.terminal-input {
+  display: none;
+}
+
+/* 设置工作区 */
+.fjk-main-workspace #settings-overview-panel {
+  position: absolute;
+  inset: 68px 0 0;
+  width: auto;
+  max-height: none;
+  min-height: 0;
+  z-index: 30;
+
+  padding: 26px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  background: #f7fbff;
+  color: #203755;
+  border: 0;
+  border-radius: 0 0 20px 20px;
+  box-shadow: none;
+  font-size: 14px;
+}
+
+/* 标题区域 */
+#settings-overview-panel
+.connection-state-heading {
+  align-items: center;
+  flex-wrap: wrap;
+  padding-bottom: 18px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid #d4e6fa;
+}
+
+#settings-overview-panel
+.connection-state-heading > div:last-child {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+#settings-overview-panel
+.connection-state-title {
+  color: #203755;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+#settings-overview-panel
+.connection-state-subtitle {
+  color: #667d99;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+/* 将原深色网格改为浅色卡片网格 */
+#settings-overview-panel
+.connection-state-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* 每一条配置成为独立小卡片 */
+#settings-overview-panel
+.connection-state-row {
+  min-width: 0;
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid #d4e6fa;
+  border-radius: 16px;
+  box-shadow:
+    0 5px 18px rgba(37, 91, 153, .07);
+}
+
+/* 标签 */
+#settings-overview-panel
+.connection-state-key {
+  color: #667d99;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: none;
+}
+
+/* 值：修复过长内容截断 */
+#settings-overview-panel
+.connection-state-value {
+  display: block;
+  min-width: 0;
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  color: #203755;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+/* 说明与分组 */
+#settings-overview-panel
+.connection-state-section {
+  padding: 18px;
+  margin-top: 16px;
+  background: #ffffff;
+  border: 1px solid #d4e6fa;
+  border-radius: 16px;
+}
+
+#settings-overview-panel
+.connection-state-section-title {
+  color: #203755;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+#settings-overview-panel
+.connection-state-copy,
+#settings-overview-panel
+.connection-state-hint {
+  color: #526985;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* 操作按钮 */
+#settings-overview-panel
+.connection-state-trigger,
+#settings-overview-panel
+.connection-state-row button {
+  max-width: 100%;
+  min-height: 34px;
+  margin: 4px 4px 4px 0;
+  padding: 6px 12px;
+  background: #ffffff;
+  border: 1px solid #acd4ff;
+  border-radius: 10px;
+  color: #0873d8;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transform: translateY(0);
+  transition:
+    transform 160ms ease-out,
+    opacity 160ms ease-out;
+}
+
+#settings-overview-panel button:hover:not(:disabled) {
+  background: #eaf5ff;
+  transform: translateY(-2px);
+}
+
+#settings-overview-panel button:active:not(:disabled) {
+  transform: translateY(2px);
+  transition-duration: 70ms;
+}
+
+#settings-overview-panel button:focus-visible {
+  outline: 2px solid #128afa;
+  outline-offset: 3px;
+}
+
+#settings-overview-panel button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 模型输入控件 */
+#settings-overview-panel input,
+#settings-overview-panel select {
+  max-width: 100%;
+  min-height: 36px;
+  padding: 7px 10px;
+  background: #ffffff;
+  border: 1px solid #b8d7f4;
+  border-radius: 10px;
+  color: #203755;
+  font-size: 13px;
+}
+
+#settings-overview-panel input::placeholder {
+  color: #667d99;
+}
+
+/* 状态徽章 */
+#settings-overview-panel
+.connection-state-badge {
+  background: #eaf4ff;
+  color: #35618d;
+  border: 1px solid #d4e6fa;
+}
+
+#settings-overview-panel
+.connection-state-badge-ok {
+  background: #e6f7ed;
+  color: #238763;
+  border-color: #b9e8d0;
+}
+
+#settings-overview-panel
+.connection-state-badge-error {
+  background: #fff0f5;
+  color: #c92f6c;
+  border-color: #ffc5da;
+}
+
+/* 代码与错误信息 */
+#settings-overview-panel code {
+  color: #255b99;
+  background: #edf5ff;
+  border-radius: 6px;
+  padding: 2px 5px;
+  overflow-wrap: anywhere;
+}
+
+#settings-overview-panel
+.connection-state-error {
+  background: #fff0f5;
+  border: 1px solid #ffc5da;
+  border-radius: 12px;
+}
+
+#settings-overview-panel
+.connection-state-error-title {
+  color: #c92f6c;
+}
+
+/* 小窗口改为单列 */
+@media (max-width: 1120px) {
+  #settings-overview-panel
+  .connection-state-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fjk-main-workspace
+  #settings-overview-panel {
+    padding: 16px;
+  }
+}
+
+@media (max-height: 700px) {
+  .fjk-main-workspace
+  #settings-overview-panel {
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+}
+
+/* 减少动态效果 */
+@media (prefers-reduced-motion: reduce) {
+  #settings-overview-panel *,
+  #settings-overview-panel *::before,
+  #settings-overview-panel *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  #settings-overview-panel button:hover,
+  #settings-overview-panel button:active {
+    transform: none !important;
   }
 }

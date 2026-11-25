@@ -1,0 +1,387 @@
+/* ============================================================================
+   FJK P3 · 会话/连接面板亮色统一 + 输入框与欢迎页修复
+   来源：交接包 P0 规则泛化（不删减原 P0 规则），仅扩展作用域。
+   ========================================================================== */
+
+/* P3：把 P0 亮色规则从「仅设置面板」泛化到所有 .connection-state-panel */
+
+:root {
+  color-scheme: light;
+}
+
+/* 设置打开时隐藏聊天输入区 */
+.fjk-main-workspace
+.terminal:has(.connection-state-panel)
+.terminal-input {
+  display: none;
+}
+
+/* 设置工作区 */
+.fjk-main-workspace .fjk-main-workspace .connection-state-panel {
+  position: absolute;
+  inset: 68px 0 0;
+  width: auto;
+  max-height: none;
+  min-height: 0;
+  z-index: 30;
+
+  padding: 26px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  background: #f7fbff;
+  color: #203755;
+  border: 0;
+  border-radius: 0 0 20px 20px;
+  box-shadow: none;
+  font-size: 14px;
+}
+
+/* 标题区域 */
+.fjk-main-workspace .connection-state-panel
+.connection-state-heading {
+  align-items: center;
+  flex-wrap: wrap;
+  padding-bottom: 18px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid #d4e6fa;
+}
+
+.fjk-main-workspace .connection-state-panel
+.connection-state-heading > div:last-child {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.fjk-main-workspace .connection-state-panel
+.connection-state-title {
+  color: #203755;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.fjk-main-workspace .connection-state-panel
+.connection-state-subtitle {
+  color: #667d99;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+/* 将原深色网格改为浅色卡片网格 */
+.fjk-main-workspace .connection-state-panel
+.connection-state-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* 每一条配置成为独立小卡片 */
+.fjk-main-workspace .connection-state-panel
+.connection-state-row {
+  min-width: 0;
+  padding: 18px;
+  background: #ffffff;
+  border: 1px solid #d4e6fa;
+  border-radius: 16px;
+  box-shadow:
+    0 5px 18px rgba(37, 91, 153, .07);
+}
+
+/* 标签 */
+.fjk-main-workspace .connection-state-panel
+.connection-state-key {
+  color: #667d99;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: none;
+}
+
+/* 值：修复过长内容截断 */
+.fjk-main-workspace .connection-state-panel
+.connection-state-value {
+  display: block;
+  min-width: 0;
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  color: #203755;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+/* 说明与分组 */
+.fjk-main-workspace .connection-state-panel
+.connection-state-section {
+  padding: 18px;
+  margin-top: 16px;
+  background: #ffffff;
+  border: 1px solid #d4e6fa;
+  border-radius: 16px;
+}
+
+.fjk-main-workspace .connection-state-panel
+.connection-state-section-title {
+  color: #203755;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.fjk-main-workspace .connection-state-panel
+.connection-state-copy,
+.fjk-main-workspace .connection-state-panel
+.connection-state-hint {
+  color: #526985;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* 操作按钮 */
+.fjk-main-workspace .connection-state-panel
+.connection-state-trigger,
+.fjk-main-workspace .connection-state-panel
+.connection-state-row button {
+  max-width: 100%;
+  min-height: 34px;
+  margin: 4px 4px 4px 0;
+  padding: 6px 12px;
+  background: #ffffff;
+  border: 1px solid #acd4ff;
+  border-radius: 10px;
+  color: #0873d8;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transform: translateY(0);
+  transition:
+    transform 160ms ease-out,
+    opacity 160ms ease-out;
+}
+
+.fjk-main-workspace .connection-state-panel button:hover:not(:disabled) {
+  background: #eaf5ff;
+  transform: translateY(-2px);
+}
+
+.fjk-main-workspace .connection-state-panel button:active:not(:disabled) {
+  transform: translateY(2px);
+  transition-duration: 70ms;
+}
+
+.fjk-main-workspace .connection-state-panel button:focus-visible {
+  outline: 2px solid #128afa;
+  outline-offset: 3px;
+}
+
+.fjk-main-workspace .connection-state-panel button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 模型输入控件 */
+.fjk-main-workspace .connection-state-panel input,
+.fjk-main-workspace .connection-state-panel select {
+  max-width: 100%;
+  min-height: 36px;
+  padding: 7px 10px;
+  background: #ffffff;
+  border: 1px solid #b8d7f4;
+  border-radius: 10px;
+  color: #203755;
+  font-size: 13px;
+}
+
+.fjk-main-workspace .connection-state-panel input::placeholder {
+  color: #667d99;
+}
+
+/* 状态徽章 */
+.fjk-main-workspace .connection-state-panel
+.connection-state-badge {
+  background: #eaf4ff;
+  color: #35618d;
+  border: 1px solid #d4e6fa;
+}
+
+.fjk-main-workspace .connection-state-panel
+.connection-state-badge-ok {
+  background: #e6f7ed;
+  color: #238763;
+  border-color: #b9e8d0;
+}
+
+.fjk-main-workspace .connection-state-panel
+.connection-state-badge-error {
+  background: #fff0f5;
+  color: #c92f6c;
+  border-color: #ffc5da;
+}
+
+/* 代码与错误信息 */
+.fjk-main-workspace .connection-state-panel code {
+  color: #255b99;
+  background: #edf5ff;
+  border-radius: 6px;
+  padding: 2px 5px;
+  overflow-wrap: anywhere;
+}
+
+.fjk-main-workspace .connection-state-panel
+.connection-state-error {
+  background: #fff0f5;
+  border: 1px solid #ffc5da;
+  border-radius: 12px;
+}
+
+.fjk-main-workspace .connection-state-panel
+.connection-state-error-title {
+  color: #c92f6c;
+}
+
+/* 小窗口改为单列 */
+@media (max-width: 1120px) {
+  .fjk-main-workspace .connection-state-panel
+  .connection-state-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fjk-main-workspace
+  .fjk-main-workspace .connection-state-panel {
+    padding: 16px;
+  }
+}
+
+@media (max-height: 700px) {
+  .fjk-main-workspace
+  .fjk-main-workspace .connection-state-panel {
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+}
+
+/* 减少动态效果 */
+@media (prefers-reduced-motion: reduce) {
+  .fjk-main-workspace .connection-state-panel *,
+  .fjk-main-workspace .connection-state-panel *::before,
+  .fjk-main-workspace .connection-state-panel *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .fjk-main-workspace .connection-state-panel button:hover,
+  .fjk-main-workspace .connection-state-panel button:active {
+    transform: none !important;
+  }
+}
+
+
+/* ============================================================================
+   P3 · 输入框与欢迎页排版修复
+   ========================================================================== */
+
+/* ---------- 输入框：与聊天气泡同一套浅色语言 ---------- */
+.fjk-main-workspace .terminal-input {
+  padding: 12px clamp(25px, 4.2vw, 72px) 22px;
+}
+
+.fjk-main-workspace .terminal-input textarea {
+  display: block;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  min-height: 64px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 2px solid #d9ecff;
+  border-radius: 16px;
+  color: #12233f;
+  font-size: 14px;
+  line-height: 1.6;
+  box-shadow: 0 6px 18px rgba(24, 74, 140, 0.1);
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
+}
+
+.fjk-main-workspace .terminal-input textarea::placeholder {
+  color: #9fb2c9;
+}
+
+.fjk-main-workspace .terminal-input textarea:hover:not(:disabled) {
+  border-color: #b5d9ff;
+}
+
+.fjk-main-workspace .terminal-input textarea:focus {
+  border-color: #128afa;
+  outline: 4px solid rgba(18, 138, 250, 0.14);
+  outline-offset: 0;
+}
+
+.fjk-main-workspace .terminal-input textarea:disabled {
+  background: #f4f9ff;
+  color: #8a9cb4;
+  box-shadow: none;
+}
+
+/* ---------- 欢迎页：大字可见 + 对比度 ---------- */
+.fjk-welcome kicker,
+.fjk-welcome .fjk-welcome-kicker {
+  color: #128afa;
+  opacity: 1;
+}
+
+.fjk-welcome .fjk-welcome-greeting {
+  color: #12233f;
+  font-weight: 700;
+}
+
+.fjk-welcome h1 {
+  background: linear-gradient(96deg, #12233f 8%, #1b4d8f 46%, #128afa 92%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 0.4px rgba(18, 35, 63, 0.18);
+}
+
+.fjk-welcome .fjk-welcome-description {
+  color: #526985;
+}
+
+.fjk-welcome .fjk-capability > span {
+  color: #128afa;
+}
+
+.fjk-welcome .fjk-prompt-heading {
+  color: #7b8ca6;
+  font-weight: 600;
+}
+
+/* 小窗口：欢迎页不挤压 */
+@media (max-width: 1120px) {
+  .fjk-welcome .fjk-capability-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .fjk-welcome .fjk-capability-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- 减少动态 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .fjk-main-workspace .terminal-input textarea {
+    transition: none !important;
+  }
+}

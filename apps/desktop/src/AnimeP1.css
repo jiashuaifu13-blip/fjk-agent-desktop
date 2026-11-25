@@ -1,0 +1,345 @@
+/* ============================================================================
+   FJK P1 · 深色残留清理（消息 / 日志 / 状态胶囊 / 提示条 / 桌宠气泡）
+   约束：动画只允许 transform / opacity；禁止模糊背景；静态阴影。
+   ========================================================================== */
+
+/* ---------- 1. 聊天气泡 ---------- */
+.terminal-messages .msg {
+  margin-bottom: 14px;
+}
+
+.terminal-messages .msg-user {
+  justify-content: flex-end;
+}
+
+.terminal-messages .msg-assistant {
+  justify-content: flex-start;
+}
+
+.msg-user .msg-content {
+  background: linear-gradient(160deg, #ffe9f4, #ffd8ea);
+  border: 1px solid #ffc3de;
+  border-radius: 16px 16px 4px 16px;
+  color: #5d2347;
+  box-shadow: 0 4px 12px rgba(180, 60, 120, 0.1);
+}
+
+.msg-assistant .msg-content {
+  background: #ffffff;
+  border: 1px solid #d8e6f5;
+  border-left: 3px solid #128afa;
+  border-radius: 16px 16px 16px 4px;
+  color: #203755;
+  box-shadow: 0 4px 12px rgba(37, 91, 153, 0.07);
+}
+
+.msg .msg-role {
+  color: #7b8ca6;
+  font-weight: 600;
+}
+
+.msg .msg-content .msg-streaming {
+  color: #7b8ca6;
+}
+
+.msg .msg-content code {
+  background: #edf5ff;
+  color: #255b99;
+  border-radius: 6px;
+  padding: 1px 5px;
+}
+
+.msg-user .msg-content code {
+  background: rgba(255, 255, 255, 0.7);
+  color: #8a2b5e;
+}
+
+.msg .msg-content pre {
+  background: #f4faff;
+  border: 1px solid #e0eefb;
+  border-radius: 10px;
+  color: #24405f;
+}
+
+.msg-user .msg-content pre {
+  background: rgba(255, 255, 255, 0.66);
+  border-color: #ffd3e6;
+  color: #5d2347;
+}
+
+/* 消息元信息 */
+.terminal-meta {
+  color: #7b8ca6;
+}
+
+.terminal-empty {
+  color: #7b8ca6;
+}
+
+/* 等待/流式提示 */
+.msg-list-empty,
+.terminal-messages .msg-streaming {
+  color: #7b8ca6;
+}
+
+/* ---------- 2. 连接 / 日志面板 ---------- */
+#runtime-log-viewer,
+.runtime-log-viewer {
+  background: #f7fbff;
+  border: 1px solid #d8e6f5;
+  border-radius: 18px;
+  box-shadow: 0 10px 26px rgba(37, 91, 153, 0.1);
+  color: #203755;
+}
+
+.runtime-log-header {
+  background: linear-gradient(180deg, #eef7ff, #e3f1ff);
+  border-bottom: 1px solid #d8e6f5;
+  border-radius: 18px 18px 0 0;
+}
+
+.runtime-log-title {
+  color: #12233f;
+  font-weight: 700;
+}
+
+.runtime-log-subtitle,
+.runtime-log-meta,
+.runtime-log-empty {
+  color: #7b8ca6;
+}
+
+.runtime-log-body {
+  background: transparent;
+}
+
+.runtime-log-entry {
+  background: #ffffff;
+  border: 1px solid #e2eefb;
+  border-radius: 12px;
+  color: #2b3d57;
+}
+
+.runtime-log-entry-warn {
+  background: #fffdf6;
+  border-color: #ffe4b8;
+}
+
+.runtime-log-entry-error {
+  background: #fff5f8;
+  border-color: #ffcede;
+}
+
+.runtime-log-time,
+.runtime-log-source {
+  color: #8a9cb4;
+}
+
+.runtime-log-level {
+  border-radius: 999px;
+  border: 1px solid #d8e6f5;
+  background: #eef6ff;
+  color: #35618d;
+}
+
+.runtime-log-level-info {
+  background: #eaf4ff;
+  color: #255b99;
+  border-color: #cfe6fb;
+}
+
+.runtime-log-level-warn {
+  background: #fff6e6;
+  color: #9a6412;
+  border-color: #ffe0ae;
+}
+
+.runtime-log-level-error {
+  background: #fff0f5;
+  color: #c92f6c;
+  border-color: #ffc5da;
+}
+
+.runtime-log-message {
+  color: #203755;
+}
+
+.runtime-log-detail {
+  color: #526985;
+}
+
+.runtime-log-footer {
+  border-top: 1px solid #d8e6f5;
+  color: #7b8ca6;
+}
+
+.runtime-log-actions button {
+  background: #ffffff;
+  border: 1px solid #acd4ff;
+  border-radius: 10px;
+  color: #0873d8;
+  font-weight: 600;
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
+}
+
+.runtime-log-actions button:hover:not(:disabled) {
+  background: #eaf5ff;
+  transform: translateY(-1px);
+}
+
+.runtime-log-actions button:active:not(:disabled) {
+  transform: translateY(2px) scale(0.98);
+}
+
+/* ---------- 3. 状态胶囊 ---------- */
+.fjk-main-workspace .terminal-mode,
+.fjk-main-workspace .terminal-agent {
+  background: #eef6ff;
+  border: 1px solid #cfe6fb;
+  border-radius: 999px;
+  color: #255b99;
+}
+
+.fjk-main-workspace .terminal-mode-ok {
+  background: #e6f7ed;
+  border-color: #b9e8d0;
+  color: #1c7a58;
+}
+
+.fjk-main-workspace .terminal-mode-warn {
+  background: #fff6e6;
+  border-color: #ffe0ae;
+  color: #8a5a12;
+}
+
+/* ---------- 4. 提示条 / 错误条 ---------- */
+.terminal-notice {
+  background: #f4faff;
+  border: 1px solid #d8e6f5;
+  border-radius: 14px;
+  color: #2b3d57;
+}
+
+.terminal-notice .notice-title {
+  color: #12233f;
+  font-weight: 700;
+}
+
+.terminal-notice .notice-detail,
+.terminal-notice .notice-hint {
+  color: #526985;
+}
+
+.terminal-notice code {
+  background: #ffffff;
+  border: 1px solid #ffe3b8;
+  border-radius: 8px;
+  color: #6b4a10;
+}
+
+.terminal-error {
+  background: #fff5f8;
+  border: 1px solid #ffcede;
+  border-radius: 14px;
+  color: #b02a63;
+}
+
+/* 审批（内联）条：琥珀白卡 */
+.terminal-notice-warn {
+  background: linear-gradient(180deg, #fffdf7, #fff6e7);
+  border: 1px solid #ffd9a8;
+  border-radius: 14px;
+  color: #6b4a10;
+}
+
+.terminal-notice-warn .notice-title {
+  color: #8a5a12;
+}
+
+/* ---------- 5. 桌宠气泡与审批卡 ---------- */
+.pet-speech {
+  background: linear-gradient(170deg, #ffffff, #f2f9ff);
+  border: 1px solid #cfe6fb;
+  border-radius: 16px;
+  color: #203755;
+  box-shadow: 0 8px 20px rgba(37, 91, 153, 0.14);
+}
+
+.pet-speech::after {
+  border-top-color: #ffffff;
+}
+
+.pet-approval {
+  background: linear-gradient(170deg, #fffdf7, #fff7ea);
+  border: 1px solid #ffd9a8;
+  border-radius: 16px;
+  color: #5b4210;
+  box-shadow: 0 10px 24px rgba(120, 80, 20, 0.16);
+}
+
+.pet-approval-title {
+  color: #8a5a12;
+  font-weight: 700;
+}
+
+.pet-approval-risk {
+  background: #ffe1b0;
+  border-radius: 999px;
+  color: #6b4403;
+}
+
+.pet-approval-command {
+  background: #ffffff;
+  border: 1px solid #ffe3b8;
+  border-radius: 10px;
+  color: #5b4210;
+}
+
+.pet-approval-hint {
+  color: #8a7040;
+}
+
+.pet-approval-actions button {
+  border-radius: 10px;
+  border: 1px solid #acd4ff;
+  background: #ffffff;
+  color: #0873d8;
+  font-weight: 600;
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
+}
+
+.pet-approval-actions button:hover:not(:disabled) {
+  background: #eaf5ff;
+  transform: translateY(-1px);
+}
+
+.pet-approval-actions button:active:not(:disabled) {
+  transform: translateY(2px) scale(0.98);
+}
+
+/* ---------- 6. 桌宠底座适配亮底 ---------- */
+.fjk-pet-platform {
+  border: 1px solid rgba(18, 138, 250, 0.35);
+  background: radial-gradient(ellipse at 50% 60%, rgba(18, 138, 250, 0.18), rgba(18, 138, 250, 0) 70%);
+}
+
+.fjk-pet-orbit {
+  border-color: rgba(18, 138, 250, 0.22);
+  border-left-color: transparent;
+  border-bottom-color: transparent;
+}
+
+.fjk-pet-scenery {
+  background: radial-gradient(ellipse at 58% 55%, rgba(18, 138, 250, 0.12), rgba(18, 138, 250, 0) 70%);
+}
+
+/* ---------- 减少动态 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .terminal-messages .msg,
+  .runtime-log-entry,
+  .pet-speech,
+  .pet-approval {
+    animation: none !important;
+    transition: none !important;
+  }
+}
