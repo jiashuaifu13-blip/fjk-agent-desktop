@@ -17,7 +17,7 @@
 }
 
 /* 设置工作区 */
-.fjk-main-workspace .fjk-main-workspace .connection-state-panel {
+.fjk-main-workspace .connection-state-panel {
   position: absolute;
   inset: 68px 0 0;
   width: auto;

@@ -127,6 +127,54 @@ fn refresh_path() -> String {
     merged
 }
 
+/// 找到 node.exe（与应用内检测同源，避免依赖 PATH）。
+fn node_exe() -> Option<PathBuf> {
+    let mut candidates: Vec<PathBuf> = Vec::new();
+
+    if let Ok(output) = Command::new("where").arg("node").output() {
+        if output.status.success() {
+            let text = String::from_utf8_lossy(&output.stdout);
+            for line in text.lines() {
+                let line = line.trim();
+                if !line.is_empty() {
+                    candidates.push(PathBuf::from(line));
+                }
+            }
+        }
+    }
+
+    for base in [
+        r"C:\Program Files\nodejs\node.exe",
+        r"C:\Program Files (x86)\nodejs\node.exe",
+    ] {
+        candidates.push(PathBuf::from(base));
+    }
+
+    if let Ok(local) = std::env::var("LOCALAPPDATA") {
+        candidates.push(
+            PathBuf::from(local)
+                .join("Programs")
+                .join("nodejs")
+                .join("node.exe"),
+        );
+    }
+
+    candidates.into_iter().find(|path| path.exists())
+}
+
+/// OpenClaw 的 JS 入口（直接用 node 运行，绕开 cmd 与 PATH）。
+fn openclaw_entry() -> Option<PathBuf> {
+    let appdata = std::env::var("APPDATA").ok()?;
+    let entry = PathBuf::from(appdata)
+        .join("npm")
+        .join("node_modules")
+        .join("openclaw")
+        .join("dist")
+        .join("index.js");
+
+    entry.exists().then_some(entry)
+}
+
 fn gateway_cmd_path() -> Option<PathBuf> {
     let home = std::env::var("USERPROFILE").ok()?;
     let path = PathBuf::from(home).join(".openclaw").join("gateway.cmd");
@@ -227,16 +275,34 @@ pub async fn gateway_repair(
         let t2 = Instant::now();
         set_step(&shared, "start", "running", None, None);
 
-        let start_result = if let Some(cmd_path) = gateway_cmd_path() {
+        // 优先 node + index.js：完全不依赖 PATH / cmd 引号解析
+        let start_result = if let (Some(node), Some(entry)) = (node_exe(), openclaw_entry()) {
+            let mut command = Command::new(node);
+            command
+                .arg(entry)
+                .arg("gateway")
+                .arg("start")
+                .stdout(Stdio::null())
+                .stderr(Stdio::piped());
+
+            #[cfg(windows)]
+            {
+                use std::os::windows::process::CommandExt;
+                const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+                command.creation_flags(CREATE_NO_WINDOW);
+            }
+
+            command.output()
+        } else if let Some(cmd_path) = gateway_cmd_path() {
             Command::new("cmd")
-                .args(["/C", &cmd_path.display().to_string()])
+                .args(["/C", &format!("chcp 65001>nul & \"{}\"", cmd_path.display())])
                 .stdout(Stdio::null())
                 .stderr(Stdio::piped())
                 .output()
         } else {
             let cli_path = cli.as_ref().expect("cli").display().to_string();
             Command::new("cmd")
-                .args(["/C", &format!("\"{cli_path}\" gateway start")])
+                .args(["/C", &format!("chcp 65001>nul & \"{cli_path}\" gateway start")])
                 .stdout(Stdio::null())
                 .stderr(Stdio::piped())
                 .output()
