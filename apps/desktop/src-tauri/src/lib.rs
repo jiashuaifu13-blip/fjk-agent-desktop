@@ -8,6 +8,7 @@ mod gateway_launch;
 mod gateway_repair;
 mod onboarding;
 mod openclaw_auth;
+mod openclaw_cli;
 mod openclaw_install;
 mod pet_memory;
 mod policy_file;

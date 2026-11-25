@@ -250,7 +250,7 @@ pub fn openclaw_configure_custom_provider(
         "models": models,
     });
 
-    let cli = match find_cli() {
+    let _cli = match find_cli() {
         Some(path) => path,
         None => {
             return CliResult {
@@ -264,18 +264,14 @@ pub fn openclaw_configure_custom_provider(
 
     let path = format!("models.providers.{id}");
 
-    let output = Command::new("cmd")
-        .args(["/C"])
-        .arg(&cli)
-        .args([
-            "config",
-            "set",
-            &path,
-            &payload.to_string(),
-            "--strict-json",
-            "--merge",
-        ])
-        .output();
+    let output = crate::openclaw_cli::run(&[
+        "config",
+        "set",
+        &path,
+        &payload.to_string(),
+        "--strict-json",
+        "--merge",
+    ]);
 
     match output {
         Ok(result) => CliResult {

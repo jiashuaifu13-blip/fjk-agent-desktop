@@ -83,13 +83,11 @@ fn tail(text: &str, max: usize) -> String {
 
 #[tauri::command]
 pub fn openclaw_auth_list() -> Result<String, String> {
-    let cli = find_cli().ok_or_else(|| "OpenClaw CLI not found".to_string())?;
+    if find_cli().is_none() {
+        return Err("OpenClaw CLI not found".to_string());
+    }
 
-    let output = Command::new("cmd")
-        .args(["/C"])
-        .arg(&cli)
-        .args(["models", "auth", "list", "--json"])
-        .output()
+    let output = crate::openclaw_cli::run(&["models", "auth", "list", "--json"])
         .map_err(|error| format!("spawn failed: {error}"))?;
 
     if !output.status.success() {

@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use std::process::Command;
 
 use serde::Serialize;
 
@@ -141,7 +140,7 @@ pub fn openclaw_set_exec_mode(mode: String) -> ExecModeWriteResult {
         };
     }
 
-    let cli = match cli_path() {
+    let _cli = match cli_path() {
         Some(path) => path,
         None => {
             return ExecModeWriteResult {
@@ -155,11 +154,13 @@ pub fn openclaw_set_exec_mode(mode: String) -> ExecModeWriteResult {
 
     let value = serde_json::Value::String(mode.clone()).to_string();
 
-    let output = Command::new("cmd")
-        .args(["/C"])
-        .arg(&cli)
-        .args(["config", "set", "tools.exec.mode", &value, "--strict-json"])
-        .output();
+    let output = crate::openclaw_cli::run(&[
+        "config",
+        "set",
+        "tools.exec.mode",
+        &value,
+        "--strict-json",
+    ]);
 
     match output {
         Ok(result) => ExecModeWriteResult {

@@ -99,7 +99,7 @@ pub fn openclaw_set_default_model(model: String) -> SetDefaultResult {
         };
     }
 
-    let cli = match find_cli() {
+    let _cli = match find_cli() {
         Some(path) => path,
         None => {
             return SetDefaultResult {
@@ -113,17 +113,13 @@ pub fn openclaw_set_default_model(model: String) -> SetDefaultResult {
 
     let value = serde_json::Value::String(model).to_string();
 
-    let output = Command::new("cmd")
-        .args(["/C"])
-        .arg(&cli)
-        .args([
-            "config",
-            "set",
-            "agents.defaults.model.primary",
-            &value,
-            "--strict-json",
-        ])
-        .output();
+    let output = crate::openclaw_cli::run(&[
+        "config",
+        "set",
+        "agents.defaults.model.primary",
+        &value,
+        "--strict-json",
+    ]);
 
     match output {
         Ok(result) => SetDefaultResult {

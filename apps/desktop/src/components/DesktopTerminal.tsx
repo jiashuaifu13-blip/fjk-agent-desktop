@@ -776,39 +776,34 @@ export function DesktopTerminal() {
 
               <div className="connection-state-value">
                 <div>
-                  {settingsOverview.model ?? '未提供'}
+                  {settingsOverview.model ?? '未设置（在下方选择并保存即可）'}
                   {settingsOverview.provider
                     ? `（${settingsOverview.provider}）`
                     : ''}
                 </div>
-                <input value={modelDraft} placeholder="输入不同的已允许模型" onChange={(e) => setModelDraft(e.target.value)} />
-                <button type="button" disabled={!settingsOverview.model || !modelDraft.trim()} onClick={async () => {
+                <input value={modelDraft} placeholder="例如 deepseek/deepseek-v4-pro" onChange={(e) => setModelDraft(e.target.value)} />
+                <button type="button" disabled={!modelDraft.trim()} onClick={async () => {
                   const draft = modelDraft.trim()
+                  const provider = settingsOverview.provider ?? 'deepseek'
+                  const qualified = draft.includes('/') ? draft : `${provider}/${draft}`
 
-                  setModelWriteStatus(`原值：${settingsOverview.model ?? '未提供'}`)
+                  setModelWriteStatus(`原值：${settingsOverview.model ?? '未设置'}，正在保存…`)
 
+                  // 有会话就同步切换当前会话；没有会话（新装环境）时直接写全局默认
                   try {
                     await updateSessionModel(draft)
-                    setModelDraft('')
-
-                    const qualified = draft.includes('/')
-                      ? draft
-                      : `${settingsOverview.provider ?? ''}/${draft}`
-
-                    setModelWriteStatus(
-                      `当前会话已切换为 ${draft}；全局默认后台同步中…`,
-                    )
-
-                    queueDefaultModelSync(qualified, (result) => {
-                      setModelWriteStatus(
-                        result.ok
-                          ? `当前会话=${draft}，全局默认=${qualified}（新会话也用它）`
-                          : `会话已切换，但全局默认同步失败：${(result.error ?? '').slice(0, 160)}`,
-                      )
-                    })
-                  } catch (err) {
-                    setModelWriteStatus(`修改失败：${err instanceof Error ? err.message : String(err)}`)
+                  } catch {
+                    // 无会话场景忽略
                   }
+
+                  queueDefaultModelSync(qualified, (result) => {
+                    if (result.ok) {
+                      setModelWriteStatus(`已保存：${qualified}（新会话与新消息都会使用它）`)
+                      setModelDraft('')
+                    } else {
+                      setModelWriteStatus(`保存失败：${(result.error ?? '').slice(0, 160)}`)
+                    }
+                  })
                 }}>保存模型</button>
                 <button type="button" disabled={!previousModel} onClick={async () => {
                   try { await rollbackSessionModel(); setModelWriteStatus('已回滚到原模型') }
