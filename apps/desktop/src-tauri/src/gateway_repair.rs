@@ -1,6 +1,6 @@
-﻿use std::net::{TcpStream};
+use std::net::TcpStream;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::{Command, Output, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -47,7 +47,13 @@ fn step(id: &str, label: &str) -> RepairStep {
     }
 }
 
-fn set_step(state: &RepairState, id: &str, status: &str, detail: Option<String>, elapsed: Option<Duration>) {
+fn set_step(
+    state: &RepairState,
+    id: &str,
+    status: &str,
+    detail: Option<String>,
+    elapsed: Option<Duration>,
+) {
     let Ok(mut guard) = state.steps.lock() else {
         return;
     };
@@ -59,6 +65,12 @@ fn set_step(state: &RepairState, id: &str, status: &str, detail: Option<String>,
             item.elapsed_ms = elapsed.map(|value| value.as_millis() as u64);
             return;
         }
+    }
+}
+
+fn set_message(state: &RepairState, text: &str) {
+    if let Ok(mut guard) = state.message.lock() {
+        *guard = text.to_string();
     }
 }
 
@@ -86,7 +98,10 @@ fn refresh_path() -> String {
 
     for (hive, key) in [
         ("HKCU", r"Environment"),
-        ("HKLM", r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment"),
+        (
+            "HKLM",
+            r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
+        ),
     ] {
         let output = Command::new("reg")
             .args(["query", &format!("{hive}\\{key}"), "/v", "Path"])
@@ -112,6 +127,12 @@ fn refresh_path() -> String {
         parts.push(PathBuf::from(appdata).join("npm").display().to_string());
     }
 
+    if let Some(node) = node_exe() {
+        if let Some(dir) = node.parent() {
+            parts.push(dir.display().to_string());
+        }
+    }
+
     parts.push(r"C:\Program Files\nodejs".to_string());
 
     let current = std::env::var("PATH").unwrap_or_default();
@@ -127,7 +148,7 @@ fn refresh_path() -> String {
     merged
 }
 
-/// 找到 node.exe（与应用内检测同源，避免依赖 PATH）。
+/// 找到 node.exe（多路径兜底，不依赖 PATH）。
 fn node_exe() -> Option<PathBuf> {
     let mut candidates: Vec<PathBuf> = Vec::new();
 
@@ -175,18 +196,77 @@ fn openclaw_entry() -> Option<PathBuf> {
     entry.exists().then_some(entry)
 }
 
-fn gateway_cmd_path() -> Option<PathBuf> {
-    let home = std::env::var("USERPROFILE").ok()?;
-    let path = PathBuf::from(home).join(".openclaw").join("gateway.cmd");
-    path.exists().then_some(path)
-}
-
 fn port_ready() -> bool {
     TcpStream::connect_timeout(
         &"127.0.0.1:18789".parse().expect("addr"),
         Duration::from_millis(400),
     )
     .is_ok()
+}
+
+/// 用 node + index.js 执行 CLI 子命令（带超时控制由调用方负责）。
+fn run_cli(args: &[&str]) -> Option<std::io::Result<Output>> {
+    let node = node_exe()?;
+    let entry = openclaw_entry()?;
+
+    let mut command = Command::new(node);
+    command
+        .arg(entry)
+        .args(args)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .stdin(Stdio::null());
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    Some(command.output())
+}
+
+/// 最后兜底：直接以后台进程方式跑网关（不依赖 Windows 服务/登录项）。
+fn spawn_gateway_detached() -> bool {
+    let Some(node) = node_exe() else {
+        return false;
+    };
+    let Some(entry) = openclaw_entry() else {
+        return false;
+    };
+
+    let mut command = Command::new(node);
+    command
+        .arg(entry)
+        .arg("gateway")
+        .arg("--port")
+        .arg("18789")
+        .arg("--task-supervisor")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .stdin(Stdio::null());
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        const DETACHED_PROCESS: u32 = 0x0000_0008;
+        command.creation_flags(CREATE_NO_WINDOW | DETACHED_PROCESS);
+    }
+
+    command.spawn().is_ok()
+}
+
+fn tail(text: &str, lines: usize) -> String {
+    let collected: Vec<&str> = text
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect();
+
+    let start = collected.len().saturating_sub(lines);
+    collected[start..].join(" | ")
 }
 
 #[tauri::command]
@@ -196,15 +276,21 @@ pub fn gateway_repair_status(state: tauri::State<'_, Arc<RepairState>>) -> Repai
         finished: state.finished.load(Ordering::SeqCst),
         ok: state.ok.load(Ordering::SeqCst),
         needs_install: state.needs_install.load(Ordering::SeqCst),
-        steps: state.steps.lock().map(|guard| guard.clone()).unwrap_or_default(),
-        message: state.message.lock().map(|guard| guard.clone()).unwrap_or_default(),
+        steps: state
+            .steps
+            .lock()
+            .map(|guard| guard.clone())
+            .unwrap_or_default(),
+        message: state
+            .message
+            .lock()
+            .map(|guard| guard.clone())
+            .unwrap_or_default(),
     }
 }
 
 #[tauri::command]
-pub async fn gateway_repair(
-    state: tauri::State<'_, Arc<RepairState>>,
-) -> Result<(), String> {
+pub async fn gateway_repair(state: tauri::State<'_, Arc<RepairState>>) -> Result<(), String> {
     if state.running.swap(true, Ordering::SeqCst) {
         return Err("修复已在进行中".to_string());
     }
@@ -212,14 +298,12 @@ pub async fn gateway_repair(
     state.finished.store(false, Ordering::SeqCst);
     state.ok.store(false, Ordering::SeqCst);
     state.needs_install.store(false, Ordering::SeqCst);
-    if let Ok(mut guard) = state.message.lock() {
-        guard.clear();
-    }
+    set_message(&state, "");
     if let Ok(mut guard) = state.steps.lock() {
         guard.clear();
         guard.push(step("cli", "找到 OpenClaw"));
         guard.push(step("env", "刷新系统环境变量"));
-        guard.push(step("start", "启动网关进程"));
+        guard.push(step("start", "安装并启动网关"));
         guard.push(step("port", "等待网关端口就绪"));
         guard.push(step("auth", "验证网关握手"));
     }
@@ -250,9 +334,7 @@ pub async fn gateway_repair(
                     Some(t0.elapsed()),
                 );
                 shared.needs_install.store(true, Ordering::SeqCst);
-                if let Ok(mut guard) = shared.message.lock() {
-                    *guard = "这台电脑还没有安装 OpenClaw。点下面的按钮，我带你装。".to_string();
-                }
+                set_message(&shared, "这台电脑还没有安装 OpenClaw。点下面的按钮，我带你装。");
                 shared.running.store(false, Ordering::SeqCst);
                 shared.finished.store(true, Ordering::SeqCst);
                 return;
@@ -271,71 +353,98 @@ pub async fn gateway_repair(
             Some(t1.elapsed()),
         );
 
-        // 3) 启动网关
+        // 3) 安装并启动网关：start → install → 直接后台运行
         let t2 = Instant::now();
         set_step(&shared, "start", "running", None, None);
 
-        // 优先 node + index.js：完全不依赖 PATH / cmd 引号解析
-        let start_result = if let (Some(node), Some(entry)) = (node_exe(), openclaw_entry()) {
-            let mut command = Command::new(node);
-            command
-                .arg(entry)
-                .arg("gateway")
-                .arg("start")
-                .stdout(Stdio::null())
-                .stderr(Stdio::piped());
+        let mut notes: Vec<String> = Vec::new();
 
-            #[cfg(windows)]
-            {
-                use std::os::windows::process::CommandExt;
-                const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-                command.creation_flags(CREATE_NO_WINDOW);
-            }
-
-            command.output()
-        } else if let Some(cmd_path) = gateway_cmd_path() {
-            Command::new("cmd")
-                .args(["/C", &format!("chcp 65001>nul & \"{}\"", cmd_path.display())])
-                .stdout(Stdio::null())
-                .stderr(Stdio::piped())
-                .output()
-        } else {
-            let cli_path = cli.as_ref().expect("cli").display().to_string();
-            Command::new("cmd")
-                .args(["/C", &format!("chcp 65001>nul & \"{cli_path}\" gateway start")])
-                .stdout(Stdio::null())
-                .stderr(Stdio::piped())
-                .output()
-        };
-
-        match start_result {
-            Ok(output) => {
-                let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-
-                let tail: String = stderr
-                    .lines()
-                    .rev()
-                    .take(3)
-                    .collect::<Vec<_>>()
-                    .into_iter()
-                    .rev()
-                    .collect::<Vec<_>>()
-                    .join(" ");
-
+        // 3.1 start
+        if let Some(Ok(output)) = run_cli(&["gateway", "start"]) {
+            if output.status.success() && port_ready() {
                 set_step(
                     &shared,
                     "start",
-                    if output.status.success() { "done" } else { "failed" },
-                    if tail.is_empty() { None } else { Some(tail) },
+                    "done",
+                    Some("已通过系统服务启动".to_string()),
                     Some(t2.elapsed()),
                 );
+            } else {
+                let text = String::from_utf8_lossy(&output.stderr).to_string();
+                notes.push(format!("start: {}", tail(&text, 1)));
             }
-            Err(error) => {
+        }
+
+        // 3.2 服务缺失时，install（安装并启动登录项）
+        let started = shared
+            .steps
+            .lock()
+            .map(|guard| guard.iter().any(|item| item.id == "start" && item.status == "done"))
+            .unwrap_or(false);
+
+        if !started {
+            if let Some(Ok(output)) = run_cli(&["gateway", "install"]) {
+                if output.status.success() {
+                    // 安装会启动服务，等端口
+                    let deadline = Instant::now() + Duration::from_secs(45);
+                    while Instant::now() < deadline && !port_ready() {
+                        std::thread::sleep(Duration::from_millis(900));
+                    }
+
+                    if port_ready() {
+                        set_step(
+                            &shared,
+                            "start",
+                            "done",
+                            Some("已安装系统服务并启动".to_string()),
+                            Some(t2.elapsed()),
+                        );
+                    } else {
+                        let text = String::from_utf8_lossy(&output.stderr).to_string();
+                        notes.push(format!("install: {}", tail(&text, 1)));
+                    }
+                } else {
+                    let text = String::from_utf8_lossy(&output.stderr).to_string();
+                    notes.push(format!("install: {}", tail(&text, 1)));
+                }
+            }
+        }
+
+        // 3.3 仍失败则直接后台拉进程（不依赖服务）
+        let started = shared
+            .steps
+            .lock()
+            .map(|guard| guard.iter().any(|item| item.id == "start" && item.status == "done"))
+            .unwrap_or(false);
+
+        if !started {
+            let spawned = spawn_gateway_detached();
+
+            if spawned {
+                let deadline = Instant::now() + Duration::from_secs(40);
+                while Instant::now() < deadline && !port_ready() {
+                    std::thread::sleep(Duration::from_millis(700));
+                }
+            }
+
+            if port_ready() {
+                set_step(
+                    &shared,
+                    "start",
+                    "done",
+                    Some("已由应用直接启动（无需系统服务）".to_string()),
+                    Some(t2.elapsed()),
+                );
+            } else {
                 set_step(
                     &shared,
                     "start",
                     "failed",
-                    Some(format!("无法启动：{error}")),
+                    Some(if notes.is_empty() {
+                        "无法启动网关进程".to_string()
+                    } else {
+                        notes.join(" ; ")
+                    }),
                     Some(t2.elapsed()),
                 );
             }
@@ -368,20 +477,21 @@ pub async fn gateway_repair(
                 Some("等待 120 秒仍无响应".to_string()),
                 Some(t3.elapsed()),
             );
-            if let Ok(mut guard) = shared.message.lock() {
-                *guard = "网关启动超时。可能是杀毒软件拦截，或端口被其它程序占用。".to_string();
-            }
+            set_message(&shared, "网关启动超时。可能是杀毒软件拦截，或端口被其它程序占用。");
             shared.running.store(false, Ordering::SeqCst);
             shared.finished.store(true, Ordering::SeqCst);
             return;
         }
 
-        // 5) 握手交给前端连接（这里只标记待验证）
-        set_step(&shared, "auth", "running", Some("正在由应用建立连接…".to_string()), None);
-
-        if let Ok(mut guard) = shared.message.lock() {
-            *guard = "网关已启动，正在自动连接…".to_string();
-        }
+        // 5) 握手由应用连接完成
+        set_step(
+            &shared,
+            "auth",
+            "running",
+            Some("正在由应用建立连接…".to_string()),
+            None,
+        );
+        set_message(&shared, "网关已启动，正在自动连接…");
 
         shared.ok.store(true, Ordering::SeqCst);
         shared.running.store(false, Ordering::SeqCst);
