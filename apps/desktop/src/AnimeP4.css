@@ -150,17 +150,6 @@
   }
 }
 
-/* ---------- 6. 消息气泡最大宽度（避免长行贴边） ---------- */
-.msg .msg-content {
-  max-width: min(760px, 78%);
-}
-
-@media (max-width: 980px) {
-  .msg .msg-content {
-    max-width: 88%;
-  }
-}
-
 /* ---------- 7. 减少动态 ---------- */
 @media (prefers-reduced-motion: reduce) {
   #session-list-panel .connection-state-trigger,
