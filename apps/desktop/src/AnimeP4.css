@@ -1,0 +1,170 @@
+/* ============================================================================
+   FJK P4 · 收尾：残留深色清理 + 窄窗适配 + 焦点/选中/滚动细节
+   约束：动画仅 transform / opacity；禁止模糊背景；静态阴影。
+   ========================================================================== */
+
+/* ---------- 1. 残留深色规则（扫描确认的 4 条） ---------- */
+.terminal-notice-info {
+  background: #f2f9ff;
+  border: 1px solid #d8e6f5;
+  border-radius: 14px;
+  color: #2b3d57;
+}
+
+.error-raw code,
+.connection-state-raw code {
+  display: block;
+  padding: 10px 12px;
+  background: #f6fbff;
+  border: 1px solid #e0eefb;
+  border-radius: 10px;
+  color: #255b99;
+  font-family: Consolas, 'Cascadia Code', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.pet-badge {
+  background: #eef6ff;
+  border: 1px solid #cfe6fb;
+  border-radius: 999px;
+  color: #255b99;
+  font-weight: 600;
+}
+
+/* ---------- 2. 文本选中色 ---------- */
+.fjk-workspace ::selection {
+  background: rgba(18, 138, 250, 0.22);
+  color: #10233f;
+}
+
+.fjk-workspace ::-moz-selection {
+  background: rgba(18, 138, 250, 0.22);
+  color: #10233f;
+}
+
+/* ---------- 3. 焦点可见性统一 ---------- */
+.fjk-workspace :is(button, textarea, input, select, a, summary):focus-visible,
+.connection-state-panel :is(button, input, select):focus-visible {
+  outline: 2px solid #128afa;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* 面板内滚动条（与主区域一致） */
+.connection-state-panel::-webkit-scrollbar,
+#runtime-log-viewer::-webkit-scrollbar,
+.fjk-main-workspace ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.connection-state-panel::-webkit-scrollbar-thumb,
+#runtime-log-viewer::-webkit-scrollbar-thumb,
+.fjk-main-workspace ::-webkit-scrollbar-thumb {
+  background: #c9def4;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+/* ---------- 4. 会话面板「新建」按钮 ---------- */
+#session-list-panel .connection-state-trigger,
+.fjk-session-heading + button,
+.fjk-session-count + button {
+  min-width: 34px;
+  min-height: 34px;
+  border-radius: 12px;
+  border: 1px solid #b8dcff;
+  background: #ffffff;
+  color: #0b6fd8;
+  font-weight: 700;
+  box-shadow: 0 3px 0 #e6f1fd;
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
+}
+
+#session-list-panel .connection-state-trigger:hover:not(:disabled),
+.fjk-session-heading + button:hover:not(:disabled),
+.fjk-session-count + button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+#session-list-panel .connection-state-trigger:active:not(:disabled),
+.fjk-session-heading + button:active:not(:disabled),
+.fjk-session-count + button:active:not(:disabled) {
+  transform: translateY(2px) scale(0.97);
+  box-shadow: none;
+}
+
+/* ---------- 5. 窄窗适配 ---------- */
+@media (max-width: 1180px) {
+  .fjk-workspace {
+    --fjk-sidebar-width: 246px;
+  }
+}
+
+@media (max-width: 980px) {
+  .fjk-workspace {
+    --fjk-sidebar-width: 208px;
+  }
+
+  .fjk-sidebar {
+    padding: 16px 10px;
+  }
+
+  .fjk-main-workspace .terminal-input {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .connection-state-panel {
+    padding: 16px !important;
+  }
+
+  .terminal-messages {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+@media (max-width: 820px) {
+  .fjk-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .fjk-sidebar {
+    margin: 8px 8px 0;
+    max-height: 42vh;
+    overflow-y: auto;
+  }
+
+  .fjk-main-workspace {
+    margin: 8px;
+  }
+
+  .msg .msg-content {
+    max-width: 100%;
+  }
+}
+
+/* ---------- 6. 消息气泡最大宽度（避免长行贴边） ---------- */
+.msg .msg-content {
+  max-width: min(760px, 78%);
+}
+
+@media (max-width: 980px) {
+  .msg .msg-content {
+    max-width: 88%;
+  }
+}
+
+/* ---------- 7. 减少动态 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  #session-list-panel .connection-state-trigger,
+  .fjk-session-heading + button {
+    transition: none !important;
+  }
+}

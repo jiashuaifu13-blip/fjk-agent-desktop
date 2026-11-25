@@ -4,6 +4,7 @@ import { PetView } from './components/PetView'
 import { DesktopTerminal } from './components/DesktopTerminal'
 import { SetupWizard } from './components/SetupWizard'
 import { StyleLab } from './components/StyleLab'
+import { PerfHud } from './components/PerfHud'
 import { isSetupCompleted } from './system/setupState'
 import { WorkspaceSidebar } from './components/WorkspaceSidebar'
 import './App.css'
@@ -28,6 +29,7 @@ export default function App() {
         <PetView />
         {showWizard && <SetupWizard onDone={() => setShowWizard(false)} />}
         {showLab && <StyleLab onClose={() => setShowLab(false)} />}
+        <PerfHud />
       </div>
     </PetRuntimeProvider>
   )

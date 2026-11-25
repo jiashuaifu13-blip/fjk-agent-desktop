@@ -888,3 +888,26 @@ body {background:var(--fjk-bg); color:var(--fjk-text)}
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---- 性能 HUD（Ctrl+Shift+P） ---- */
+.fjk-perf-hud {
+  position: fixed;
+  left: 14px;
+  bottom: 14px;
+  z-index: 400;
+  display: flex;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(8, 20, 32, 0.88);
+  border: 1px solid rgba(95, 227, 232, 0.4);
+  color: #d6f6ff;
+  font: 600 12px Consolas, monospace;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+}
+
+.fjk-perf-hint {
+  opacity: 0.6;
+  font-weight: 400;
+}
