@@ -1,6 +1,16 @@
 use std::net::{SocketAddr, TcpStream};
 use std::path::PathBuf;
 use std::process::Command;
+
+/// 子进程隐藏窗口，避免控制台闪烁。
+fn hide_window(command: &mut Command) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+}
 use std::time::Duration;
 
 use serde::Serialize;
@@ -45,10 +55,11 @@ pub(crate) fn find_cli() -> Option<PathBuf> {
         }
     }
 
-    let output = Command::new("where")
-        .arg("openclaw")
-        .output()
-        .ok()?;
+    let mut where_cmd = Command::new("where");
+    where_cmd.arg("openclaw");
+    hide_window(&mut where_cmd);
+
+    let output = where_cmd.output().ok()?;
 
     if !output.status.success() {
         return None;
@@ -65,12 +76,11 @@ pub(crate) fn find_cli() -> Option<PathBuf> {
 }
 
 fn read_version(cli: &PathBuf) -> Option<String> {
-    let output = Command::new("cmd")
-        .args(["/C"])
-        .arg(cli)
-        .arg("--version")
-        .output()
-        .ok()?;
+    let mut version_cmd = Command::new("cmd");
+    version_cmd.args(["/C"]).arg(cli).arg("--version");
+    hide_window(&mut version_cmd);
+
+    let output = version_cmd.output().ok()?;
 
     if !output.status.success() {
         return None;

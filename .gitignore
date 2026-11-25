@@ -53,3 +53,13 @@ tools/bin/
 
 # 构建时由 stage-fjkctl 生成
 apps/desktop/src-tauri/resources/fjkctl.exe
+
+# Basic Memory 知识库（本地记忆）
+.agent-memory/
+
+# 本地调试截图
+shot*.png
+
+# 临时构建/分析目录
+.tmp/
+

@@ -1,11 +1,13 @@
 mod audit_log;
 mod custom_provider;
 mod default_model;
+mod env_check;
 mod exec_policy;
 mod gateway;
 mod gateway_launch;
 mod onboarding;
 mod openclaw_auth;
+mod openclaw_install;
 mod pet_memory;
 mod policy_file;
 mod provider_catalog;
@@ -13,8 +15,34 @@ mod provider_models;
 
 use tauri::Manager;
 
+
+/// 单实例保护：避免重复打开导致多个窗口/多个审批订阅。
+#[cfg(windows)]
+fn ensure_single_instance() {
+    use windows::core::PCWSTR;
+    use windows::Win32::Foundation::{GetLastError, ERROR_ALREADY_EXISTS};
+    use windows::Win32::System::Threading::CreateMutexW;
+
+    unsafe {
+        let name: Vec<u16> = "Local\\FJK-Agent-SingleInstance\0".encode_utf16().collect();
+        let handle = CreateMutexW(None, false, PCWSTR(name.as_ptr()));
+
+        if handle.is_err() {
+            return;
+        }
+
+        if GetLastError() == ERROR_ALREADY_EXISTS {
+            // 已有实例在运行：直接退出，避免多窗口
+            std::process::exit(0);
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(windows)]
+    ensure_single_instance();
+
     tauri::Builder::default()
         .setup(|app| {
             /*
@@ -50,6 +78,7 @@ pub fn run() {
         })
         .manage(gateway::GatewayState::default())
         .manage(gateway_launch::GatewayLaunchState::default())
+        .manage(std::sync::Arc::new(openclaw_install::InstallState::default()))
         .invoke_handler(tauri::generate_handler![
             gateway::gateway_info,
             gateway::gateway_connect,
@@ -61,6 +90,10 @@ pub fn run() {
             pet_memory::pet_memory_save,
             pet_memory::pet_memory_clear,
             onboarding::openclaw_status,
+            env_check::env_check,
+            env_check::open_url,
+            openclaw_install::openclaw_install,
+            openclaw_install::openclaw_install_status,
             openclaw_auth::openclaw_auth_list,
             openclaw_auth::openclaw_save_api_key,
             provider_models::provider_list_models,

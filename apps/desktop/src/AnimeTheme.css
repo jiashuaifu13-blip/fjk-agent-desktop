@@ -1,0 +1,498 @@
+/* ============================================================================
+   FJK · 蔚蓝档案式主题（明亮 / 单一亮蓝 / 樱粉点缀 / 圆润 / 光环）
+   约束：动画只用 transform / opacity；不使用 backdrop-filter；静态阴影。
+   ========================================================================== */
+
+:root {
+  --ba-blue: #128afa;
+  --ba-blue-deep: #0b6fd8;
+  --ba-blue-soft: #e8f3ff;
+  --ba-blue-line: #b8dcff;
+  --ba-pink: #ff8fc4;
+  --ba-navy: #12233f;
+  --ba-text: #2b3d57;
+  --ba-muted: #7b8ca6;
+  --ba-line: #d8e6f5;
+  --ba-white: #ffffff;
+  --ba-amber: #d98a1f;
+
+  /* 覆盖既有 token */
+  --fjk-bg: #eaf4ff;
+  --fjk-base: #f4faff;
+  --fjk-panel: #ffffff;
+  --fjk-panel-2: #f6fbff;
+  --fjk-border: #d8e6f5;
+  --fjk-border-hi: #a9d6ff;
+  --fjk-text: #12233f;
+  --fjk-secondary: #2b3d57;
+  --fjk-muted: #7b8ca6;
+  --fjk-accent: #128afa;
+  --fjk-accent-soft: rgba(18, 138, 250, 0.1);
+  --fjk-danger: #d94f92;
+  --fjk-warning: #b8791a;
+  --fjk-shadow: 0 14px 34px rgba(24, 74, 140, 0.14);
+}
+
+body {
+  background: radial-gradient(120% 90% at 15% 0%, #e2f1ff 0%, #d3e8fb 45%, #c6ddf7 100%) !important;
+  color: var(--ba-text);
+  font-family: 'Microsoft YaHei UI', 'PingFang SC', system-ui, sans-serif;
+}
+
+/* ---------- 主框架 ---------- */
+.fjk-workspace {
+  background: transparent;
+  color: var(--ba-text);
+}
+
+.fjk-sidebar {
+  margin: 10px 0 10px 10px;
+  padding: 20px 14px;
+  border-radius: 22px;
+  border: 1px solid var(--ba-line);
+  background: linear-gradient(180deg, #ffffff, #f2f9ff);
+  box-shadow: 0 16px 36px rgba(24, 74, 140, 0.12);
+}
+
+.fjk-brand {
+  color: var(--ba-navy);
+}
+
+.fjk-brand-mark {
+  border-radius: 12px;
+  background: var(--ba-blue-soft);
+  color: var(--ba-blue);
+  box-shadow: inset 0 0 0 1px #cfe6ff;
+}
+
+/* ---------- 导航 ---------- */
+.fjk-nav-item {
+  border-radius: 13px;
+  border: 1px solid transparent;
+  color: var(--ba-text);
+  transition: background 150ms ease-out, color 150ms ease-out,
+    border-color 150ms ease-out, transform 90ms ease-out;
+}
+
+.fjk-nav-item:hover {
+  background: #eef7ff;
+  border-color: #dceeff;
+  color: var(--ba-blue-deep);
+}
+
+.fjk-nav-item:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.fjk-nav-item.is-current {
+  background: linear-gradient(90deg, #e3f2ff, #f6fbff);
+  border-color: var(--ba-blue-line);
+  color: var(--ba-blue-deep);
+  box-shadow: inset 3px 0 0 var(--ba-blue);
+}
+
+.fjk-nav-item span {
+  color: inherit;
+}
+
+/* ---------- 会话列表 ---------- */
+.fjk-session-item {
+  border-radius: 13px;
+  border: 1px solid transparent;
+  background: #ffffff;
+  color: var(--ba-text);
+  transition: background 150ms ease-out, border-color 150ms ease-out,
+    transform 90ms ease-out, box-shadow 150ms ease-out;
+}
+
+.fjk-session-item:hover:not(:disabled) {
+  background: #f4faff;
+  border-color: var(--ba-blue-line);
+  box-shadow: 0 4px 12px rgba(24, 74, 140, 0.08);
+}
+
+.fjk-session-item:active:not(:disabled) {
+  transform: translateY(1px) scale(0.995);
+}
+
+.fjk-session-item.is-active {
+  background: linear-gradient(90deg, #e3f2ff, #f7fbff);
+  border-color: var(--ba-blue-line);
+  box-shadow: inset 3px 0 0 var(--ba-blue);
+}
+
+.fjk-session-icon {
+  color: var(--ba-blue);
+}
+
+.fjk-session-heading,
+.fjk-prompt-heading {
+  color: var(--ba-muted);
+}
+
+.fjk-sidebar-connection {
+  border-radius: 14px;
+  border: 1px solid var(--ba-line);
+  background: #ffffff;
+  color: var(--ba-text);
+  transition: border-color 150ms ease-out, transform 90ms ease-out;
+}
+
+.fjk-sidebar-connection:hover {
+  border-color: var(--ba-blue-line);
+}
+
+.fjk-active-pip,
+.fjk-connection-dot {
+  background: var(--ba-blue);
+  box-shadow: 0 0 0 3px rgba(18, 138, 250, 0.16);
+}
+
+/* ---------- 主工作区 ---------- */
+.fjk-main-workspace {
+  margin: 10px;
+  border-radius: 22px;
+  border: 1px solid var(--ba-line);
+  background: #ffffff;
+  box-shadow: 0 18px 40px rgba(24, 74, 140, 0.12);
+  overflow: hidden;
+}
+
+.fjk-main-workspace .terminal-header {
+  background: linear-gradient(180deg, #eef7ff, #e0efff);
+  border-bottom: 1px solid var(--ba-line);
+}
+
+.fjk-main-workspace .terminal-title {
+  color: var(--ba-navy);
+  font-weight: 700;
+}
+
+.fjk-main-workspace .terminal-meta {
+  color: var(--ba-muted);
+}
+
+.fjk-main-workspace .terminal-dot {
+  box-shadow: none;
+}
+
+/* ---------- 欢迎页 ---------- */
+.fjk-welcome {
+  color: var(--ba-text);
+}
+
+.fjk-welcome-kicker {
+  color: var(--ba-blue);
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+
+.fjk-welcome-greeting {
+  color: var(--ba-navy);
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.fjk-welcome-description {
+  color: var(--ba-muted);
+}
+
+/* 能力卡 */
+.fjk-capability {
+  position: relative;
+  border-radius: 18px;
+  border: 1px solid var(--ba-line);
+  background: linear-gradient(160deg, #ffffff, #f2f9ff);
+  box-shadow: 0 10px 24px rgba(24, 74, 140, 0.1);
+  overflow: hidden;
+  transition: transform 160ms ease-out, box-shadow 160ms ease-out,
+    border-color 160ms ease-out;
+}
+
+.fjk-capability:hover {
+  transform: translateY(-4px);
+  border-color: #a9d6ff;
+  box-shadow: 0 18px 34px rgba(24, 74, 140, 0.18);
+}
+
+.fjk-capability strong,
+.fjk-capability h3 {
+  color: var(--ba-navy);
+}
+
+.fjk-capability small,
+.fjk-capability p {
+  color: var(--ba-muted);
+}
+
+/* 快捷指令 */
+.fjk-prompt-row button {
+  border-radius: 999px;
+  border: 1px solid var(--ba-line);
+  background: #ffffff;
+  color: var(--ba-text);
+  transition: transform 140ms ease-out, border-color 140ms ease-out,
+    color 140ms ease-out, box-shadow 140ms ease-out;
+}
+
+.fjk-prompt-row button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--ba-blue);
+  color: var(--ba-blue-deep);
+  box-shadow: 0 8px 18px rgba(24, 74, 140, 0.14);
+}
+
+.fjk-prompt-row button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.fjk-prompt-row button span {
+  color: var(--ba-blue);
+}
+
+/* ---------- 消息区 ---------- */
+.terminal-messages {
+  color: var(--ba-text);
+}
+
+.terminal-empty {
+  color: var(--ba-muted);
+}
+
+.terminal-meta {
+  color: var(--ba-muted);
+}
+
+/* ---------- 输入区 ---------- */
+.terminal-input {
+  border-radius: 16px;
+  border: 2px solid #d9ecff;
+  background: #ffffff;
+  color: var(--ba-navy);
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+.terminal-input:focus,
+.terminal-input:focus-visible {
+  outline: none;
+  border-color: var(--ba-blue);
+  box-shadow: 0 0 0 4px rgba(18, 138, 250, 0.14);
+}
+
+.terminal-input::placeholder {
+  color: #9fb2c9;
+}
+
+.terminal-actions button {
+  border-radius: 12px;
+  border: 1px solid var(--ba-line);
+  background: #ffffff;
+  color: var(--ba-blue-deep);
+  font-weight: 600;
+  transition: transform 90ms ease-out, box-shadow 150ms ease-out,
+    border-color 150ms ease-out, background 150ms ease-out;
+}
+
+.terminal-actions button:hover:not(:disabled) {
+  border-color: var(--ba-blue);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(24, 74, 140, 0.14);
+}
+
+.terminal-actions button:active:not(:disabled) {
+  transform: translateY(2px) scale(0.98);
+  box-shadow: none;
+}
+
+.fjk-main-workspace .terminal-actions button[type='submit'] {
+  border: 1px solid #0a5fbb;
+  background: linear-gradient(180deg, #38a3ff, var(--ba-blue) 55%, var(--ba-blue-deep));
+  color: #ffffff;
+  box-shadow: 0 5px 0 #0a5fbb, 0 12px 20px rgba(18, 138, 250, 0.24);
+}
+
+.fjk-main-workspace .terminal-actions button[type='submit']:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 0 #0a5fbb, 0 16px 26px rgba(18, 138, 250, 0.3);
+}
+
+.fjk-main-workspace .terminal-actions button[type='submit']:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #0a5fbb;
+}
+
+/* ---------- 提示条 ---------- */
+.terminal-notice {
+  border-radius: 14px;
+  border: 1px solid var(--ba-line);
+  background: #f6fbff;
+  color: var(--ba-text);
+}
+
+.terminal-notice-warn {
+  border-color: #ffd9a8;
+  background: linear-gradient(180deg, #fffdf7, #fff6e7);
+  color: #6b4a10;
+}
+
+/* ---------- 设置面板 ---------- */
+.terminal-settings-section {
+  border-radius: 16px;
+  border: 1px solid var(--ba-line);
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(24, 74, 140, 0.08);
+}
+
+.terminal-settings-title {
+  color: var(--ba-navy);
+  font-weight: 700;
+  border-bottom: 1px solid var(--ba-line);
+}
+
+.terminal-settings-label {
+  color: var(--ba-text);
+}
+
+.terminal-settings-row button,
+.fjk-icon-action {
+  border-radius: 11px;
+  border: 1px solid var(--ba-line);
+  background: #ffffff;
+  color: var(--ba-blue-deep);
+  transition: transform 90ms ease-out, border-color 150ms ease-out,
+    background 150ms ease-out;
+}
+
+.terminal-settings-row button:hover:not(:disabled),
+.fjk-icon-action:hover:not(:disabled) {
+  border-color: var(--ba-blue);
+  background: #f4faff;
+}
+
+.terminal-settings-row button:active:not(:disabled),
+.fjk-icon-action:active:not(:disabled) {
+  transform: translateY(1px) scale(0.97);
+}
+
+/* ---------- 滚动条 ---------- */
+.fjk-workspace *::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.fjk-workspace *::-webkit-scrollbar-thumb {
+  background: #c9def4;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.fjk-workspace *::-webkit-scrollbar-thumb:hover {
+  background: #a9cff2;
+  background-clip: content-box;
+}
+
+.fjk-workspace *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------- 环境向导（浅色版） ---------- */
+.fjk-setup {
+  background: rgba(18, 50, 90, 0.35);
+}
+
+.fjk-setup-card {
+  border-radius: 22px;
+  border: 1px solid var(--ba-line);
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(23, 70, 130, 0.26);
+  color: var(--ba-text);
+}
+
+.fjk-setup-head h2 {
+  color: var(--ba-navy);
+}
+
+.fjk-setup-head p {
+  color: var(--ba-muted);
+}
+
+.fjk-setup-row {
+  border-radius: 14px;
+  border: 1px solid var(--ba-line);
+  background: linear-gradient(180deg, #ffffff, #f6fbff);
+}
+
+.fjk-setup-row strong {
+  color: var(--ba-navy);
+}
+
+.fjk-setup-row small {
+  color: var(--ba-muted);
+}
+
+.fjk-setup-row button,
+.fjk-setup-actions button {
+  border-radius: 11px;
+  border: 1px solid var(--ba-line);
+  background: #ffffff;
+  color: var(--ba-blue-deep);
+  font-weight: 600;
+  transition: transform 90ms ease-out, border-color 150ms ease-out;
+}
+
+.fjk-setup-row button:hover:not(:disabled),
+.fjk-setup-actions button:hover:not(:disabled) {
+  border-color: var(--ba-blue);
+}
+
+.fjk-setup-row button:active:not(:disabled),
+.fjk-setup-actions button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.97);
+}
+
+.fjk-setup-ok {
+  color: #1aa06d;
+}
+
+.fjk-setup-primary {
+  background: linear-gradient(180deg, #38a3ff, var(--ba-blue) 55%, var(--ba-blue-deep)) !important;
+  border-color: #0a5fbb !important;
+  color: #ffffff !important;
+  box-shadow: 0 5px 0 #0a5fbb;
+}
+
+.fjk-setup-log {
+  border-radius: 14px;
+  border: 1px solid var(--ba-line);
+  background: #f6fbff;
+}
+
+.fjk-setup-log pre {
+  color: #33506f;
+}
+
+.fjk-setup-error {
+  border-radius: 14px;
+  border: 1px solid #ffc6de;
+  background: #fff4f9;
+  color: #a83572;
+}
+
+/* ---------- 通用按压反馈 ---------- */
+.fjk-workspace button {
+  transition: transform 90ms ease-out;
+}
+
+.fjk-workspace button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fjk-workspace *,
+  .fjk-workspace *::before,
+  .fjk-workspace *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

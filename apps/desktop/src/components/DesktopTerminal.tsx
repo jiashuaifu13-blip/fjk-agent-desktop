@@ -29,6 +29,7 @@ import type {
 } from '../system/openclawStatus'
 
 import { ensureGatewayRunning } from '../system/gatewayLaunch'
+import { resetSetup } from '../system/setupState'
 
 import type {
   ChatMessage,
@@ -1061,7 +1062,36 @@ export function DesktopTerminal() {
               </span>
             </div>
 
-            <div className="connection-state-row">
+            <div className="terminal-settings-section">
+            <div className="terminal-settings-title">
+              环境向导
+            </div>
+
+            <div className="terminal-settings-row">
+              <span className="terminal-settings-label">重新运行环境检查</span>
+              <button
+                type="button"
+                onClick={() => {
+                  resetSetup()
+                  window.location.reload()
+                }}
+              >
+                运行向导
+              </button>
+            </div>
+
+            <div className="terminal-settings-row">
+              <span className="terminal-settings-label">风格样张（蔚蓝档案式）</span>
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new Event('fjk-open-style-lab'))}
+              >
+                查看样张
+              </button>
+            </div>
+          </div>
+
+          <div className="connection-state-row">
               <span className="connection-state-key">
                 最近判定
               </span>
