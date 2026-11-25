@@ -176,7 +176,16 @@ fn write_png(path: &str, width: u32, height: u32, bgra: &[u8], max_width: Option
 
 // ---------- 截图 ----------
 
-fn screenshot(out: Option<String>, max_width: Option<u32>) -> Result<(), String> {
+struct ShotOptions {
+    out: Option<String>,
+    max_width: Option<u32>,
+    region: Option<(i32, i32, i32, i32)>,
+    scale: u32,
+    grid: Option<u32>,
+}
+
+/// 抓取整个主屏到 BGRA 缓冲区。
+fn capture_screen() -> Result<(i32, i32, Vec<u8>), String> {
     unsafe {
         let width = GetSystemMetrics(SM_CXSCREEN);
         let height = GetSystemMetrics(SM_CYSCREEN);
@@ -202,7 +211,7 @@ fn screenshot(out: Option<String>, max_width: Option<u32>) -> Result<(), String>
         info.bmiHeader = BITMAPINFOHEADER {
             biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
             biWidth: width,
-            biHeight: -height, // top-down
+            biHeight: -height,
             biPlanes: 1,
             biBitCount: 32,
             biCompression: BI_RGB.0,
@@ -228,31 +237,112 @@ fn screenshot(out: Option<String>, max_width: Option<u32>) -> Result<(), String>
             return Err("截图失败（BitBlt/GetDIBits）".to_string());
         }
 
-        let path = out.unwrap_or_else(|| {
-            let dir = std::env::temp_dir().join("fjk-desktop");
-            let _ = std::fs::create_dir_all(&dir);
-            dir.join(format!("shot-{}.png", now_stamp()))
-                .to_string_lossy()
-                .to_string()
-        });
+        Ok((width, height, buffer))
+    }
+}
 
-        if let Some(parent) = std::path::Path::new(&path).parent() {
-            let _ = std::fs::create_dir_all(parent);
+/// 截图 / 裁剪 / 放大 / 叠网格。
+///
+/// 放大与裁剪服务于“视觉兜底”：模型看不清细节时，把局部放大后再交给它判断坐标。
+fn screenshot(options: ShotOptions) -> Result<(), String> {
+    let (screen_w, screen_h, full) = capture_screen()?;
+
+    let (mut width, mut height, mut data) = match options.region {
+        Some((x, y, w, h)) => {
+            let x0 = x.max(0).min(screen_w.saturating_sub(1));
+            let y0 = y.max(0).min(screen_h.saturating_sub(1));
+            let rw = w.max(1).min(screen_w.saturating_sub(x0));
+            let rh = h.max(1).min(screen_h.saturating_sub(y0));
+
+            let mut cropped = Vec::with_capacity((rw * rh * 4) as usize);
+
+            for row in 0..rh {
+                let start = (((y0 + row) * screen_w + x0) * 4) as usize;
+                cropped.extend_from_slice(&full[start..start + (rw * 4) as usize]);
+            }
+
+            (rw, rh, cropped)
+        }
+        None => (screen_w, screen_h, full),
+    };
+
+    // 叠网格：帮助模型在放大图上估坐标（BGRA 顺序）
+    if let Some(step) = options.grid {
+        let step = step.max(8) as i32;
+        let color = [0u8, 200u8, 255u8, 255u8];
+
+        let mut gx = step;
+        while gx < width {
+            for yy in 0..height {
+                let index = (((yy * width) + gx) * 4) as usize;
+                data[index..index + 4].copy_from_slice(&color);
+            }
+            gx += step;
         }
 
-        let (out_w, out_h) = write_png(&path, width as u32, height as u32, &buffer, max_width)?;
-
-        out_json(&format!(
-            "{{\"ok\":true,\"action\":\"screenshot\",\"path\":\"{}\",\"width\":{},\"height\":{},\"sourceWidth\":{},\"sourceHeight\":{}}}",
-            path.replace('\\', "\\\\"),
-            out_w,
-            out_h,
-            width,
-            height
-        ));
-
-        Ok(())
+        let mut gy = step;
+        while gy < height {
+            for xx in 0..width {
+                let index = (((gy * width) + xx) * 4) as usize;
+                data[index..index + 4].copy_from_slice(&color);
+            }
+            gy += step;
+        }
     }
+
+    // 最近邻放大：保留像素边界，适合读小字/小控件
+    if options.scale > 1 {
+        let scale = options.scale as i32;
+        let scaled_w = width * scale;
+        let scaled_h = height * scale;
+        let mut scaled = Vec::with_capacity((scaled_w * scaled_h * 4) as usize);
+
+        for yy in 0..scaled_h {
+            let source_y = yy / scale;
+
+            for xx in 0..scaled_w {
+                let source_x = xx / scale;
+                let index = (((source_y * width) + source_x) * 4) as usize;
+                scaled.extend_from_slice(&data[index..index + 4]);
+            }
+        }
+
+        width = scaled_w;
+        height = scaled_h;
+        data = scaled;
+    }
+
+    let out_path = options.out.unwrap_or_else(|| {
+        let dir = std::env::temp_dir().join("fjk-desktop");
+        let _ = std::fs::create_dir_all(&dir);
+        dir.join(format!("shot-{}.png", now_stamp()))
+            .to_string_lossy()
+            .to_string()
+    });
+
+    if let Some(parent) = std::path::Path::new(&out_path).parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+
+    let (out_w, out_h) = write_png(
+        &out_path,
+        width as u32,
+        height as u32,
+        &data,
+        options.max_width,
+    )?;
+
+    out_json(&format!(
+        "{{\"ok\":true,\"action\":\"screenshot\",\"path\":\"{}\",\"width\":{},\"height\":{},\"sourceWidth\":{},\"sourceHeight\":{},\"scale\":{}}}",
+        out_path.replace('\\', "\\\\"),
+        out_w,
+        out_h,
+        screen_w,
+        screen_h,
+        options.scale
+    ));
+
+    Ok(())
 }
 
 // ---------- 窗口枚举 ----------
@@ -357,15 +447,11 @@ fn absolute(x: i32, y: i32) -> (i32, i32) {
     }
 }
 
-fn click(x: i32, y: i32, button: &str, double: bool) -> Result<(), String> {
+/// 执行一次点击（不输出 JSON，供 click / click-verify 复用）。
+fn perform_click(x: i32, y: i32, button: &str, double: bool) {
     let (abs_x, abs_y) = absolute(x, y);
 
-    mouse_send(
-        MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE,
-        abs_x,
-        abs_y,
-        0,
-    );
+    mouse_send(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, abs_x, abs_y, 0);
 
     let (down, up) = match button {
         "right" => (MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP),
@@ -381,12 +467,138 @@ fn click(x: i32, y: i32, button: &str, double: bool) -> Result<(), String> {
         mouse_send(up, 0, 0, 0);
         std::thread::sleep(std::time::Duration::from_millis(40));
     }
+}
+
+fn click(x: i32, y: i32, button: &str, double: bool) -> Result<(), String> {
+    perform_click(x, y, button, double);
 
     out_json(&format!(
         "{{\"ok\":true,\"action\":\"click\",\"x\":{x},\"y\":{y},\"button\":\"{button}\",\"double\":{double}}}"
     ));
 
     Ok(())
+}
+
+fn region_box(cx: i32, cy: i32, box_w: i32, box_h: i32, screen_w: i32, screen_h: i32) -> (i32, i32, i32, i32) {
+    let x0 = (cx - box_w / 2).max(0).min(screen_w.saturating_sub(1));
+    let y0 = (cy - box_h / 2).max(0).min(screen_h.saturating_sub(1));
+    let w = box_w.min(screen_w - x0).max(1);
+    let h = box_h.min(screen_h - y0).max(1);
+
+    (x0, y0, w, h)
+}
+
+fn extract_region(full: &[u8], screen_w: i32, region: (i32, i32, i32, i32)) -> Vec<u8> {
+    let (x0, y0, w, h) = region;
+    let mut out = Vec::with_capacity((w * h * 4) as usize);
+
+    for row in 0..h {
+        let start = (((y0 + row) * screen_w + x0) * 4) as usize;
+        out.extend_from_slice(&full[start..start + (w * 4) as usize]);
+    }
+
+    out
+}
+
+/// 像素差异比例（0.0–1.0）：任一通道差值超过 tol 即视为变化。
+fn diff_ratio(before: &[u8], after: &[u8], tol: u8) -> f64 {
+    let pixels = (before.len() / 4).max(1);
+    let mut changed = 0usize;
+
+    for index in (0..before.len().min(after.len())).step_by(4) {
+        let delta_b = (before[index] as i32 - after[index] as i32).unsigned_abs() as u8;
+        let delta_g = (before[index + 1] as i32 - after[index + 1] as i32).unsigned_abs() as u8;
+        let delta_r = (before[index + 2] as i32 - after[index + 2] as i32).unsigned_abs() as u8;
+
+        if delta_b > tol || delta_g > tol || delta_r > tol {
+            changed += 1;
+        }
+    }
+
+    changed as f64 / pixels as f64
+}
+
+/// 点击后自校验：点完截图对比，画面没变化就重试一次，仍无变化则报告失败。
+fn click_verify(
+    x: i32,
+    y: i32,
+    button: &str,
+    double: bool,
+    wait_ms: u64,
+    threshold: f64,
+    retries: u32,
+    box_size: (i32, i32),
+    save_dir: Option<String>,
+) -> Result<(), String> {
+    let (screen_w, screen_h, before_full) = capture_screen()?;
+    let region = region_box(x, y, box_size.0, box_size.1, screen_w, screen_h);
+    let before = extract_region(&before_full, screen_w, region);
+
+    let mut attempts = 0u32;
+
+    loop {
+        attempts += 1;
+        perform_click(x, y, button, double);
+        std::thread::sleep(std::time::Duration::from_millis(wait_ms));
+
+        let (_w, _h, after_full) = capture_screen()?;
+        let after = extract_region(&after_full, screen_w, region);
+
+        let ratio = diff_ratio(&before, &after, 12);
+
+        if ratio >= threshold {
+            let mut paths: Vec<String> = Vec::new();
+            let mut save_error: Option<String> = None;
+
+            if let Some(dir) = save_dir {
+                if let Err(error) = std::fs::create_dir_all(&dir) {
+                    save_error = Some(format!("create_dir_all: {error}"));
+                }
+
+                let stamp = now_stamp();
+                let before_path = format!("{dir}\\click-before-{stamp}.png");
+                let after_path = format!("{dir}\\click-after-{stamp}.png");
+                let (_x0, _y0, w, h) = region;
+
+                match write_png(&before_path, w as u32, h as u32, &before, None) {
+                    Ok(_) => paths.push(before_path),
+                    Err(error) => save_error = Some(format!("before: {error}")),
+                }
+
+                match write_png(&after_path, w as u32, h as u32, &after, None) {
+                    Ok(_) => paths.push(after_path),
+                    Err(error) => save_error = Some(format!("after: {error}")),
+                }
+            }
+
+            out_json(&format!(
+                "{{\"ok\":true,\"action\":\"click-verify\",\"changed\":true,\"ratio\":{ratio:.5},\"attempts\":{attempts},\"x\":{x},\"y\":{y},\"region\":{{\"x\":{},\"y\":{},\"width\":{},\"height\":{}}},\"files\":[{}],\"saveError\":{}}}",
+                region.0,
+                region.1,
+                region.2,
+                region.3,
+                paths
+                    .iter()
+                    .map(|item| format!("\"{}\"", item.replace('\\', "\\\\")))
+                    .collect::<Vec<_>>()
+                    .join(","),
+                save_error
+                    .as_ref()
+                    .map(|item| format!("\"{}\"", item.replace('\\', "\\\\").replace('"', "\\\"")))
+                    .unwrap_or_else(|| "null".to_string())
+            ));
+
+            return Ok(());
+        }
+
+        if attempts > retries {
+            out_json(&format!(
+                "{{\"ok\":false,\"action\":\"click-verify\",\"changed\":false,\"ratio\":{ratio:.5},\"attempts\":{attempts},\"x\":{x},\"y\":{y},\"error\":\"no_visual_change\",\"hint\":\"点击后画面未变化：可能点偏、目标已打开、或该区域本就不变；请先用 crop 放大确认坐标\"}}"
+            ));
+
+            return Ok(());
+        }
+    }
 }
 
 fn move_mouse(x: i32, y: i32) -> Result<(), String> {
@@ -732,7 +944,38 @@ fn main() {
     };
 
     let result = match command.as_str() {
-        "screenshot" => screenshot(arg_value(&args, "--out"), arg_value(&args, "--max-width").and_then(|value| value.parse::<u32>().ok())),
+        "screenshot" | "crop" => {
+            let region = match (
+                arg_value(&args, "--x"),
+                arg_value(&args, "--y"),
+                arg_value(&args, "--w"),
+                arg_value(&args, "--h"),
+            ) {
+                (Some(x), Some(y), Some(w), Some(h)) => Some((
+                    x.parse::<i32>().unwrap_or(0),
+                    y.parse::<i32>().unwrap_or(0),
+                    w.parse::<i32>().unwrap_or(240),
+                    h.parse::<i32>().unwrap_or(180),
+                )),
+                _ => None,
+            };
+
+            if command == "crop" && region.is_none() {
+                Err("crop 需要 --x --y --w --h".to_string())
+            } else {
+                screenshot(ShotOptions {
+                    out: arg_value(&args, "--out"),
+                    max_width: arg_value(&args, "--max-width")
+                        .and_then(|value| value.parse::<u32>().ok()),
+                    region,
+                    scale: arg_value(&args, "--scale")
+                        .and_then(|value| value.parse::<u32>().ok())
+                        .unwrap_or(1),
+                    grid: arg_value(&args, "--grid")
+                        .and_then(|value| value.parse::<u32>().ok()),
+                })
+            }
+        }
         "list-windows" => list_windows(),
         "move" => number(&args, "--x")
             .and_then(|x| number(&args, "--y").map(|y| (x, y)))
@@ -745,6 +988,42 @@ fn main() {
             number(&args, "--x")
                 .and_then(|x| number(&args, "--y").map(|y| (x, y)))
                 .and_then(|(x, y)| click(x, y, &button, double))
+        }
+        "click-verify" => {
+            let button = arg_value(&args, "--button").unwrap_or_else(|| "left".to_string());
+            let double = has_flag(&args, "--double");
+            let wait_ms = arg_value(&args, "--wait")
+                .and_then(|value| value.parse::<u64>().ok())
+                .unwrap_or(450);
+            let threshold = arg_value(&args, "--threshold")
+                .and_then(|value| value.parse::<f64>().ok())
+                .unwrap_or(0.002);
+            let retries = arg_value(&args, "--retries")
+                .and_then(|value| value.parse::<u32>().ok())
+                .unwrap_or(1);
+            let box_size = arg_value(&args, "--box")
+                .and_then(|value| {
+                    let parts: Vec<i32> = value
+                        .split('x')
+                        .filter_map(|part| part.parse::<i32>().ok())
+                        .collect();
+                    if parts.len() == 2 {
+                        Some((parts[0], parts[1]))
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or((260, 180));
+            let save_dir = arg_value(&args, "--save-dir").or_else(|| {
+                let dir = std::env::temp_dir().join("fjk-desktop");
+                Some(dir.to_string_lossy().to_string())
+            });
+
+            number(&args, "--x")
+                .and_then(|x| number(&args, "--y").map(|y| (x, y)))
+                .and_then(|(x, y)| {
+                    click_verify(x, y, &button, double, wait_ms, threshold, retries, box_size, save_dir)
+                })
         }
         "type" => arg_value(&args, "--text")
             .ok_or_else(|| "缺少参数 --text".to_string())
