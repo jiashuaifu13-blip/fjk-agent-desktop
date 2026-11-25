@@ -5,6 +5,7 @@ mod env_check;
 mod exec_policy;
 mod gateway;
 mod gateway_launch;
+mod gateway_repair;
 mod onboarding;
 mod openclaw_auth;
 mod openclaw_install;
@@ -78,6 +79,7 @@ pub fn run() {
         })
         .manage(gateway::GatewayState::default())
         .manage(gateway_launch::GatewayLaunchState::default())
+        .manage(std::sync::Arc::new(gateway_repair::RepairState::default()))
         .manage(std::sync::Arc::new(openclaw_install::InstallState::default()))
         .invoke_handler(tauri::generate_handler![
             gateway::gateway_info,
@@ -85,6 +87,8 @@ pub fn run() {
             gateway::gateway_request,
             gateway::gateway_disconnect,
             gateway_launch::gateway_ensure_running,
+            gateway_repair::gateway_repair,
+            gateway_repair::gateway_repair_status,
             gateway_launch::gateway_probe,
             pet_memory::pet_memory_load,
             pet_memory::pet_memory_save,

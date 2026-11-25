@@ -29,6 +29,7 @@ import type {
 } from '../system/openclawStatus'
 
 import { ensureGatewayRunning } from '../system/gatewayLaunch'
+import { ConnectionRepair } from './ConnectionRepair'
 import { resetSetup } from '../system/setupState'
 
 import type {
@@ -1746,6 +1747,8 @@ export function DesktopTerminal() {
               }
             </span>
           </div>
+
+          <ConnectionRepair />
 
           <div className="connection-state-grid">
             <div className="connection-state-row">

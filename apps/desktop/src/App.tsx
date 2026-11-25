@@ -15,8 +15,15 @@ export default function App() {
 
   useEffect(() => {
     const open = () => setShowLab(true)
+    const openSetup = () => setShowWizard(true)
+
     window.addEventListener('fjk-open-style-lab', open)
-    return () => window.removeEventListener('fjk-open-style-lab', open)
+    window.addEventListener('fjk-open-setup', openSetup)
+
+    return () => {
+      window.removeEventListener('fjk-open-style-lab', open)
+      window.removeEventListener('fjk-open-setup', openSetup)
+    }
   }, [])
 
   return (
