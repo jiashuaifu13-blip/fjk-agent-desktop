@@ -91,6 +91,7 @@ export function DesktopTerminal() {
     rollbackSessionModel,
     sessionList,
     createSession,
+    archiveActiveSession,
     deleteSession,
     switchSession,
     loadOlderHistory,
@@ -2192,10 +2193,30 @@ export function DesktopTerminal() {
           <button
             type="button"
             disabled={
-              !chatController
+              !chatController || sending
             }
+            title="归档当前对话并开始新对话（原文保留，供长期记忆提炼）"
             onClick={() => {
+              const confirmed = window.confirm(
+                '清空将把当前对话归档（原文保留，界面开始新对话）。\n\n归档的对话不会显示在列表里，但会作为长期记忆的原料保留。\n\n继续吗？',
+              )
+
+              if (!confirmed) return
+
               chatController?.clear()
+
+              void archiveActiveSession()
+                .then((newKey) => {
+                  if (newKey) {
+                    chatController?.clear()
+                  }
+                })
+                .catch((error: unknown) => {
+                  console.warn('[fjk] archive session failed', error)
+                  window.alert(
+                    '归档失败：' + (error instanceof Error ? error.message : String(error)) + '\n\n已为你清空界面，但对话未归档。',
+                  )
+                })
             }}
           >
             清空

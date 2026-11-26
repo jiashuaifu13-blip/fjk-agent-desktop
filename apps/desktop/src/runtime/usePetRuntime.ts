@@ -15,6 +15,7 @@ import { PetEmotionEngine } from '../pet/PetEmotionEngine.js'
 import { PetHitTest } from '../pet/PetHitTest.js'
 import { PetInteractionController } from '../pet/PetInteractionController.js'
 import { ChatController } from '../chat/ChatController.js'
+import { recordPendingDistill } from '../memory/pipeline'
 import { createCommandPolicy } from '../policy/CommandPolicy'
 import {
   addPolicyGrant,
@@ -183,6 +184,7 @@ export interface PetRuntime {
   petSpeech: string | null
   petEmotion: string
   createSession(): Promise<string>
+  archiveActiveSession(): Promise<string | null>
   deleteSession(
     sessionKey: string,
     expectedSessionId: string,
@@ -2291,6 +2293,69 @@ export function usePetRuntime(
     return key
   }
 
+  /**
+   * 归档当前会话并新建一个：原文保留在磁盘（供后台提炼长期记忆），
+   * 界面切到新会话，既清空屏幕又不丢记忆原料。
+   */
+  const archiveActiveSession = async (): Promise<string | null> => {
+    const gateway = gatewayClientRef.current
+    const adapter = gatewayChatAdapterRef.current
+
+    if (!gateway || !adapter) {
+      throw new Error('Gateway/session adapter unavailable')
+    }
+
+    if (sending) {
+      throw new Error('当前有回复进行中，请先停止')
+    }
+
+    const currentKey = activeSessionKeyRef.current ?? settingsOverview.sessionKey
+    const archivedAt = Date.now()
+
+    if (currentKey) {
+      try {
+        await gateway.send('sessions.patch', { key: currentKey, archived: true })
+        recordPendingDistill(currentKey, 'clear')
+        appendRuntimeLog('info', 'gateway', 'Session archived', `session=${currentKey}; at=${archivedAt}`)
+      } catch (error) {
+        appendRuntimeLog('warn', 'gateway', 'Session archive failed', String(error))
+      }
+    }
+
+    const created = await gateway.send('sessions.create', {})
+    const newKey = (created as { key?: string } | null)?.key
+
+    if (!newKey) {
+      throw new Error('sessions.create returned no key')
+    }
+
+    activeSessionKeyRef.current = newKey
+    adapter.setSessionKey(newKey)
+
+    try {
+      await gateway.send('sessions.messages.subscribe', { key: newKey, includeApprovals: true })
+    } catch (error) {
+      appendRuntimeLog('warn', 'gateway', 'Subscribe new session failed', String(error))
+    }
+
+    historySessionKeyRef.current = newKey
+    historyOlderCursorRef.current = null
+
+    const list = await gateway.send('sessions.list', {})
+    const refreshedSessions = readSessionList(list)
+
+    setSessionList(refreshedSessions)
+    setSettingsOverview((current) => ({
+      ...current,
+      sessionKey: newKey,
+      sessionCount: refreshedSessions.length,
+    }))
+
+    appendRuntimeLog('info', 'gateway', 'Session created', `session=${newKey} (after archive)`)
+
+    return newKey
+  }
+
   const deleteSession = async (
     sessionKey: string,
     expectedSessionId: string,
@@ -2992,6 +3057,7 @@ export function usePetRuntime(
     rollbackSessionModel,
     sessionList,
     createSession,
+    archiveActiveSession,
     deleteSession,
     switchSession,
     refreshSessions,
