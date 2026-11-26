@@ -31,6 +31,7 @@ import type {
 import { ensureGatewayRunning } from '../system/gatewayLaunch'
 import { ConnectionRepair } from './ConnectionRepair'
 import { useVirtualMessages } from '../hooks/useVirtualMessages'
+import { PersonaCard } from './PersonaCard'
 import { resetSetup } from '../system/setupState'
 
 import type {
@@ -814,6 +815,17 @@ export function DesktopTerminal() {
           </div>
 
           <div className="connection-state-grid">
+            <PersonaCard
+              onApplied={async () => {
+                try {
+                  await archiveActiveSession()
+                  chatController?.clear()
+                } catch (error) {
+                  console.warn('[fjk] persona apply: new session failed', error)
+                }
+              }}
+            />
+
             <div className="connection-state-row">
               <span className="connection-state-key">
                 模型

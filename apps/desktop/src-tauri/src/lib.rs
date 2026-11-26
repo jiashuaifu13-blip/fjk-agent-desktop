@@ -10,6 +10,7 @@ mod onboarding;
 mod openclaw_auth;
 mod openclaw_cli;
 mod openclaw_install;
+mod persona;
 mod pet_memory;
 mod policy_file;
 mod provider_catalog;
@@ -99,6 +100,8 @@ pub fn run() {
             env_check::open_url,
             openclaw_install::openclaw_install,
             openclaw_install::openclaw_install_status,
+            persona::persona_status,
+            persona::persona_import_default,
             openclaw_auth::openclaw_auth_list,
             openclaw_auth::openclaw_save_api_key,
             provider_models::provider_list_models,

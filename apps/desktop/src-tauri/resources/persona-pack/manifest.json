@@ -1,0 +1,28 @@
+{
+  "version": "1",
+  "name": "FJK 出厂人格包",
+  "description": "大肥鱼（鲸鱼娘）人格 + 桌宠角色卡，外部 V2 卡可覆盖",
+  "createdAt": "2026-11-26",
+  "files": [
+    {
+      "path": "character.json",
+      "size": 9129,
+      "sha256": "fb96476f519ce11fde2e2cd89de8bf5db1f20d602109fc9c7ad3e565dbe8ef15"
+    },
+    {
+      "path": "identity.md",
+      "size": 372,
+      "sha256": "3316c682e4cf34b2e3d3e314f05424bce3c5743359698ec7e5ec4f6bd06aeda7"
+    },
+    {
+      "path": "persona.v2.json",
+      "size": 3316,
+      "sha256": "00f62640f52ddcefb4fd2b9fd1954cd8aa710861023615899c8a4c0bbb1aed70"
+    },
+    {
+      "path": "soul-persona-block.md",
+      "size": 3085,
+      "sha256": "053a2fc3e67c2c0f744ab9cf76b5d0cbb2dce94100d8b8d510626f2dba648150"
+    }
+  ]
+}
