@@ -13,6 +13,7 @@ interface PerfSample {
  */
 export function PerfHud() {
   const [visible, setVisible] = useState(false)
+  const [stats, setStats] = useState<{ total: number; rendered: number; virtual: boolean } | null>(null)
   const [sample, setSample] = useState<PerfSample>({
     fps: 0,
     worstFrameMs: 0,
@@ -72,6 +73,11 @@ export function PerfHud() {
         const memory = (performance as unknown as { memory?: { usedJSHeapSize: number } }).memory
         const heapMb = memory ? Math.round(memory.usedJSHeapSize / 1048576) : null
 
+        setStats(
+          (window as unknown as { __fjkMsgStats?: { total: number; rendered: number; virtual: boolean } })
+            .__fjkMsgStats ?? null,
+        )
+
         setSample({
           fps,
           worstFrameMs: Math.round(worst * 10) / 10,
@@ -107,6 +113,12 @@ export function PerfHud() {
       <span>FPS {sample.fps}</span>
       <span>最差帧 {sample.worstFrameMs}ms</span>
       <span>长任务 {sample.longTasks}</span>
+      {stats && (
+        <span>
+          消息 {stats.rendered}/{stats.total}
+          {stats.virtual ? ' · 虚拟' : ''}
+        </span>
+      )}
       {sample.heapMb !== null && <span>堆 {sample.heapMb}MB</span>}
       <span className="fjk-perf-hint">Ctrl+Shift+P 关闭</span>
     </div>

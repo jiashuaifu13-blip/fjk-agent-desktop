@@ -30,6 +30,7 @@ import type {
 
 import { ensureGatewayRunning } from '../system/gatewayLaunch'
 import { ConnectionRepair } from './ConnectionRepair'
+import { useVirtualMessages } from '../hooks/useVirtualMessages'
 import { resetSetup } from '../system/setupState'
 
 import type {
@@ -57,12 +58,15 @@ import {
 
 const MessageRow = memo(function MessageRow({
   message,
+  measureKey,
 }: {
   message: ChatMessage
+  measureKey?: string
 }) {
   return (
     <div
       className={`msg msg-${message.role}`}
+      data-vms-key={measureKey}
     >
       <div className="msg-role">
         {message.role === 'user' ? 'You' : 'Agent'}
@@ -396,6 +400,32 @@ export function DesktopTerminal() {
 
   const loadingOlderRef = useRef(false)
 
+  const previousMessageCountRef = useRef(0)
+
+  // 虚拟滚动开关：消息较多时启用，可在控制台用
+  // localStorage['fjk-virtual-scroll']='off' 关闭
+  const virtualEnabled =
+    typeof window !== 'undefined' &&
+    window.localStorage.getItem('fjk-virtual-scroll') !== 'off'
+
+  const messageKeys = messages.map((item) => item.id)
+
+  const virtualRange = useVirtualMessages({
+    count: messages.length,
+    keys: messageKeys,
+    containerRef: listRef,
+    enabled: virtualEnabled && messages.length > 30,
+  })
+
+  // 供性能 HUD 显示：总共多少条、实际渲染多少条
+  if (typeof window !== 'undefined') {
+    ;(window as unknown as { __fjkMsgStats?: unknown }).__fjkMsgStats = {
+      total: messages.length,
+      rendered: virtualRange ? virtualRange.end - virtualRange.start : messages.length,
+      virtual: Boolean(virtualRange),
+    }
+  }
+
   useEffect(() => {
     if (!chatController) {
       return
@@ -435,8 +465,18 @@ export function DesktopTerminal() {
       return
     }
 
-    el.scrollTop =
-      el.scrollHeight
+    const previousCount = previousMessageCountRef.current
+    previousMessageCountRef.current = messages.length
+
+    const distanceToBottom =
+      el.scrollHeight - el.scrollTop - el.clientHeight
+
+    const firstLoad = previousCount === 0 && messages.length > 0
+    const nearBottom = distanceToBottom < 160
+
+    if (firstLoad || sending || nearBottom) {
+      el.scrollTop = el.scrollHeight
+    }
   }, [messages, sending])
 
   const unauthorized =
@@ -1991,9 +2031,20 @@ export function DesktopTerminal() {
           </div>
         )}
 
-        {messages.map((m) => (
-          <MessageRow key={m.id} message={m} />
+        {virtualRange && (
+          <div style={{ height: virtualRange.padTop }} aria-hidden="true" />
+        )}
+
+        {(virtualRange
+          ? messages.slice(virtualRange.start, virtualRange.end)
+          : messages
+        ).map((m) => (
+          <MessageRow key={m.id} message={m} measureKey={virtualRange ? m.id : undefined} />
         ))}
+
+        {virtualRange && (
+          <div style={{ height: virtualRange.padBottom }} aria-hidden="true" />
+        )}
 
         {sending && (
           <div className="msg msg-assistant">
