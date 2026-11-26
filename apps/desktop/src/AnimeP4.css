@@ -360,3 +360,26 @@
   color: #2b3d57;
   overflow-wrap: anywhere;
 }
+
+.fjk-persona-secondary {
+  min-height: 34px;
+  padding: 7px 14px;
+  border-radius: 11px;
+  border: 1px solid #b8dcff;
+  background: #ffffff;
+  color: #0b6fd8;
+  font: 600 13px 'Microsoft YaHei UI', system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #e6f1fd;
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
+}
+
+.fjk-persona-secondary:active:not(:disabled) {
+  transform: translateY(2px) scale(0.98);
+  box-shadow: none;
+}
+
+.fjk-persona-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

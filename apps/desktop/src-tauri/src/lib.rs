@@ -11,6 +11,7 @@ mod openclaw_auth;
 mod openclaw_cli;
 mod openclaw_install;
 mod persona;
+mod persona_card;
 mod pet_memory;
 mod policy_file;
 mod provider_catalog;
@@ -102,6 +103,9 @@ pub fn run() {
             openclaw_install::openclaw_install_status,
             persona::persona_status,
             persona::persona_import_default,
+            persona_card::persona_preview_card,
+            persona_card::persona_import_card,
+            persona_card::persona_read_sidecar,
             openclaw_auth::openclaw_auth_list,
             openclaw_auth::openclaw_save_api_key,
             provider_models::provider_list_models,
