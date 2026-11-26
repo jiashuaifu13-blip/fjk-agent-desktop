@@ -185,6 +185,9 @@ pub async fn gateway_ensure_running(
         }
     }
 
+    // 2.5) 限制 Node 堆上限（默认 8032MB → 2048MB），防止长时间运行涨到 1.4GB
+    let _ = tune_gateway_heap(2048);
+
     // 3) 选择启动方式：优先直接运行 gateway.cmd（快），否则回退 CLI。
     let (args, source) = match gateway_cmd_path() {
         Some(path) => (vec![path.to_string_lossy().to_string()], "gateway.cmd"),
@@ -261,4 +264,55 @@ pub async fn gateway_ensure_running(
         error_kind: None,
         detail: Some(format!("已发起启动（{source}），等待端口就绪…")),
     })
+}
+
+/// 调整 gateway.cmd 里的 Node 堆上限（默认 2048MB）。
+///
+/// 为什么必须改文件：OpenClaw 生成的 gateway.cmd 会先 `set "NODE_OPTIONS="`，
+/// 再用命令行 `--max-old-space-size=8032` 启动，环境变量覆盖不了它。
+/// 该文件是 GBK 编码且含中文用户名，所以按字节定位 ASCII 片段替换，绝不整体重写。
+pub fn tune_gateway_heap(target_mb: u32) -> Option<String> {
+    let home = std::env::var("USERPROFILE").ok()?;
+    let path = std::path::PathBuf::from(home).join(".openclaw").join("gateway.cmd");
+
+    if !path.exists() {
+        return None;
+    }
+
+    let bytes = std::fs::read(&path).ok()?;
+    let needle = b"--max-old-space-size=";
+
+    let start = bytes
+        .windows(needle.len())
+        .position(|window| window == needle)?;
+
+    let number_start = start + needle.len();
+    let mut number_end = number_start;
+
+    while number_end < bytes.len()
+        && bytes[number_end].is_ascii_digit()
+        && number_end - number_start < 8
+    {
+        number_end += 1;
+    }
+
+    if number_end == number_start {
+        return None;
+    }
+
+    let current = String::from_utf8_lossy(&bytes[number_start..number_end]).to_string();
+
+    if current == target_mb.to_string() {
+        return Some(format!("已是 {current}MB"));
+    }
+
+    let replacement = format!("{target_mb:04}").into_bytes();
+    let mut next: Vec<u8> = Vec::with_capacity(bytes.len());
+    next.extend_from_slice(&bytes[..number_start]);
+    next.extend_from_slice(&replacement);
+    next.extend_from_slice(&bytes[number_end..]);
+
+    std::fs::write(&path, next).ok()?;
+
+    Some(format!("{current}MB -> {target_mb}MB"))
 }
