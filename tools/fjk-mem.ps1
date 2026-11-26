@@ -15,6 +15,7 @@
     fjk-mem.ps1 user   --text "以后别叫我老板，叫我 X"
     fjk-mem.ps1 memory --text "结论：..."
     fjk-mem.ps1 daily  --text "..."
+    fjk-mem.ps1 diary  --mood happy --text "今天的日记（≤50字）"
     fjk-mem.ps1 show   --file user|memory|daily
 #>
 
@@ -24,7 +25,8 @@ param(
   [string]$Command,
 
   [string]$Text,
-  [string]$File
+  [string]$File,
+  [string]$Mood
 )
 
 $ErrorActionPreference = 'Stop'
@@ -115,9 +117,57 @@ try {
 
   $kind = $Command.ToLower()
 
-  if (@('user', 'memory', 'daily') -notcontains $kind) {
+  if (@('user', 'memory', 'daily', 'diary') -notcontains $kind) {
     Write-Json @{ ok = $false; error = "未知子命令：$Command" }
     exit 2
+  }
+
+  if ($kind -eq 'diary') {
+    $cleanMood = 'neutral'
+
+    if (-not [string]::IsNullOrWhiteSpace($Mood)) {
+      $cleanMood = $Mood.ToLower()
+    }
+    $allowed = @('neutral','happy','joy','excited','proud','shy','surprised','angry','sad','wronged')
+
+    if ($allowed -notcontains $cleanMood) {
+      $cleanMood = 'neutral'
+    }
+
+    $rawText = ''
+
+    if (-not [string]::IsNullOrWhiteSpace($Text)) {
+      $rawText = $Text
+    }
+
+    $body = $rawText.Trim() -replace "`r?`n", ' '
+
+    if ($body.Length -gt 50) {
+      $body = $body.Substring(0, 50) + '…'
+    }
+
+    if ([string]::IsNullOrWhiteSpace($body)) {
+      Write-Json @{ ok = $false; error = '缺少 --text' }
+      exit 2
+    }
+
+    $diaryPath = Get-TargetPath 'daily'
+    Initialize-File $diaryPath 'daily'
+
+    $existing = [string][System.IO.File]::ReadAllText($diaryPath, [System.Text.Encoding]::UTF8)
+
+    if ($existing.Contains($body)) {
+      Write-Json @{ ok = $true; appended = $false; duplicate = $true; kind = 'diary'; path = $diaryPath }
+      exit 0
+    }
+
+    $stamp = Get-Date -Format 'HH:mm'
+    $entry = "`n## $stamp · 心情 $cleanMood`n`n$body`n`n[[mood:$cleanMood]]`n"
+
+    [System.IO.File]::AppendAllText($diaryPath, $entry, $Utf8NoBom)
+
+    Write-Json @{ ok = $true; appended = $true; kind = 'diary'; mood = $cleanMood; path = $diaryPath }
+    exit 0
   }
 
   $safe = Get-SafeText $Text

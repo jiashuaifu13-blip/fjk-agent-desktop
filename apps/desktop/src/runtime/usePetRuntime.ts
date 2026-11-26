@@ -37,6 +37,7 @@ import { createAgentStateReducer } from '@fjk/agent-state/AgentStateReducer.js'
 import { GatewayChatAdapter } from '../gateway/GatewayChatAdapter'
 import { TauriGatewayClient } from '../gateway/TauriGatewayClient'
 import { loadPetCharacterOverride } from '../system/petCharacter'
+import { invoke } from '@tauri-apps/api/core'
 import { toGatewayIssue } from '../gateway/GatewayError'
 
 export interface ChatMessage {
@@ -186,6 +187,7 @@ export interface PetRuntime {
   petEmotion: string
   createSession(): Promise<string>
   archiveActiveSession(): Promise<string | null>
+  generateDiary(digest: string): Promise<string | null>
   deleteSession(
     sessionKey: string,
     expectedSessionId: string,
@@ -2455,6 +2457,100 @@ export function usePetRuntime(
     )
   }
 
+
+  /**
+   * 用当前人格写一篇 ≤50 字日记：临时会话生成，写完即删，不影响用户会话。
+   */
+  const generateDiary = async (digest: string): Promise<string | null> => {
+    const gateway = gatewayClientRef.current
+
+    if (!gateway) return null
+
+    const trimmed = digest.trim()
+
+    if (trimmed.length < 20) return null
+
+    const created = await gateway.send('sessions.create', {})
+    const scratchKey = (created as { key?: string } | null)?.key
+
+    if (!scratchKey) return null
+
+    let unsubscribe: (() => void) | null = null
+
+    try {
+      await gateway.send('sessions.messages.subscribe', { key: scratchKey })
+
+      let collected = ''
+      let done = false
+
+      unsubscribe = gateway.onEvent((event) => {
+        const frame = event as {
+          type?: string
+          sessionKey?: string
+          stream?: string
+          phase?: string
+          data?: { delta?: unknown }
+        }
+
+        if (frame.type !== 'agent') return
+        if (frame.sessionKey && frame.sessionKey !== scratchKey) return
+
+        if (frame.stream === 'assistant' && typeof frame.data?.delta === 'string') {
+          collected += frame.data.delta
+        }
+
+        if (frame.stream === 'lifecycle' && (frame.phase === 'end' || frame.phase === 'error')) {
+          done = true
+        }
+      })
+
+      const prompt = [
+        '不要解释，直接输出结果。',
+        '请以你当前的人格（第一人称，保持口吻）写今天的日记：≤50 字，一段话，不写列表和标题。',
+        '最后一行单独输出情绪标记，取值 neutral/happy/joy/excited/proud/shy/surprised/angry/sad/wronged。',
+        '',
+        '今天的对话要点：',
+        trimmed.slice(0, 2000),
+      ].join('\n')
+
+      await gateway.send('chat.send', {
+        sessionKey: scratchKey,
+        message: prompt,
+        idempotencyKey: `diary-${Date.now()}`,
+      })
+
+      const deadline = Date.now() + 45000
+
+      while (!done && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 400))
+      }
+
+      const moodMatch = collected.match(/\[\[mood:([a-z]+)/i)
+      const mood = moodMatch?.[1]?.toLowerCase() ?? 'neutral'
+      const text = collected
+        .replace(/\[\[mood:[^\]]*\]\]/gi, '')
+        .trim()
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .join(' ')
+
+      if (!text) return null
+
+      const saved = await invoke<string>('memory_append_diary', { mood, text })
+
+      appendRuntimeLog('info', 'gateway', 'Diary written', saved)
+
+      return saved
+    } catch (error) {
+      appendRuntimeLog('warn', 'gateway', 'Diary failed', String(error))
+      return null
+    } finally {
+      unsubscribe?.()
+      await gateway.send('sessions.delete', { key: scratchKey }).catch(() => undefined)
+    }
+  }
+
   const setApprovalMode = (mode: 'tiered' | 'strict'): void => {
     setApprovalModeState(mode)
 
@@ -3060,6 +3156,7 @@ export function usePetRuntime(
     sessionList,
     createSession,
     archiveActiveSession,
+    generateDiary,
     deleteSession,
     switchSession,
     refreshSessions,

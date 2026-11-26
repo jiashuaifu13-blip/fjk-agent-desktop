@@ -115,6 +115,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File \"{path}\" show --file user\
 - 用户说「记住…」「以后都这样」→ 用 user（写 USER.md，下次会话自动加载）\n\
 - 形成稳定决定/根因结论 → 用 memory（写 MEMORY.md）\n\
 - 一次性上下文 → 用 daily（写 memory/YYYY-MM-DD.md）\n\
+- 写日记（有人味、≤50 字、带心情）→ 用 diary --mood <心情> --text \"…\"\n\
 - 同一条重复写会被去重；补充已有主题用 show 读回后改写，不要重复追加\n\
 - 不写密钥/token、不写大段日志\n\
 {END} v1 -->\n"
@@ -192,6 +193,102 @@ pub fn memory_setup(app: tauri::AppHandle) -> Result<MemoryStatus, String> {
     let _ = backup;
 
     memory_status()
+}
+
+/// 写入一篇"有人味"的日记：时间 + 心情 + 正文（≤50 字）+ 情绪标记。
+#[tauri::command]
+pub fn memory_append_diary(mood: String, text: String) -> Result<String, String> {
+    let workspace = workspace_dir()?;
+    let memory_dir = workspace.join("memory");
+    fs::create_dir_all(&memory_dir).map_err(|error| format!("创建 memory 目录失败：{error}"))?;
+
+    let today = chrono_like_date();
+    let path = memory_dir.join(format!("{today}.md"));
+
+    let cleaned_mood = mood
+        .trim()
+        .to_lowercase()
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .collect::<String>();
+
+    let mood = if [
+        "neutral", "happy", "joy", "excited", "proud", "shy", "surprised", "angry", "sad",
+        "wronged",
+    ]
+    .contains(&cleaned_mood.as_str())
+    {
+        cleaned_mood
+    } else {
+        "neutral".to_string()
+    };
+
+    let mut body: String = text
+        .lines()
+        .map(|line| line.trim())
+        .filter(|line| !line.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    if body.chars().count() > 50 {
+        body = body.chars().take(50).collect::<String>() + "…";
+    }
+
+    if body.is_empty() {
+        return Err("日记内容为空".to_string());
+    }
+
+    let entry = format!(
+        "\n## {} · 心情 {}\n\n{}\n\n[[mood:{}]]\n",
+        chrono_like_time(),
+        mood,
+        body,
+        mood
+    );
+
+    let existing = fs::read_to_string(&path).unwrap_or_default();
+
+    if existing.contains(&body) {
+        return Ok(path.display().to_string());
+    }
+
+    let content = if existing.trim().is_empty() {
+        format!("# {today}\n{entry}")
+    } else {
+        format!("{}{entry}", existing.trim_end().to_string() + "\n")
+    };
+
+    fs::write(&path, content).map_err(|error| format!("写入日记失败：{error}"))?;
+
+    Ok(path.display().to_string())
+}
+
+fn chrono_like_date() -> String {
+    // 用系统时间换算本地日期（不引入 chrono 依赖）
+    let secs = now_secs();
+    let days = secs / 86400;
+    let (y, m, d) = civil_from_days(days as i64);
+    format!("{y:04}-{m:02}-{d:02}")
+}
+
+fn chrono_like_time() -> String {
+    let secs = now_secs();
+    let local = (secs + 8 * 3600) % 86400; // 本地时区（+08:00）
+    format!("{:02}:{:02}", local / 3600, (local % 3600) / 60)
+}
+
+/// Howard Hinnant 的 days->civil 算法
+fn civil_from_days(z: i64) -> (i64, u32, u32) {
+    let z = z + 719468;
+    let era = if z >= 0 { z } else { z - 146096 } / 146097;
+    let doe = (z - era * 146097) as u64;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;
+    (if m <= 2 { y + 1 } else { y }, m, d)
 }
 
 #[tauri::command]

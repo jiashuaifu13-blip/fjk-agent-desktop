@@ -144,6 +144,7 @@ pub fn run() {
             memory::memory_setup,
             memory::memory_open_dir,
             memory::memory_archive_old,
+            memory::memory_append_diary,
             openclaw_auth::openclaw_auth_list,
             openclaw_auth::openclaw_save_api_key,
             provider_models::provider_list_models,

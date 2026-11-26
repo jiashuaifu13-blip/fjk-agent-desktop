@@ -99,6 +99,7 @@ export function DesktopTerminal() {
     sessionList,
     createSession,
     archiveActiveSession,
+    generateDiary,
     deleteSession,
     switchSession,
     loadOlderHistory,
@@ -2280,12 +2281,26 @@ export function DesktopTerminal() {
 
               if (!confirmed) return
 
+              // 归档前先攒出"今天的要点"，供自动日记使用
+              const digest = messages
+                .slice(-12)
+                .map((item) => {
+                  const role = item.role === 'user' ? '用户' : '助手'
+                  return role + '：' + item.content.replace(/\s+/g, ' ').slice(0, 200)
+                })
+                .join('\n')
+
               chatController?.clear()
 
               void archiveActiveSession()
-                .then((newKey) => {
+                .then(async (newKey) => {
                   if (newKey) {
                     chatController?.clear()
+                  }
+
+                  // 自动写日记（≤50 字 + 当天心情）；失败静默，不影响归档
+                  if (digest.length >= 20) {
+                    void generateDiary(digest)
                   }
                 })
                 .catch((error: unknown) => {
