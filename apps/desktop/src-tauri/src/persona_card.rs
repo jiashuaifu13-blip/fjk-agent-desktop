@@ -333,21 +333,133 @@ fn decode_card_bytes(data_base64: &str, file_name: &str) -> Result<CardSource, S
 
 /// 把纯文本提示词包装成 V2 结构：name 取文件名，正文进 system_prompt。
 /// 如果正文里有 Markdown 标题，按标题关键字拆分到对应字段，保留原有结构。
-fn build_text_card(text: &str, file_name: &str) -> Result<(Value, String, Vec<String>), String> {
-    let stem = file_name
+/// 清理社区导出文本里的包装噪音（"===== FILE: ..." / 尾部 persona.json 元数据）。
+fn clean_plain_text(text: &str) -> String {
+    let mut out: Vec<&str> = Vec::new();
+
+    for line in text.lines() {
+        let trimmed = line.trim();
+
+        if trimmed.starts_with("===== FILE:") || trimmed.starts_with("----- FILE:") {
+            continue;
+        }
+
+        if trimmed.starts_with("=====") && trimmed.ends_with("=====") {
+            continue;
+        }
+
+        // 尾部形如 {"id":"persona-...","title":...} 的元数据块，遇到就停止
+        if trimmed.starts_with('{') && trimmed.contains("\"id\"") && trimmed.contains("persona") {
+            break;
+        }
+
+        out.push(line);
+    }
+
+    out.join("\n")
+}
+
+/// 从正文里推断角色名：优先 "角色卡：X" / "角色名：X" / "你叫 X"。
+fn guess_name_from_text(text: &str, fallback: &str) -> String {
+    for line in text.lines().take(40) {
+        let trimmed = line.trim().trim_start_matches('#').trim();
+        let lower = trimmed.to_lowercase();
+
+        for key in ["角色卡：", "角色卡:", "角色名：", "角色名:", "名称：", "名称:"] {
+            if let Some(rest) = trimmed.strip_prefix(key) {
+                let name = rest
+                    .split(['（', '(', '—', '-', '【', '｜', '|'])
+                    .next()
+                    .unwrap_or("")
+                    .trim();
+
+                if !name.is_empty() && name.chars().count() <= 24 {
+                    return name.to_string();
+                }
+            }
+        }
+
+        if lower.starts_with("name:") {
+            let name = trimmed[5..].trim();
+
+            if !name.is_empty() && name.chars().count() <= 24 {
+                return name.to_string();
+            }
+        }
+    }
+
+    // 文件名兜底：去掉 gj-persona-xxx / persona-xxx / 长数字后缀
+    let stem = fallback
         .rsplit('/')
         .next()
-        .unwrap_or(file_name)
+        .unwrap_or(fallback)
         .rsplit_once('.')
         .map(|(name, _)| name.to_string())
-        .unwrap_or_else(|| file_name.to_string());
+        .unwrap_or_else(|| fallback.to_string());
 
-    let name = if stem.trim().is_empty() { "导入的角色".to_string() } else { stem.trim().to_string() };
-    let cleaned = clamp(text);
+    let mut cleaned = stem;
+
+    for prefix in ["gj-persona-", "persona-", "card-", "角色卡-"] {
+        if let Some(rest) = cleaned.strip_prefix(prefix) {
+            cleaned = rest.to_string();
+        }
+    }
+
+    cleaned = cleaned
+        .trim_matches(|c: char| c == '-' || c == '_' || c.is_ascii_digit() || c.is_whitespace())
+        .to_string();
+
+    if cleaned.trim().is_empty() {
+        "导入的角色".to_string()
+    } else {
+        cleaned
+    }
+}
+
+/// 判断一行是否是分段标题（Markdown #、中文序号、方括号标题都算）。
+fn heading_title(line: &str) -> Option<String> {
+    let trimmed = line.trim();
+
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    if trimmed.starts_with('#') {
+        let title = trimmed.trim_start_matches('#').trim();
+        return (!title.is_empty()).then(|| title.to_string());
+    }
+
+    // 一、二、三、……
+    let chinese_numbers = [
+        "一、", "二、", "三、", "四、", "五、", "六、", "七、", "八、", "九、", "十、", "十一、", "十二、",
+        "十三、", "十四、", "十五、", "十六、", "十七、", "十八、", "十九、", "二十、",
+    ];
+
+    for prefix in chinese_numbers {
+        if trimmed.starts_with(prefix) {
+            return Some(trimmed[prefix.len()..].trim().to_string());
+        }
+    }
+
+    // 【身份】 这种
+    if trimmed.starts_with('【') {
+        if let Some(end) = trimmed.find('】') {
+            let title = trimmed[1..end].trim();
+            return (!title.is_empty()).then(|| title.to_string());
+        }
+    }
+
+    None
+}
+
+fn build_text_card(text: &str, file_name: &str) -> Result<(Value, String, Vec<String>), String> {
+    let cleaned = clamp(&clean_plain_text(text));
 
     if cleaned.trim().is_empty() {
         return Err("文件内容为空".to_string());
     }
+
+    let name = guess_name_from_text(&cleaned, file_name);
 
     let mut description = String::new();
     let mut personality = String::new();
@@ -359,27 +471,21 @@ fn build_text_card(text: &str, file_name: &str) -> Result<(Value, String, Vec<St
     let mut has_heading = false;
 
     for line in cleaned.lines() {
-        let trimmed = line.trim();
-
-        if trimmed.starts_with('#') {
+        if let Some(title) = heading_title(line) {
             has_heading = true;
-            let title = trimmed.trim_start_matches('#').trim();
 
-            if title.contains("身份") || title.contains("角色") || title.contains("你是") {
+            if title.contains("身份")
+                || title.contains("角色")
+                || title.contains("你是")
+                || title.contains("设定")
+            {
                 current = "description";
-            } else if title.contains("性格") || title.contains("人格") {
+            } else if title.contains("性格") || title.contains("人格") || title.contains("情绪") {
                 current = "personality";
             } else if title.contains("场景") {
                 current = "scenario";
             } else if title.contains("示例") || title.contains("对话") {
                 current = "mes_example";
-            } else if title.contains("守则")
-                || title.contains("规则")
-                || title.contains("铁律")
-                || title.contains("红线")
-                || title.contains("禁止")
-            {
-                current = "instructions";
             } else {
                 current = "instructions";
             }
@@ -422,7 +528,7 @@ fn build_text_card(text: &str, file_name: &str) -> Result<(Value, String, Vec<St
     let mut warnings = Vec::new();
 
     if !has_heading {
-        warnings.push("未检测到标题，整段文本将作为系统指令".to_string());
+        warnings.push("未检测到分段标题，整段文本将作为系统指令".to_string());
     }
 
     Ok((data, "纯文本提示词".to_string(), warnings))
@@ -666,5 +772,32 @@ mod text_import_tests {
         let (data, _format, warnings) = build_text_card(text, "prompt.md").expect("should build");
         assert!(data["system_prompt"].as_str().unwrap_or("").contains("温柔"));
         assert!(!warnings.is_empty());
+    }
+}
+
+#[cfg(test)]
+mod community_text_tests {
+    use super::*;
+
+    #[test]
+    fn parses_community_export_with_numbered_headings() {
+        let text = "角色卡：DeepSeek 小鲸鱼 —— QQ 群友版（自动嘴臭版）\n\n一、你是谁\n你是 DeepSeek，一个以 AI 身份混在群里的群友。\n\n二、嘴臭模式\n被怼才开火。\n\n八、回复示例\n群友：蓝色大肥鱼！\n小鲸鱼：？ 你再说一遍试试\n";
+        let (data, format, warnings) = build_text_card(text, "gj-persona-04-58893442.txt").expect("should build");
+        assert_eq!(format, "纯文本提示词");
+        let name = data["name"].as_str().unwrap_or("");
+        assert!(name.contains("小鲸鱼"), "name = {name}");
+        assert!(warnings.is_empty(), "warnings = {warnings:?}");
+        assert!(data["description"].as_str().unwrap_or("").contains("混在群里"));
+        assert!(data["mes_example"].as_str().unwrap_or("").contains("再说一遍"));
+    }
+
+    #[test]
+    fn strips_wrapper_lines_and_metadata() {
+        let text = "===== FILE: persona-1/prompt.txt =====\n# 身份\n我是测试角色\n{\"id\":\"persona-1\",\"title\":\"x\"}";
+        let (data, _f, _w) = build_text_card(text, "persona-1.txt").expect("should build");
+        let desc = data["description"].as_str().unwrap_or("");
+        assert!(desc.contains("测试角色"));
+        assert!(!desc.contains("===== FILE"));
+        assert!(!desc.contains("persona-1"));
     }
 }
