@@ -36,6 +36,7 @@ import { mapAgentStateToPetAction } from '@fjk/agent-state/AgentToPetState.js'
 import { createAgentStateReducer } from '@fjk/agent-state/AgentStateReducer.js'
 import { GatewayChatAdapter } from '../gateway/GatewayChatAdapter'
 import { TauriGatewayClient } from '../gateway/TauriGatewayClient'
+import { loadPetCharacterOverride } from '../system/petCharacter'
 import { toGatewayIssue } from '../gateway/GatewayError'
 
 export interface ChatMessage {
@@ -852,9 +853,10 @@ export function usePetRuntime(
       let character: unknown = null
 
       try {
-        character = await loader.loadJson(
-          'character.json',
-        )
+        // 外部人格卡导入后会生成桌宠角色覆盖，优先使用
+        character =
+          (await loadPetCharacterOverride()) ??
+          (await loader.loadJson('character.json'))
       } catch (characterError) {
         console.warn(
           '[FJK] character card unavailable:',

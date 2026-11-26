@@ -580,6 +580,7 @@ pub fn persona_preview_card(data_base64: String, file_name: String) -> Result<Ca
 
 #[tauri::command]
 pub fn persona_import_card(
+    app: tauri::AppHandle,
     data_base64: String,
     file_name: String,
 ) -> Result<super::persona::PersonaImportResult, String> {
@@ -649,6 +650,14 @@ pub fn persona_import_card(
 
     fs::write(workspace.join(".persona-version"), marker.to_string())
         .map_err(|error| format!("写入版本记录失败：{error}"))?;
+
+    // 桌宠联动：用卡片的性格重写桌宠角色卡（失败不阻塞导入）
+    let _ = super::persona::write_pet_character(
+        &app,
+        &name,
+        data.get("description").and_then(|v| v.as_str()).unwrap_or(""),
+        data.get("personality").and_then(|v| v.as_str()).unwrap_or(""),
+    );
 
     Ok(super::persona::PersonaImportResult {
         ok: true,

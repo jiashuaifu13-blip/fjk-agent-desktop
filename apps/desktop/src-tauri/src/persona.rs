@@ -30,7 +30,7 @@ fn workspace_dir() -> Result<PathBuf, String> {
     Ok(PathBuf::from(home).join(".openclaw").join("workspace"))
 }
 
-fn pack_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+pub(crate) fn pack_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     use tauri::Manager;
 
     // 打包后：resource_dir/persona-pack；开发时：cargo manifest/resources/persona-pack
@@ -284,4 +284,96 @@ pub fn persona_import_default(app: tauri::AppHandle) -> Result<PersonaImportResu
         backups,
         message: "默认人格已导入，正在创建新会话以生效…".to_string(),
     })
+}
+
+/// 读取桌宠角色覆盖文件（外部人格卡导入后生成）。
+#[tauri::command]
+pub fn pet_character_override() -> Option<String> {
+    let appdata = std::env::var("APPDATA").ok()?;
+    let path = PathBuf::from(appdata)
+        .join("com.fjk.agent")
+        .join("persona")
+        .join("character.json");
+
+    if !path.exists() {
+        return None;
+    }
+
+    let meta = fs::metadata(&path).ok()?;
+
+    if meta.len() > 512 * 1024 {
+        return None;
+    }
+
+    fs::read_to_string(&path).ok()
+}
+
+/// 根据外部人格卡生成桌宠角色卡：以内置默认卡为底，覆盖名字/日常人格，
+/// 并按性格关键词微调情绪权重，让桌宠的表演跟着人格走。
+pub(crate) fn write_pet_character(
+    app: &tauri::AppHandle,
+    name: &str,
+    description: &str,
+    personality: &str,
+) -> Result<(), String> {
+    let pack = pack_dir(app)?;
+    let base_raw = fs::read_to_string(pack.join("character.json"))
+        .map_err(|error| format!("读取内置桌宠卡失败：{error}"))?;
+    let mut base: serde_json::Value =
+        serde_json::from_str(&base_raw).map_err(|error| format!("内置桌宠卡损坏：{error}"))?;
+
+    let daily_parts: Vec<String> = [description, personality]
+        .iter()
+        .filter(|text| !text.trim().is_empty())
+        .map(|text| text.chars().take(160).collect::<String>())
+        .collect();
+
+    if !name.trim().is_empty() {
+        base["name"] = serde_json::Value::String(name.trim().to_string());
+    }
+
+    if !daily_parts.is_empty() {
+        base["persona"]["daily"] = serde_json::Value::String(daily_parts.join("。"));
+    }
+
+    let mut hook = |weight_key: &str, delta: f64| {
+        if let Some(entry) = base["emotions"].get_mut(weight_key) {
+            if let Some(weight) = entry["weight"].as_f64() {
+                entry["weight"] = serde_json::json!((weight + delta).clamp(0.6, 2.0));
+            }
+        }
+    };
+
+    let text = format!("{description}{personality}");
+
+    if text.contains("傲娇") || text.contains("嘴硬") {
+        hook("angry", 0.2);
+        hook("proud", 0.2);
+    }
+
+    if text.contains("温柔") || text.contains("软") || text.contains("乖巧") {
+        hook("happy", 0.2);
+        hook("shy", 0.2);
+    }
+
+    if text.contains("活泼") || text.contains("元气") || text.contains("开朗") {
+        hook("excited", 0.2);
+        hook("joy", 0.1);
+    }
+
+    if text.contains("冷静") || text.contains("理性") || text.contains("沉稳") {
+        hook("neutral", 0.2);
+    }
+
+    let appdata = std::env::var("APPDATA").map_err(|_| "无法获取 APPDATA".to_string())?;
+    let dir = PathBuf::from(appdata).join("com.fjk.agent").join("persona");
+    fs::create_dir_all(&dir).ok();
+
+    fs::write(
+        dir.join("character.json"),
+        serde_json::to_string_pretty(&base).unwrap_or_else(|_| base.to_string()),
+    )
+    .map_err(|error| format!("写入桌宠角色卡失败：{error}"))?;
+
+    Ok(())
 }

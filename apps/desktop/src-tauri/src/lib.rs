@@ -6,6 +6,7 @@ mod exec_policy;
 mod gateway;
 mod gateway_launch;
 mod gateway_repair;
+mod guard;
 mod onboarding;
 mod openclaw_auth;
 mod openclaw_cli;
@@ -109,6 +110,9 @@ pub fn run() {
             persona_card::persona_read_sidecar,
             persona_export::persona_export_json,
             persona_export::persona_export_file,
+            persona::pet_character_override,
+            guard::guard_apply_default,
+            guard::guard_status,
             openclaw_auth::openclaw_auth_list,
             openclaw_auth::openclaw_save_api_key,
             provider_models::provider_list_models,

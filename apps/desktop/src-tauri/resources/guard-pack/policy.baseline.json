@@ -1,0 +1,43 @@
+{
+  "version": "1",
+  "name": "FJK 审批保护基线",
+  "description": "通用只读放行 + 危险命令拒绝 + 系统目录保护；不含任何个人路径与授权",
+  "allow": [
+    "^\\s*dir\\b",
+    "^\\s*type\\b",
+    "^\\s*where(\\.exe)?\\b",
+    "^\\s*Get-ChildItem\\b",
+    "^\\s*Get-Content\\b",
+    "^\\s*Get-Process\\b",
+    "^\\s*Get-Service\\b",
+    "^\\s*git\\s+(status|log|diff|branch|show)\\b",
+    "^\\s*node\\s+--version\\b",
+    "^\\s*npm\\s+--version\\b",
+    "^\\s*openclaw\\s+(--version|status)\\b",
+    "^\\s*[\\w:\\\\/. -]*fjkctl(\\.exe)?\"?\\s+(screenshot|crop|list-windows|move|scroll|wait|focus)\\b",
+    "^\\s*[\\w:\\\\/. -]*fjkctl(\\.exe)?\"?\\s+key\\s+--combo\\s+\"?(media-|volume-|mute)",
+    "^\\s*powershell(\\.exe)?[^\\r\\n]*fjk-uia\\.ps1\"?\\s+(windows|list|find|get-text)\\b",
+    "^\\s*powershell(\\.exe)?[^\\r\\n]*fjk-mem\\.ps1\"?\\s+(user|memory|daily|show)\\b"
+  ],
+  "deny": [
+    "fjkctl(\\.exe)?\"?\\s+kill\\b",
+    "powershell.*(SendInput|mouse_event|keybd_event|SetCursorPos)",
+    ".*user32\\.dll.*(mouse_event|keybd_event)",
+    "(?i)\\bformat\\s+[a-z]:",
+    "(?i)\\bdiskpart\\b",
+    "(?i)\\bbcdedit\\b",
+    "(?i)\\bshutdown\\b",
+    "(?i)\\brm\\s+-rf\\s+/",
+    "(?i)del\\s+/[fsq].*\\\\(windows|program files)",
+    "(?i)reg\\s+delete\\s+HKLM"
+  ],
+  "protected": [
+    "C:\\\\Windows",
+    "C:\\\\Program Files",
+    "C:\\\\Program Files (x86)",
+    "C:\\\\ProgramData\\\\Microsoft",
+    "\\\\.openclaw\\\\openclaw\\\\.json",
+    "\\\\.openclaw\\\\workspace"
+  ],
+  "projectRoots": []
+}
