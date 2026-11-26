@@ -13,7 +13,7 @@ interface PerfSample {
  */
 export function PerfHud() {
   const [visible, setVisible] = useState(false)
-  const [stats, setStats] = useState<{ total: number; rendered: number; virtual: boolean } | null>(null)
+  const [stats, setStats] = useState<{ total: number; rendered: number; virtual: boolean; chars?: number } | null>(null)
   const [sample, setSample] = useState<PerfSample>({
     fps: 0,
     worstFrameMs: 0,
@@ -74,7 +74,7 @@ export function PerfHud() {
         const heapMb = memory ? Math.round(memory.usedJSHeapSize / 1048576) : null
 
         setStats(
-          (window as unknown as { __fjkMsgStats?: { total: number; rendered: number; virtual: boolean } })
+          (window as unknown as { __fjkMsgStats?: { total: number; rendered: number; virtual: boolean; chars?: number } })
             .__fjkMsgStats ?? null,
         )
 
@@ -117,6 +117,7 @@ export function PerfHud() {
         <span>
           消息 {stats.rendered}/{stats.total}
           {stats.virtual ? ' · 虚拟' : ''}
+          {typeof stats.chars === 'number' ? ' · ' + Math.round(stats.chars / 1000) + 'k字' : ''}
         </span>
       )}
       {sample.heapMb !== null && <span>堆 {sample.heapMb}MB</span>}
