@@ -173,7 +173,7 @@ export function PersonaCard({ onApplied }: { onApplied: () => Promise<void> | vo
           <input
             ref={fileRef}
             type="file"
-            accept=".png,.json,.txt,application/json,image/png"
+            accept=".png,.json,.txt,.md,application/json,image/png,text/plain,text/markdown"
             style={{ display: 'none' }}
             onChange={(event) => {
               const file = event.target.files?.[0]
@@ -183,7 +183,7 @@ export function PersonaCard({ onApplied }: { onApplied: () => Promise<void> | vo
         </div>
 
         <div className="fjk-persona-hint">
-          支持 Character Card V2/V3（PNG 内嵌或 JSON）。导入后会归档当前对话并新建会话，让人格立刻生效；原文件自动备份。
+          支持 Character Card V2/V3（PNG 内嵌 / JSON）与纯文本提示词（.txt / .md）。导入后会归档当前对话并新建会话，让人格立刻生效；原文件自动备份。
         </div>
 
         {note && <div className="fjk-persona-note">{note}</div>}

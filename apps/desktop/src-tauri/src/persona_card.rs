@@ -300,7 +300,15 @@ fn merge_soul(existing: &str, block: &str) -> String {
     format!("{}\n\n{}\n", existing.trim_end(), block.trim_end())
 }
 
-fn decode_card_bytes(data_base64: &str, file_name: &str) -> Result<String, String> {
+/// 解析后的输入来源。
+enum CardSource {
+    /// JSON 文本（V2/V3/TavernAI）
+    Json(String),
+    /// 纯文本提示词（.txt / .md，中文社区主流格式）
+    PlainText(String),
+}
+
+fn decode_card_bytes(data_base64: &str, file_name: &str) -> Result<CardSource, String> {
     let bytes = base64_decode(data_base64).map_err(|error| format!("Base64 解码失败：{error}"))?;
 
     if bytes.len() > MAX_FILE_BYTES {
@@ -310,16 +318,127 @@ fn decode_card_bytes(data_base64: &str, file_name: &str) -> Result<String, Strin
     let lower = file_name.to_lowercase();
 
     if lower.ends_with(".png") || bytes.starts_with(b"\x89PNG") {
-        return extract_card_from_png(&bytes);
+        return extract_card_from_png(&bytes).map(CardSource::Json);
     }
 
-    String::from_utf8(bytes).map_err(|error| format!("文件编码异常：{error}"))
+    let text = String::from_utf8(bytes).map_err(|error| format!("文件编码异常：{error}"))?;
+    let trimmed = text.trim_start_matches('\u{feff}').trim();
+
+    if trimmed.starts_with('{') || trimmed.starts_with('[') {
+        return Ok(CardSource::Json(text));
+    }
+
+    Ok(CardSource::PlainText(text))
+}
+
+/// 把纯文本提示词包装成 V2 结构：name 取文件名，正文进 system_prompt。
+/// 如果正文里有 Markdown 标题，按标题关键字拆分到对应字段，保留原有结构。
+fn build_text_card(text: &str, file_name: &str) -> Result<(Value, String, Vec<String>), String> {
+    let stem = file_name
+        .rsplit('/')
+        .next()
+        .unwrap_or(file_name)
+        .rsplit_once('.')
+        .map(|(name, _)| name.to_string())
+        .unwrap_or_else(|| file_name.to_string());
+
+    let name = if stem.trim().is_empty() { "导入的角色".to_string() } else { stem.trim().to_string() };
+    let cleaned = clamp(text);
+
+    if cleaned.trim().is_empty() {
+        return Err("文件内容为空".to_string());
+    }
+
+    let mut description = String::new();
+    let mut personality = String::new();
+    let mut scenario = String::new();
+    let mut mes_example = String::new();
+    let mut instructions = String::new();
+    let mut current = "description";
+
+    let mut has_heading = false;
+
+    for line in cleaned.lines() {
+        let trimmed = line.trim();
+
+        if trimmed.starts_with('#') {
+            has_heading = true;
+            let title = trimmed.trim_start_matches('#').trim();
+
+            if title.contains("身份") || title.contains("角色") || title.contains("你是") {
+                current = "description";
+            } else if title.contains("性格") || title.contains("人格") {
+                current = "personality";
+            } else if title.contains("场景") {
+                current = "scenario";
+            } else if title.contains("示例") || title.contains("对话") {
+                current = "mes_example";
+            } else if title.contains("守则")
+                || title.contains("规则")
+                || title.contains("铁律")
+                || title.contains("红线")
+                || title.contains("禁止")
+            {
+                current = "instructions";
+            } else {
+                current = "instructions";
+            }
+
+            continue;
+        }
+
+        let target = match current {
+            "description" => &mut description,
+            "personality" => &mut personality,
+            "scenario" => &mut scenario,
+            "mes_example" => &mut mes_example,
+            _ => &mut instructions,
+        };
+
+        target.push_str(line);
+        target.push('\n');
+    }
+
+    // 没有标题时，整段文本按"系统指令"处理，避免被误当成背景描述
+    if !has_heading {
+        instructions = cleaned.clone();
+        description.clear();
+        personality.clear();
+        scenario.clear();
+        mes_example.clear();
+    }
+
+    let data = serde_json::json!({
+        "name": name,
+        "description": description.trim(),
+        "personality": personality.trim(),
+        "scenario": scenario.trim(),
+        "mes_example": mes_example.trim(),
+        "system_prompt": instructions.trim(),
+        "tags": ["纯文本导入"],
+        "creator_notes": "由纯文本提示词导入",
+    });
+
+    let mut warnings = Vec::new();
+
+    if !has_heading {
+        warnings.push("未检测到标题，整段文本将作为系统指令".to_string());
+    }
+
+    Ok((data, "纯文本提示词".to_string(), warnings))
+}
+
+fn parse_any(source: CardSource, file_name: &str) -> Result<(Value, String, Vec<String>), String> {
+    match source {
+        CardSource::Json(text) => parse_card(&text),
+        CardSource::PlainText(text) => build_text_card(&text, file_name),
+    }
 }
 
 #[tauri::command]
 pub fn persona_preview_card(data_base64: String, file_name: String) -> Result<CardPreview, String> {
-    let text = decode_card_bytes(&data_base64, &file_name)?;
-    let (data, format, warnings) = parse_card(&text)?;
+    let source = decode_card_bytes(&data_base64, &file_name)?;
+    let (data, format, warnings) = parse_any(source, &file_name)?;
     let fields = card_fields(&data);
 
     let name = value_to_string(data.get("name"));
@@ -352,8 +471,8 @@ pub fn persona_import_card(
     data_base64: String,
     file_name: String,
 ) -> Result<super::persona::PersonaImportResult, String> {
-    let text = decode_card_bytes(&data_base64, &file_name)?;
-    let (data, format, _) = parse_card(&text)?;
+    let source = decode_card_bytes(&data_base64, &file_name)?;
+    let (data, format, _) = parse_any(source, &file_name)?;
     let fields = card_fields(&data);
 
     let total: usize = fields.iter().map(|(_, text)| text.chars().count()).sum();
@@ -393,7 +512,17 @@ pub fn persona_import_card(
 
     // 保存原始卡（导出与再编辑用）
     let sidecar = workspace.join("persona.v2.json");
-    fs::write(&sidecar, text.trim()).map_err(|error| format!("写入 persona.v2.json 失败：{error}"))?;
+    let sidecar_json = serde_json::json!({
+        "spec": "chara_card_v2",
+        "spec_version": "2.0",
+        "data": data.clone(),
+    });
+
+    fs::write(
+        &sidecar,
+        serde_json::to_string_pretty(&sidecar_json).unwrap_or_else(|_| sidecar_json.to_string()),
+    )
+    .map_err(|error| format!("写入 persona.v2.json 失败：{error}"))?;
 
     let marker = serde_json::json!({
         "version": "imported",
@@ -513,5 +642,29 @@ mod tests {
         assert!(extracted.contains("PNG角色"));
 
         let _ = std::io::stdout().flush();
+    }
+}
+
+#[cfg(test)]
+mod text_import_tests {
+    use super::*;
+
+    #[test]
+    fn builds_card_from_plain_text() {
+        let text = "# 身份\n我是大肥鱼，住在数据海洋。\n# 性格\n傲娇嘴硬心软。\n# 回复示例\n用户：你好\n大肥鱼：唔，你来啦。\n";
+        let (data, format, _) = build_text_card(text, "大肥鱼.txt").expect("should build");
+        assert_eq!(format, "纯文本提示词");
+        assert_eq!(data["name"].as_str(), Some("大肥鱼"));
+        assert!(data["description"].as_str().unwrap_or("").contains("数据海洋"));
+        assert!(data["personality"].as_str().unwrap_or("").contains("傲娇"));
+        assert!(data["mes_example"].as_str().unwrap_or("").contains("你来啦"));
+    }
+
+    #[test]
+    fn plain_text_without_heading_falls_back_to_instructions() {
+        let text = "你是一个温柔的角色，说话短。";
+        let (data, _format, warnings) = build_text_card(text, "prompt.md").expect("should build");
+        assert!(data["system_prompt"].as_str().unwrap_or("").contains("温柔"));
+        assert!(!warnings.is_empty());
     }
 }
