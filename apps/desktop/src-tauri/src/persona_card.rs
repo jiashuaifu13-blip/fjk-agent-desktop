@@ -233,6 +233,12 @@ fn card_fields(data: &Value) -> Vec<(String, String)> {
     fields
 }
 
+/// 仅测试用：从 PNG 字节解出卡片 JSON。
+#[cfg(test)]
+pub(crate) fn extract_card_for_test(bytes: &[u8]) -> Result<String, String> {
+    extract_card_from_png(bytes)
+}
+
 fn build_soul_block(fields: &[(String, String)], name: &str) -> String {
     let mut body = String::new();
 

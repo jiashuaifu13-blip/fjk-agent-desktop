@@ -95,6 +95,37 @@ export function PersonaCard({ onApplied }: { onApplied: () => Promise<void> | vo
     }
   }
 
+  const exportCard = async (kind: 'json' | 'png') => {
+    if (!hasTauri() || busy) return
+
+    setBusy(true)
+
+    try {
+      const saved = (await invoke('persona_export_file', {
+        target: 'desktop',
+        kind,
+      })) as string
+
+      setNote('已导出到：' + saved)
+    } catch (error) {
+      setNote('导出失败：' + (error instanceof Error ? error.message : String(error)))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const copyJson = async () => {
+    if (!hasTauri() || busy) return
+
+    try {
+      const json = (await invoke('persona_export_json')) as string
+      await navigator.clipboard.writeText(json)
+      setNote('V2 JSON 已复制到剪贴板')
+    } catch (error) {
+      setNote('复制失败：' + (error instanceof Error ? error.message : String(error)))
+    }
+  }
+
   const pickCardFile = () => {
     fileRef.current?.click()
   }
@@ -168,6 +199,34 @@ export function PersonaCard({ onApplied }: { onApplied: () => Promise<void> | vo
 
           <button type="button" className="fjk-persona-secondary" disabled={busy} onClick={pickCardFile}>
             导入人格卡（.png / .json）
+          </button>
+
+
+          <button
+            type="button"
+            className="fjk-persona-secondary"
+            disabled={busy || !status?.installed}
+            onClick={() => void exportCard('json')}
+          >
+            导出 JSON
+          </button>
+
+          <button
+            type="button"
+            className="fjk-persona-secondary"
+            disabled={busy || !status?.installed}
+            onClick={() => void exportCard('png')}
+          >
+            导出 PNG
+          </button>
+
+          <button
+            type="button"
+            className="fjk-persona-secondary"
+            disabled={busy || !status?.installed}
+            onClick={() => void copyJson()}
+          >
+            复制 JSON
           </button>
 
           <input
