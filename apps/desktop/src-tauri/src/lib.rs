@@ -14,6 +14,7 @@ mod openclaw_install;
 mod persona;
 mod persona_card;
 mod persona_export;
+mod memory;
 mod pet_memory;
 mod policy_file;
 mod provider_catalog;
@@ -80,6 +81,32 @@ pub fn run() {
                 }
             }
 
+            // 把随包分发的 fjk-mem.ps1 也释放到 bin 目录，供 agent 直接调用
+            if let Ok(resource) = app
+                .path()
+                .resolve("resources/fjk-mem.ps1", tauri::path::BaseDirectory::Resource)
+            {
+                if resource.exists() {
+                    if let Ok(dir) = app.path().app_data_dir() {
+                        let bin_dir = dir.join("bin");
+                        let _ = std::fs::create_dir_all(&bin_dir);
+
+                        let target = bin_dir.join("fjk-mem.ps1");
+                        let stale = match (
+                            std::fs::metadata(&target),
+                            std::fs::metadata(&resource),
+                        ) {
+                            (Ok(existing), Ok(source)) => existing.len() != source.len(),
+                            _ => true,
+                        };
+
+                        if stale {
+                            let _ = std::fs::copy(&resource, &target);
+                        }
+                    }
+                }
+            }
+
             Ok(())
         })
         .manage(gateway::GatewayState::default())
@@ -113,6 +140,10 @@ pub fn run() {
             persona::pet_character_override,
             guard::guard_apply_default,
             guard::guard_status,
+            memory::memory_status,
+            memory::memory_setup,
+            memory::memory_open_dir,
+            memory::memory_archive_old,
             openclaw_auth::openclaw_auth_list,
             openclaw_auth::openclaw_save_api_key,
             provider_models::provider_list_models,

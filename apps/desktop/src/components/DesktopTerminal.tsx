@@ -33,6 +33,7 @@ import { ConnectionRepair } from './ConnectionRepair'
 import { useVirtualMessages } from '../hooks/useVirtualMessages'
 import { PersonaCard } from './PersonaCard'
 import { GuardCard } from './GuardCard'
+import { MemoryCard } from './MemoryCard'
 import { resetSetup } from '../system/setupState'
 
 import type {
@@ -817,6 +818,8 @@ export function DesktopTerminal() {
 
           <div className="connection-state-grid">
             <GuardCard />
+
+            <MemoryCard />
 
             <PersonaCard
               onApplied={async () => {
