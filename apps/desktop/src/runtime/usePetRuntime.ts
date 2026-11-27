@@ -186,7 +186,7 @@ export interface PetRuntime {
   petSpeech: string | null
   petEmotion: string
   createSession(): Promise<string>
-  archiveActiveSession(): Promise<string | null>
+  resetActiveSession(): Promise<string | null>
   generateDiary(digest: string): Promise<string | null>
   deleteSession(
     sessionKey: string,
@@ -2301,7 +2301,11 @@ export function usePetRuntime(
    * 归档当前会话并新建一个：原文保留在磁盘（供后台提炼长期记忆），
    * 界面切到新会话，既清空屏幕又不丢记忆原料。
    */
-  const archiveActiveSession = async (): Promise<string | null> => {
+  /**
+   * 清空当前对话：在**同一个会话内**执行 /reset（清历史、保留会话本身），
+   * 不新建会话；主会话永不被删除，其余残留会话会被清理，保证会话数不增长。
+   */
+  const resetActiveSession = async (): Promise<string | null> => {
     const gateway = gatewayClientRef.current
     const adapter = gatewayChatAdapterRef.current
 
@@ -2314,50 +2318,73 @@ export function usePetRuntime(
     }
 
     const currentKey = activeSessionKeyRef.current ?? settingsOverview.sessionKey
-    const archivedAt = Date.now()
 
-    if (currentKey) {
-      try {
-        await gateway.send('sessions.patch', { key: currentKey, archived: true })
-        recordPendingDistill(currentKey, 'clear')
-        appendRuntimeLog('info', 'gateway', 'Session archived', `session=${currentKey}; at=${archivedAt}`)
-      } catch (error) {
-        appendRuntimeLog('warn', 'gateway', 'Session archive failed', String(error))
-      }
+    if (!currentKey) {
+      return null
     }
 
-    const created = await gateway.send('sessions.create', {})
-    const newKey = (created as { key?: string } | null)?.key
-
-    if (!newKey) {
-      throw new Error('sessions.create returned no key')
-    }
-
-    activeSessionKeyRef.current = newKey
-    adapter.setSessionKey(newKey)
+    // 1) 记录待提炼（长期记忆链路），并在原会话内重置
+    recordPendingDistill(currentKey, 'clear')
 
     try {
-      await gateway.send('sessions.messages.subscribe', { key: newKey, includeApprovals: true })
+      await gateway.send('chat.send', {
+        sessionKey: currentKey,
+        message: '/reset',
+        idempotencyKey: `reset-${Date.now()}`,
+      })
+      appendRuntimeLog('info', 'gateway', 'Session reset', `session=${currentKey}`)
     } catch (error) {
-      appendRuntimeLog('warn', 'gateway', 'Subscribe new session failed', String(error))
+      appendRuntimeLog('warn', 'gateway', 'Session reset failed', String(error))
+      throw error
     }
 
-    historySessionKeyRef.current = newKey
+    // 2) 等 /reset 落盘
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 1200)
+    })
+
+    // 3) 清理残留会话：保留主会话与当前会话，其余删除（绝不删主会话）
+    try {
+      const listed = await gateway.send('sessions.list', {})
+      const sessions = readSessionList(listed)
+      const main = sessions.find((item) => item.isMain)
+
+      for (const item of sessions) {
+        if (item.key === currentKey) continue
+        if (main && item.key === main.key) continue
+
+        try {
+          await gateway.send('sessions.delete', {
+            key: item.key,
+            expectedSessionId: item.sessionId,
+          })
+        } catch (error) {
+          appendRuntimeLog('warn', 'gateway', 'Prune session failed', String(error))
+        }
+      }
+    } catch (error) {
+      appendRuntimeLog('warn', 'gateway', 'Session prune skipped', String(error))
+    }
+
+    // 4) 刷新列表与历史游标
+    try {
+      const list = await gateway.send('sessions.list', {})
+      const refreshed = readSessionList(list)
+
+      setSessionList(refreshed)
+      setSettingsOverview((current) => ({
+        ...current,
+        sessionKey: currentKey,
+        sessionCount: refreshed.length,
+      }))
+    } catch {
+      // 忽略
+    }
+
+    historySessionKeyRef.current = currentKey
     historyOlderCursorRef.current = null
 
-    const list = await gateway.send('sessions.list', {})
-    const refreshedSessions = readSessionList(list)
-
-    setSessionList(refreshedSessions)
-    setSettingsOverview((current) => ({
-      ...current,
-      sessionKey: newKey,
-      sessionCount: refreshedSessions.length,
-    }))
-
-    appendRuntimeLog('info', 'gateway', 'Session created', `session=${newKey} (after archive)`)
-
-    return newKey
+    return currentKey
   }
 
   const deleteSession = async (
@@ -3155,7 +3182,7 @@ export function usePetRuntime(
     rollbackSessionModel,
     sessionList,
     createSession,
-    archiveActiveSession,
+    resetActiveSession,
     generateDiary,
     deleteSession,
     switchSession,

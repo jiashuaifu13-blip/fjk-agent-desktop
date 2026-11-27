@@ -98,7 +98,7 @@ export function DesktopTerminal() {
     rollbackSessionModel,
     sessionList,
     createSession,
-    archiveActiveSession,
+    resetActiveSession,
     generateDiary,
     deleteSession,
     switchSession,
@@ -825,7 +825,7 @@ export function DesktopTerminal() {
             <PersonaCard
               onApplied={async () => {
                 try {
-                  await archiveActiveSession()
+                  await resetActiveSession()
                   chatController?.clear()
                 } catch (error) {
                   console.warn('[fjk] persona apply: new session failed', error)
@@ -2273,15 +2273,15 @@ export function DesktopTerminal() {
             disabled={
               !chatController || sending
             }
-            title="归档当前对话并开始新对话（原文保留，供长期记忆提炼）"
+            title="清空当前对话（保留会话本身，不新建会话）"
             onClick={() => {
               const confirmed = window.confirm(
-                '清空将把当前对话归档（原文保留，界面开始新对话）。\n\n归档的对话不会显示在列表里，但会作为长期记忆的原料保留。\n\n继续吗？',
+                '清空会在当前对话内清除历史（会话本身保留，不会新建会话）。\n\n主会话永远保留，只会被清空内容。\n\n继续吗？',
               )
 
               if (!confirmed) return
 
-              // 归档前先攒出"今天的要点"，供自动日记使用
+              // 清空前先攒出"今天的要点"，供自动日记使用
               const digest = messages
                 .slice(-12)
                 .map((item) => {
@@ -2292,21 +2292,19 @@ export function DesktopTerminal() {
 
               chatController?.clear()
 
-              void archiveActiveSession()
-                .then(async (newKey) => {
-                  if (newKey) {
-                    chatController?.clear()
-                  }
+              void resetActiveSession()
+                .then(() => {
+                  chatController?.clear()
 
-                  // 自动写日记（≤50 字 + 当天心情）；失败静默，不影响归档
+                  // 自动写日记（≤50 字 + 当天心情）；失败静默，不影响清空
                   if (digest.length >= 20) {
                     void generateDiary(digest)
                   }
                 })
                 .catch((error: unknown) => {
-                  console.warn('[fjk] archive session failed', error)
+                  console.warn('[fjk] reset session failed', error)
                   window.alert(
-                    '归档失败：' + (error instanceof Error ? error.message : String(error)) + '\n\n已为你清空界面，但对话未归档。',
+                    '清空失败：' + (error instanceof Error ? error.message : String(error)) + '\n\n界面已清空，但会话历史可能未清除。',
                   )
                 })
             }}

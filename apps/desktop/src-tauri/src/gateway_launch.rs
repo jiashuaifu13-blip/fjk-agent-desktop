@@ -155,6 +155,11 @@ pub async fn gateway_ensure_running(
 ) -> Result<EnsureResult, String> {
     let _guard = state.ensure.lock().await;
 
+    // 0) 先纠正 gateway.cmd 的堆上限（幂等、只写文件）。
+    //    必须放在端口检查之前：升级覆盖安装时旧网关仍在监听，
+    //    若此时提前 return，旧的 2048MB 参数就永远纠正不过来。
+    let _ = tune_gateway_heap(1024);
+
     // 1) 已在监听：复用，绝不再启动第二个实例。
     if port_open() {
         let pid = listening_pid();
@@ -184,9 +189,6 @@ pub async fn gateway_ensure_running(
             }
         }
     }
-
-    // 2.5) 限制 Node 堆上限（默认 8032MB → 2048MB），防止长时间运行涨到 1.4GB
-    let _ = tune_gateway_heap(1024);
 
     // 3) 选择启动方式：优先直接运行 gateway.cmd（快），否则回退 CLI。
     let (args, source) = match gateway_cmd_path() {

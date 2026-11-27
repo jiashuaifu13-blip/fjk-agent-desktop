@@ -7,6 +7,7 @@ mod gateway;
 mod gateway_launch;
 mod gateway_repair;
 mod guard;
+mod housekeeping;
 mod onboarding;
 mod openclaw_auth;
 mod openclaw_cli;
@@ -106,6 +107,9 @@ pub fn run() {
                     }
                 }
             }
+
+            // 清理累积的备份（配置 .bak / 人格备份 / 会话备份目录），只留最近几个
+            let _ = housekeeping::tidy();
 
             Ok(())
         })
