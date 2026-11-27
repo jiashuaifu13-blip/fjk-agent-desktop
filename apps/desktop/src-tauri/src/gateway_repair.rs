@@ -238,7 +238,7 @@ fn spawn_gateway_detached() -> bool {
 
     let mut command = Command::new(node);
     command
-        .arg("--max-old-space-size=2048")
+        .arg("--max-old-space-size=1024")
         .arg(entry)
         .arg("gateway")
         .arg("--port")
@@ -355,7 +355,7 @@ pub async fn gateway_repair(state: tauri::State<'_, Arc<RepairState>>) -> Result
         );
 
         // 2.5) 限制 Node 堆上限，避免启动后涨到 1.4GB
-        let _ = crate::gateway_launch::tune_gateway_heap(2048);
+        let _ = crate::gateway_launch::tune_gateway_heap(1024);
 
         // 3) 安装并启动网关：start → install → 直接后台运行
         let t2 = Instant::now();

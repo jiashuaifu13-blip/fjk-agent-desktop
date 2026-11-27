@@ -186,7 +186,7 @@ pub async fn gateway_ensure_running(
     }
 
     // 2.5) 限制 Node 堆上限（默认 8032MB → 2048MB），防止长时间运行涨到 1.4GB
-    let _ = tune_gateway_heap(2048);
+    let _ = tune_gateway_heap(1024);
 
     // 3) 选择启动方式：优先直接运行 gateway.cmd（快），否则回退 CLI。
     let (args, source) = match gateway_cmd_path() {

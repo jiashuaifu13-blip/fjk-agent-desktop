@@ -405,7 +405,7 @@ export function DesktopTerminal() {
   const loadingOlderRef = useRef(false)
 
   // 单会话在内存中的消息上限：超过则不再向前加载（更早内容仍在磁盘/归档中）
-  const MAX_IN_MEMORY_MESSAGES = 120
+  const MAX_IN_MEMORY_MESSAGES = 80
 
   const previousMessageCountRef = useRef(0)
 
