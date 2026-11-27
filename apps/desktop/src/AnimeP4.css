@@ -383,3 +383,98 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ---------- 10. 唱歌（音乐播放条） ---------- */
+.fjk-music-idle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 24px 0;
+  flex-wrap: wrap;
+}
+
+.fjk-music-trigger {
+  min-height: 30px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid #b8dcff;
+  background: #ffffff;
+  color: #0b6fd8;
+  font: 600 12px 'Microsoft YaHei UI', system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #e6f1fd;
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
+}
+
+.fjk-music-trigger:active:not(:disabled) {
+  transform: translateY(2px) scale(0.97);
+  box-shadow: none;
+}
+
+.fjk-music-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fjk-music-link {
+  border: 0;
+  background: transparent;
+  color: #7b8ca6;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.fjk-music-link:hover {
+  color: #128afa;
+}
+
+.fjk-music {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 24px 0;
+  padding: 8px 12px;
+  border-radius: 14px;
+  border: 1px solid #d8e6f5;
+  background: linear-gradient(180deg, #ffffff, #f7fbff);
+  box-shadow: 0 4px 14px rgba(24, 74, 140, 0.08);
+}
+
+.fjk-music-icon {
+  color: #128afa;
+  font-size: 14px;
+}
+
+.fjk-music-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: #12233f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fjk-music-btn {
+  min-width: 28px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid #d8e6f5;
+  background: #ffffff;
+  color: #0b6fd8;
+  font-size: 11px;
+  cursor: pointer;
+  transition: transform 90ms ease-out;
+}
+
+.fjk-music-btn:active {
+  transform: translateY(1px) scale(0.96);
+}
+
+.fjk-music-note {
+  width: 100%;
+  font-size: 11px;
+  color: #c92f6c;
+  overflow-wrap: anywhere;
+}

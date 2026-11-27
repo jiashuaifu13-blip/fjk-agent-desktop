@@ -34,6 +34,7 @@ import { useVirtualMessages } from '../hooks/useVirtualMessages'
 import { PersonaCard } from './PersonaCard'
 import { GuardCard } from './GuardCard'
 import { MemoryCard } from './MemoryCard'
+import { MusicPlayer } from './MusicPlayer'
 import { resetSetup } from '../system/setupState'
 
 import type {
@@ -2083,6 +2084,8 @@ export function DesktopTerminal() {
           </div>
         )}
       </div>
+
+      <MusicPlayer />
 
       {approval && (
         <div className="terminal-notice terminal-notice-warn">

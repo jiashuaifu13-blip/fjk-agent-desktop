@@ -16,6 +16,7 @@ mod persona;
 mod persona_card;
 mod persona_export;
 mod memory;
+mod music;
 mod pet_memory;
 mod policy_file;
 mod provider_catalog;
@@ -108,6 +109,9 @@ pub fn run() {
                 }
             }
 
+            // 确保唱歌目录存在，用户才有地方放音频
+            let _ = music::ensure_dir();
+
             // 清理累积的备份（配置 .bak / 人格备份 / 会话备份目录），只留最近几个
             let _ = housekeeping::tidy();
 
@@ -149,6 +153,9 @@ pub fn run() {
             memory::memory_open_dir,
             memory::memory_archive_old,
             memory::memory_append_diary,
+            music::music_list,
+            music::music_open_dir,
+            music::music_read,
             openclaw_auth::openclaw_auth_list,
             openclaw_auth::openclaw_save_api_key,
             provider_models::provider_list_models,
