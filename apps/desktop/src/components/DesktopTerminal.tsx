@@ -35,6 +35,7 @@ import { PersonaCard } from './PersonaCard'
 import { GuardCard } from './GuardCard'
 import { MemoryCard } from './MemoryCard'
 import { MusicPlayer } from './MusicPlayer'
+import { VoiceBar, VoiceToggle } from './VoiceBar'
 import { resetSetup } from '../system/setupState'
 
 import type {
@@ -79,6 +80,10 @@ const MessageRow = memo(function MessageRow({
       <div className="msg-content">
         {message.content || '…'}
       </div>
+
+      {message.role === 'assistant' && message.content.length > 0 && (
+        <VoiceBar text={message.content} />
+      )}
     </div>
   )
 })
@@ -822,6 +827,8 @@ export function DesktopTerminal() {
             <GuardCard />
 
             <MemoryCard />
+
+            <VoiceToggle />
 
             <PersonaCard
               onApplied={async () => {

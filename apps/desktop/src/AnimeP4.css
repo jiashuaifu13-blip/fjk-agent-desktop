@@ -478,3 +478,44 @@
   color: #c92f6c;
   overflow-wrap: anywhere;
 }
+
+/* ---------- 11. 语音条 ---------- */
+.fjk-voice-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.fjk-voice-btn {
+  min-height: 24px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid #b8dcff;
+  background: #ffffff;
+  color: #0b6fd8;
+  font: 600 11px 'Microsoft YaHei UI', system-ui, sans-serif;
+  cursor: pointer;
+  transition: transform 90ms ease-out, opacity 150ms ease-out;
+}
+
+.fjk-voice-btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.96);
+}
+
+.fjk-voice-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.fjk-voice-btn.is-playing {
+  background: linear-gradient(180deg, #38a3ff, #128afa);
+  border-color: #0a5fbb;
+  color: #ffffff;
+}
+
+.fjk-voice-error {
+  font-size: 10px;
+  color: #c92f6c;
+  overflow-wrap: anywhere;
+}

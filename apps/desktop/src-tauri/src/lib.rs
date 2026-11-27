@@ -17,6 +17,7 @@ mod persona_card;
 mod persona_export;
 mod memory;
 mod music;
+mod voice;
 mod pet_memory;
 mod policy_file;
 mod provider_catalog;
@@ -156,6 +157,10 @@ pub fn run() {
             music::music_list,
             music::music_open_dir,
             music::music_read,
+            voice::voice_status,
+            voice::voice_speak,
+            voice::voice_open_cache,
+            voice::voice_clear_cache,
             openclaw_auth::openclaw_auth_list,
             openclaw_auth::openclaw_save_api_key,
             provider_models::provider_list_models,
