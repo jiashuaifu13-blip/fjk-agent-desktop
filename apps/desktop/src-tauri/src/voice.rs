@@ -49,7 +49,7 @@ fn script_path(app: &tauri::AppHandle) -> Option<PathBuf> {
 
     if let Ok(resource) = app
         .path()
-        .resolve("resources/voice_tts.js", tauri::path::BaseDirectory::Resource)
+        .resolve("resources/voice_tts.cjs", tauri::path::BaseDirectory::Resource)
     {
         if resource.exists() {
             return Some(resource);
@@ -58,7 +58,7 @@ fn script_path(app: &tauri::AppHandle) -> Option<PathBuf> {
 
     let dev = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("resources")
-        .join("voice_tts.js");
+        .join("voice_tts.cjs");
 
     dev.exists().then_some(dev)
 }
@@ -102,10 +102,14 @@ fn run_tts(
 
     let mut child = command.spawn().map_err(|error| format!("启动 node 失败：{error}"))?;
 
-    if let Some(stdin) = child.stdin.as_mut() {
+    // 必须 take() 后再写出：写完立刻 drop，关闭子进程 stdin。
+    // 若只 as_mut() 借用，stdin 会一直保持打开，NODE 侧等不到 'end' 事件 → 30 秒超时。
+    if let Some(mut stdin) = child.stdin.take() {
         stdin
             .write_all(text.as_bytes())
             .map_err(|error| format!("写入文本失败：{error}"))?;
+        stdin.flush().ok();
+        // stdin 在此作用域结束时 drop → 发送 EOF
     }
 
     let deadline = Instant::now() + TTS_TIMEOUT;
@@ -153,7 +157,7 @@ pub fn voice_status(app: tauri::AppHandle) -> VoiceStatus {
 
     let detail = match (&node, &script, &node_modules) {
         (None, _, _) => "未找到 node（需要先安装 OpenClaw）".to_string(),
-        (_, None, _) => "安装包缺少 voice_tts.js".to_string(),
+        (_, None, _) => "安装包缺少 voice_tts.cjs".to_string(),
         (_, _, None) => "未找到 openclaw 的 node_modules（node-edge-tts）".to_string(),
         _ => "可用（Edge TTS，需要联网）".to_string(),
     };
@@ -195,7 +199,7 @@ pub fn voice_speak(app: tauri::AppHandle, text: String, voice: Option<String>) -
     }
 
     let node = crate::openclaw_cli::node_exe().ok_or_else(|| "未找到 node（需要先安装 OpenClaw）".to_string())?;
-    let script = script_path(&app).ok_or_else(|| "安装包缺少 voice_tts.js".to_string())?;
+    let script = script_path(&app).ok_or_else(|| "安装包缺少 voice_tts.cjs".to_string())?;
     let node_modules = openclaw_node_modules()
         .ok_or_else(|| "未找到 openclaw 的 node_modules（node-edge-tts）".to_string())?;
 
